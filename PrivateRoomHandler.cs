@@ -1,11 +1,13 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UI.ProceduralImage;
-using UnityEngine.SceneManagement;
 using TMPro;
 using Photon.Pun;
+using Photon.Pun.UtilityScripts;
 using Landfall.Network;
 using InControl;
 using Steamworks;
@@ -23,6 +25,8 @@ namespace RWF
         private GameObject gameMode;
         private VersusDisplay versusDisplay;
         private bool ready = false;
+        private Dictionary<int, bool> waitingForResponse = new Dictionary<int, bool>();
+
         public static PrivateRoomHandler instance;
 
         public ListMenuPage MainPage { get; private set; }
@@ -30,6 +34,10 @@ namespace RWF
         private void Awake() {
             PrivateRoomHandler.instance = this;
             this.gameObject.AddComponent<PhotonView>();
+
+            if (RWFMod.DEBUG) {
+                this.gameObject.AddComponent<PhotonLagSimulationGui>();
+            }
         }
 
         private void Start() {
@@ -153,7 +161,6 @@ namespace RWF
             var backButton = backGo.AddComponent<Button>();
 
             backButton.onClick.AddListener(() => {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().name);
                 NetworkConnectionHandler.instance.NetworkRestart();
             });
 
@@ -218,25 +225,31 @@ namespace RWF
                 PhotonNetwork.LocalPlayer.NickName = $"Player {PhotonNetwork.LocalPlayer.ActorNumber}";
             }
 
+            foreach (var networkPlayer in PhotonNetwork.CurrentRoom.Players.Values.ToList()) {
+                this.waitingForResponse.Add(networkPlayer.ActorNumber, false);
+            }
+
             // If we handled this from OnPlayerEnteredRoom handler for other clients, the joined client's nickname might not have been set yet
             view.RPC("UpdatePlayerDisplay", RpcTarget.All);
             base.OnJoinedRoom();
         }
 
+        override public void OnMasterClientSwitched(Photon.Realtime.Player newMaster) {
+            NetworkConnectionHandler.instance.NetworkRestart();
+            base.OnMasterClientSwitched(newMaster);
+        }
+
         // Compatibility with unmodded clients
         override public void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer) {
+            this.waitingForResponse.Add(newPlayer.ActorNumber, false);
             this.StartCoroutine(this.WaitAndUpdatePlayerDisplay());
+            base.OnPlayerEnteredRoom(newPlayer);
         }
 
-        override public void OnLeftRoom() {
-            this.gameMode.SetActive(false);
+        override public void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer) {
+            this.waitingForResponse.Remove(otherPlayer.ActorNumber);
             this.UpdatePlayerDisplay();
-            base.OnLeftRoom();
-        }
-
-        override public void OnPlayerLeftRoom(Photon.Realtime.Player player) {
-            this.UpdatePlayerDisplay();
-            base.OnPlayerLeftRoom(player);
+            base.OnPlayerLeftRoom(otherPlayer);
         }
 
         private IEnumerator ToggleReady() {
@@ -248,9 +261,15 @@ namespace RWF
                 yield return null;
             }
 
-            this.ready = !this.ready;
+            if (this.IsWaitingForResponse()) {
+                yield break;
+            }
 
-            if (this.ready) {
+            foreach (var networkPlayer in PhotonNetwork.CurrentRoom.Players.Values.ToList()) {
+                this.waitingForResponse[networkPlayer.ActorNumber] = true;
+            }
+
+            if (!this.ready) {
                 InputDevice playerDevice = null;
 
                 var m_JoinButtonWasPressedOnDevice = typeof(PlayerAssigner).GetMethod("JoinButtonWasPressedOnDevice", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -268,14 +287,29 @@ namespace RWF
                     }
                 }
 
-                this.StartCoroutine(this.CreatePlayer(playerDevice));
+                yield return this.CreatePlayer(playerDevice);
+
+                foreach (var networkPlayer in PhotonNetwork.CurrentRoom.Players.Values.ToList()) {
+                    this.waitingForResponse[networkPlayer.ActorNumber] = false;
+                }
             }
 
-            if (!this.ready) {
-                this.photonView.RPC("RemovePlayer", RpcTarget.All, new object[] { PhotonNetwork.LocalPlayer.ActorNumber });
+            if (this.ready) {
+                this.photonView.RPC("RemovePlayer", RpcTarget.All, PhotonNetwork.LocalPlayer.ActorNumber);
+
+                while (this.IsWaitingForResponse()) {
+                    yield return null;
+                }
+
+                this.UpdatePlayerDisplay();
             }
 
+            this.ready = !this.ready;
             this.UpdateReadyBox();
+        }
+
+        private bool IsWaitingForResponse() {
+            return this.waitingForResponse.Values.ToList().Any(p => p);
         }
 
         private void UpdateReadyBox() {
@@ -304,19 +338,31 @@ namespace RWF
         }
 
         [PunRPC]
-        private void RemovePlayer(int actorNumber) {
+        private void RemovePlayer(int askingPlayer) {
             var players = PlayerManager.instance.players;
 
             for (int i = 0; i < players.Count; i++) {
-                if (players[i].data.view.OwnerActorNr == actorNumber) {
+                if (players[i].data.view.OwnerActorNr == askingPlayer) {
                     var m_RemovePlayer = typeof(PlayerAssigner).GetMethod("RemovePlayer", BindingFlags.Instance | BindingFlags.NonPublic);
                     m_RemovePlayer.Invoke(PlayerAssigner.instance, new object[] { players[i].data });
 
-                    this.UpdatePlayerDisplay();
+                    // We'll update the player display for the local player after all players have responded
+                    if (askingPlayer != PhotonNetwork.LocalPlayer.ActorNumber) {
+                        this.UpdatePlayerDisplay();
+                    }
+
                     break;
                 }
             }
+
+            this.photonView.RPC("RemovePlayerResponse", PhotonNetwork.CurrentRoom.GetPlayer(askingPlayer), PhotonNetwork.LocalPlayer.ActorNumber);
         }
+
+        [PunRPC]
+        private void RemovePlayerResponse(int respondingPlayer) {
+            this.waitingForResponse[respondingPlayer] = false;
+        }
+
         private IEnumerator WaitAndUpdatePlayerDisplay() {
             yield return new WaitForSeconds(0.1f);
             this.UpdatePlayerDisplay();

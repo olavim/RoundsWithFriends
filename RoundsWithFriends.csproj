@@ -33,6 +33,9 @@
     <Reference Include="PhotonUnityNetworking">
       <HintPath>D:\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\PhotonUnityNetworking.dll</HintPath>
     </Reference>
+    <Reference Include="PhotonUnityNetworking.Utilities">
+      <HintPath>D:\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\PhotonUnityNetworking.Utilities.dll</HintPath>
+    </Reference>
     <Reference Include="UnboundLib">
       <HintPath>..\UnboundLib\bin\Debug\net461\UnboundLib.dll</HintPath>
     </Reference>

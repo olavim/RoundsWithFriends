@@ -19,6 +19,8 @@ namespace RWF
     {
         public static RWFMod instance;
 
+        public static readonly bool DEBUG = false;
+
         public static string GetCustomPropertyKey(string prop) {
             return "io.olavim.plugins.rounds.teams/" + prop;
         }
