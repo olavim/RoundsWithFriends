@@ -1,6 +1,6 @@
 # RoundsWithFriends
  
-A [ROUNDS](https://landfall.se/rounds) mod to extends the game's multiplayer capabilities, built for [BepInEx](https://github.com/BepInEx/BepInEx).
+A [ROUNDS](https://landfall.se/rounds) mod to extend the game's multiplayer capabilities, built for [BepInEx](https://github.com/BepInEx/BepInEx).
 
 ## Current Features
 
