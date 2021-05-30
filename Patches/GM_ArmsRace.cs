@@ -71,6 +71,10 @@ namespace RWF.Patches
     [HarmonyPatch]
     class GM_ArmsRace_Patch_RoundTransition
     {
+        private static int GetPlayerIndex(Player player) {
+            return PlayerManager.instance.players.FindIndex(p => p.playerID == player.playerID);
+        }
+
         static Type GetNestedRoundTransitionType() {
             var nestedTypes = typeof(GM_ArmsRace).GetNestedTypes(BindingFlags.Instance | BindingFlags.NonPublic);
             Type nestedType = null;
@@ -97,7 +101,10 @@ namespace RWF.Patches
             var f_cardChoiceInstance = AccessTools.Field(typeof(CardChoice), "instance");
             var f_cardChoiceVisualsInstance = AccessTools.Field(typeof(CardChoiceVisuals), "instance");
             var m_cardChoiceVisualsShow = typeof(CardChoiceVisuals).GetMethod("Show", BindingFlags.Public | BindingFlags.Instance);
+            var m_getPlayerIndex = typeof(GM_ArmsRace_Patch_RoundTransition).GetMethod("GetPlayerIndex", BindingFlags.NonPublic | BindingFlags.Static);
+
             var f_iteratorIndex = GetNestedRoundTransitionType().GetField("<i>5__3", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var f_players = GetNestedRoundTransitionType().GetField("<players>5__2", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             for (int i = 0; i < list.Count; i++) {
                 if (
@@ -105,9 +112,14 @@ namespace RWF.Patches
                     list[i].opcode == OpCodes.Ldarg_0 &&
                     list[i + 1].LoadsField(f_cardChoiceInstance)
                 ) {
+                    // Adds `CardChoiceVisuals.instance.Show(GetPlayerIndex(players[i]), true)` before the DoPick call
                     newInstructions.Add(new CodeInstruction(OpCodes.Ldsfld, f_cardChoiceVisualsInstance));
                     newInstructions.Add(new CodeInstruction(OpCodes.Ldarg_0));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Ldfld, f_players));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Ldarg_0));
                     newInstructions.Add(new CodeInstruction(OpCodes.Ldfld, f_iteratorIndex));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Ldelem_Ref));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Call, m_getPlayerIndex));
                     newInstructions.Add(new CodeInstruction(OpCodes.Ldc_I4_1));
                     newInstructions.Add(new CodeInstruction(OpCodes.Callvirt, m_cardChoiceVisualsShow));
                     newInstructions.Add(list[i]);
