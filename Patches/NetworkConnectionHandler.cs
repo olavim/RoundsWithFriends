@@ -15,16 +15,6 @@ namespace RWF.Patches
     [HarmonyPatch(typeof(NetworkConnectionHandler), "OnJoinedRoom")]
     class NetworkConnectionHandler_Patch_OnJoinedRoom
     {
-        static void Prefix() {
-            if (PhotonNetwork.IsMasterClient) {
-                RWFMod.instance.SyncOptions();
-            } else {
-                // Sync team size from host
-                int teamSize = (int) PhotonNetwork.CurrentRoom.CustomProperties[RWFMod.GetCustomPropertyKey("teamSize")];
-                RWFMod.instance.SetTeamSize(teamSize);
-            }
-        }
-
         static Exception Finalizer(Exception __exception) {
             if (__exception != null) {
                 PatchLogger.Get("NetworkConnectionHandler::OnJoinedRoom").LogDebug($"Suppressed error:\n{__exception}");
@@ -114,10 +104,6 @@ namespace RWF.Patches
     class NetworkConnectionHandler_Patch_OnPlayerEnteredRoom
     {
         static bool Prefix(NetworkConnectionHandler __instance) {
-            if (PhotonNetwork.IsMasterClient) {
-                RWFMod.instance.SyncOptions();
-            }
-
             // When playing in a private match, we want to pretty much ignore this function since we handle player joins in PrivateRoomHandler
             if (!__instance.IsSearchingQuickMatch() && !__instance.IsSearchingTwitch()) {
                 SoundPlayerStatic.Instance.PlayPlayerAdded();

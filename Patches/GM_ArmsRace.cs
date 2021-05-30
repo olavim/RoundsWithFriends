@@ -12,9 +12,8 @@ namespace RWF.Patches
     class GM_ArmsRace_Patch_Start
     {
         static void Postfix(ref int ___playersNeededToStart) {
-            ___playersNeededToStart = 2;
+            ___playersNeededToStart = RWFMod.instance.MinPlayers;
             PlayerAssigner.instance.maxPlayers = RWFMod.instance.MaxPlayers;
-
             UIHandler.instance.HideJoinGameText();
         }
     }

@@ -3,7 +3,7 @@ using BepInEx.Logging;
 using System.Reflection;
 using System.Collections.Generic;
 
-namespace RWF
+namespace RWF.Patches
 {
     public static class PatchLogger
     {
