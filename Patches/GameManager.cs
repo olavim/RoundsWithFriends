@@ -1,11 +1,9 @@
 ﻿using HarmonyLib;
-using Photon.Pun;
-using UnityEngine;
 
 namespace RWF.Patches
 {
-    [HarmonyPatch(typeof(GameManager), "Start")]
-    class GameManager_Patch_Await
+    [HarmonyPatch(typeof(MainMenuHandler), "Awake")]
+    class MainMenuHandler_Patch_Awake
     {
         static void Postfix() {
             RWFMod.instance.InjectUIElements();

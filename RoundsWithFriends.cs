@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections;
+using System.Collections.Generic;
 using BepInEx;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
+using UnboundLib;
 using Photon.Pun;
 
 namespace RWF
@@ -14,14 +14,22 @@ namespace RWF
         public static string SetTeamSize = "set_team_size";
     }
 
-    [BepInPlugin("io.olavim.plugins.rounds.rwf", "RoundsWithFriends", "1.0.0")]
+    [BepInDependency("com.willis.rounds.unbound", "1.0.0.4")]
+    [BepInPlugin(ModId, "RoundsWithFriends", "1.0.0")]
     public class RWFMod : BaseUnityPlugin
     {
+        private const string ModId = "io.olavim.rounds.rwf";
+
+#if DEBUG
+        public static readonly bool DEBUG = true;
+#else
         public static readonly bool DEBUG = false;
+#endif
+
         public static RWFMod instance;
 
         public static string GetCustomPropertyKey(string prop) {
-            return "io.olavim.plugins.rounds.teams/" + prop;
+            return $"{ModId}/{prop}";
         }
 
         public static void DebugLog(object obj) {
@@ -62,16 +70,36 @@ namespace RWF
         }
 
         public Text infoText;
+        private Dictionary<string, bool> soundEnabled;
 
         public void Awake() {
             RWFMod.instance = this;
 
             try {
-                Patches.PatchUtils.ApplyPatches();
+                Patches.PatchUtils.ApplyPatches(ModId);
                 this.Logger.LogInfo("initialized");
             } catch (Exception e) {
                 this.Logger.LogError(e.ToString());
             }
+        }
+
+        public void Start() {
+            this.soundEnabled = new Dictionary<string, bool>();
+            Unbound.RegisterHandshake(ModId, () => {
+                PhotonNetwork.LocalPlayer.SetModded();
+            });
+        }
+
+        public void SetSoundEnabled(string key, bool enabled) {
+            if (!this.soundEnabled.ContainsKey(key)) {
+                this.soundEnabled.Add(key, enabled);
+            } else {
+                this.soundEnabled[key] = enabled;
+            }
+        }
+
+        public bool GetSoundEnabled(string key) {
+            return this.soundEnabled.ContainsKey(key) ? this.soundEnabled[key] : true;
         }
 
         public void InjectUIElements() {

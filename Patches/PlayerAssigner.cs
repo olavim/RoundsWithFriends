@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using InControl;
+using UnboundLib;
 
 namespace RWF.Patches
 {
@@ -51,9 +52,7 @@ namespace RWF.Patches
 
             if (player.view.OwnerActorNr == PhotonNetwork.LocalPlayer.ActorNumber) {
                 PhotonNetwork.Destroy(player.view);
-
-                var f_localPlayerCreated = typeof(PlayerAssigner).GetField("hasCreatedLocalPlayer", BindingFlags.Instance | BindingFlags.NonPublic);
-                f_localPlayerCreated.SetValue(__instance, false);
+                __instance.SetFieldValue("hasCreatedLocalPlayer", false);
             }
         }
     }
@@ -62,8 +61,7 @@ namespace RWF.Patches
     class PlayerAssigner_Patch_RemovePlayers
     {
         static void Postfix(PlayerAssigner __instance) {
-            var f_localPlayerCreated = typeof(PlayerAssigner).GetField("hasCreatedLocalPlayer", BindingFlags.Instance | BindingFlags.NonPublic);
-            f_localPlayerCreated.SetValue(__instance, false);
+            __instance.SetFieldValue("hasCreatedLocalPlayer", false);
         }
     }
 
@@ -101,10 +99,9 @@ namespace RWF.Patches
             var newInstructions = new List<CodeInstruction>();
 
             var f_playerManagerInstance = AccessTools.Field(typeof(PlayerManager), "instance");
-            var f_playerManagerPlayers = typeof(PlayerManager).GetField("players", BindingFlags.Public | BindingFlags.Instance);
-            var m_playerManagerPlayersCountGet = typeof(List<Player>).GetProperty("Count", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
-
-            var m_FindAvailablePlayerID = typeof(PatchUtils).GetMethod("FindAvailablePlayerID", BindingFlags.Static | BindingFlags.Public);
+            var f_playerManagerPlayers = ExtensionMethods.GetFieldInfo(typeof(PlayerManager), "players");
+            var m_playerManagerPlayersCountGet = ExtensionMethods.GetPropertyInfo(typeof(List<Player>), "Count").GetGetMethod();
+            var m_FindAvailablePlayerID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "FindAvailablePlayerID");
 
             for (int i = 0; i < list.Count; i++) {
                 if (
@@ -133,10 +130,9 @@ namespace RWF.Patches
             var newInstructions = new List<CodeInstruction>();
 
             var f_playerManagerInstance = AccessTools.Field(typeof(PlayerManager), "instance");
-            var f_playerManagerPlayers = typeof(PlayerManager).GetField("players", BindingFlags.Public | BindingFlags.Instance);
-            var m_playerManagerPlayersCountGet = typeof(List<Player>).GetProperty("Count", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
-
-            var m_FindAvailablePlayerID = typeof(PatchUtils).GetMethod("FindAvailablePlayerID", BindingFlags.Static | BindingFlags.Public);
+            var f_playerManagerPlayers = ExtensionMethods.GetFieldInfo(typeof(PlayerManager), "players");
+            var m_playerManagerPlayersCountGet = ExtensionMethods.GetPropertyInfo(typeof(List<Player>), "Count").GetGetMethod();
+            var m_FindAvailablePlayerID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "FindAvailablePlayerID");
 
             for (int i = 0; i < list.Count; i++) {
                 if (

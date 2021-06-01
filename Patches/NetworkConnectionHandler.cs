@@ -5,10 +5,10 @@ using HarmonyLib;
 using Photon.Pun;
 using System.Linq;
 using Photon.Realtime;
-using System.Reflection;
 using System.Reflection.Emit;
 using Landfall.Network;
 using SoundImplementation;
+using UnboundLib;
 
 namespace RWF.Patches
 {
@@ -76,11 +76,8 @@ namespace RWF.Patches
 
             __instance.SetForceRegion(true);
 
-            // Here we're basically doing `this.StartCoroutine(this.DoActionWhenConnected(() => this.JoinSpecificRoom(room)));` but reflection makes everything unreadable...
-            var m_DoActionWhenConnected = typeof(NetworkConnectionHandler).GetMethod("DoActionWhenConnected", BindingFlags.Instance | BindingFlags.NonPublic);
-            var m_JoinSpecificRoom = typeof(NetworkConnectionHandler).GetMethod("JoinSpecificRoom", BindingFlags.Instance | BindingFlags.NonPublic);
-            Action joinSpecificRoomDelegate = () => m_JoinSpecificRoom.Invoke(__instance, new object[] { room });
-            __instance.StartCoroutine((IEnumerator) m_DoActionWhenConnected.Invoke(__instance, new object[] { joinSpecificRoomDelegate }));
+            Action joinSpecificRoomDelegate = () => __instance.InvokeMethod("JoinSpecificRoom", room);
+            __instance.StartCoroutine((IEnumerator) __instance.InvokeMethod("DoActionWhenConnected", joinSpecificRoomDelegate));
 
             // We'll replace the whole method
             return false;
@@ -113,7 +110,7 @@ namespace RWF.Patches
                     __instance.GetComponent<PhotonView>().RPC("RPCA_FoundGame", RpcTarget.All, Array.Empty<object>());
                 }
 
-                var field = typeof(NetworkConnectionHandler).GetField("m_SteamLobby", BindingFlags.Static | BindingFlags.NonPublic);
+                var field = AccessTools.Field(typeof(NetworkConnectionHandler), "m_SteamLobby");
                 var lobby = (ClientSteamLobby) field.GetValue(null);
 
                 if (PhotonNetwork.PlayerList.Length == RWFMod.instance.MaxPlayers && lobby != null) {

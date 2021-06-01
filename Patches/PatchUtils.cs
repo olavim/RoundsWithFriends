@@ -21,8 +21,8 @@ namespace RWF.Patches
 
     public static class PatchUtils
     {
-        public static void ApplyPatches() {
-            var harmony = new Harmony("io.olavim.plugins.rounds.teams");
+        public static void ApplyPatches(string id) {
+            var harmony = new Harmony(id);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
             PatchLogger.logger.LogInfo("initialized");

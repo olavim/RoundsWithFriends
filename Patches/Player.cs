@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using HarmonyLib;
-using System.Reflection;
+using UnboundLib;
 
 namespace RWF.Patches
 {
@@ -13,8 +13,8 @@ namespace RWF.Patches
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
             // Somewhy the AssignTeamID method assigns playerID to teamID when player joins a room the second time
-            var f_playerID = typeof(Player).GetField("playerID", BindingFlags.Instance | BindingFlags.Public);
-            var f_teamID = typeof(Player).GetField("teamID", BindingFlags.Instance | BindingFlags.Public);
+            var f_playerID = ExtensionMethods.GetFieldInfo(typeof(Player), "playerID");
+            var f_teamID = ExtensionMethods.GetFieldInfo(typeof(Player), "teamID");
 
             foreach (var ins in instructions) {
                 if (ins.LoadsField(f_playerID)) {

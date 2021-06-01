@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using System.Reflection;
+using UnboundLib;
 
 namespace RWF.Patches
 {
@@ -16,8 +16,7 @@ namespace RWF.Patches
             }
 
             if (___portrait && ___portrait.controlType != MenuControllerHandler.MenuControl.Unassigned) {
-                var m_Switch = typeof(ControllerImageToggler).GetMethod("Switch", BindingFlags.Instance | BindingFlags.NonPublic);
-                m_Switch.Invoke(__instance, new object[] { ___portrait.controlType });
+                __instance.InvokeMethod("Switch", ___portrait.controlType);
             }
         }
     }

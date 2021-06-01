@@ -92,19 +92,23 @@ namespace RWF
                 var networkPlayers = PhotonNetwork.CurrentRoom.Players.Values.ToList();
 
                 networkPlayers.Sort((np1, np2) => {
-                    var p1 = this.GetPlayerWithActorID(np1.ActorNumber);
-                    var p2 = this.GetPlayerWithActorID(np2.ActorNumber);
+                    bool ready1 = np1.GetProperty<bool>("ready");
+                    bool ready2 = np2.GetProperty<bool>("ready");
+                    int order1 = np1.GetProperty<int>("readyOrder");
+                    int order2 = np2.GetProperty<int>("readyOrder");
 
-                    if ((p1 && p2) || (!p1 && !p2)) {
-                        return np1.ActorNumber - np2.ActorNumber;
+                    if (ready1 && ready2) {
+                        return order1 - order2;
                     }
 
-                    return p1 ? -1 : 1;
+                    if (ready1 || ready2) {
+                        return ready1 ? -1 : 1;
+                    }
+
+                    return np1.ActorNumber - np2.ActorNumber;
                 });
 
                 foreach (var networkPlayer in networkPlayers) {
-                    var player = this.GetPlayerWithActorID(networkPlayer.ActorNumber);
-
                     var team = this.GetNetworkPlayerTeam(networkPlayer);
                     var teamGo = team == 0 ? team1Go : team2Go;
 
@@ -112,7 +116,7 @@ namespace RWF
                     playerGo.transform.SetParent(teamGo.transform);
                     playerGo.transform.localScale = Vector3.one;
 
-                    var playerNameGo = CreatePlayerName(networkPlayer.NickName, team, player != null);
+                    var playerNameGo = CreatePlayerName(networkPlayer.NickName, team, networkPlayer.GetProperty<bool>("ready"));
                     playerNameGo.transform.SetParent(playerGo.transform);
                     playerNameGo.transform.localScale = Vector3.one;
 
@@ -155,21 +159,9 @@ namespace RWF
             return playerNameGo;
         }
 
-        private Player GetPlayerWithActorID(int actorID) {
-            var players = PlayerManager.instance.players;
-            for (int i = 0; i < players.Count; i++) {
-                if (players[i].data.view.OwnerActorNr == actorID) {
-                    return players[i];
-                }
-            }
-            return null;
-        }
-
         private int GetNetworkPlayerTeam(Photon.Realtime.Player networkPlayer) {
-            var player = GetPlayerWithActorID(networkPlayer.ActorNumber);
-
-            if (player) {
-                return player.teamID;
+            if (networkPlayer.GetProperty<bool>("ready")) {
+                return networkPlayer.GetProperty<int>("readyOrder") % 2;
             }
 
             return this.teamPlayers[0] > this.teamPlayers[1] ? 1 : 0;

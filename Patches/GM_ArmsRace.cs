@@ -1,10 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using HarmonyLib;
-using System.Linq;
 using System.Reflection;
+using System.Collections.Generic;
+using System.Linq;
+using HarmonyLib;
 using System.Reflection.Emit;
-using UnityEngine;
+using UnityEngine.SceneManagement;
+using Photon.Pun;
+using UnboundLib;
 
 namespace RWF.Patches
 {
@@ -41,29 +43,25 @@ namespace RWF.Patches
     {
         // Fixing rematch for >2 players is possible, but going back to lobby is enough for now
         static bool Prefix(GM_ArmsRace __instance) {
-            if (PlayerManager.instance.players.Count == 2) {
-                return true;
+            if (!PhotonNetwork.OfflineMode) {
+                // Enable rematch if playing against a single unmodded player
+                var allModded = PhotonNetwork.CurrentRoom.Players.Values.ToList().All(p => p.IsModded());
+                if (!allModded && PlayerManager.instance.players.Count == 2) {
+                    return true;
+                }
+
+                /* The master client destroys all networked player objects after each game. Otherwise, if someone
+                 * joins a lobby after a game has been played, all the previously created player objects will be
+                 * created for the new client as well, which causes a host of problems.
+                 */
+                if (PhotonNetwork.IsMasterClient) {
+                    foreach (var player in PhotonNetwork.CurrentRoom.Players.Values.ToList()) {
+                        PhotonNetwork.DestroyPlayerObjects(player);
+                    }
+                }
             }
 
-            var m_ResetMatch = typeof(GM_ArmsRace).GetMethod("ResetMatch", BindingFlags.NonPublic | BindingFlags.Instance);
-            m_ResetMatch.Invoke(__instance, null);
-
-            // Reset crown
-            var crown = __instance.gameObject.GetComponentInChildren<GameCrownHandler>();
-            crown.transform.position = new Vector3(-1000, -1000, 0);
-            var f_currentCrownHolder = typeof(GameCrownHandler).GetField("currentCrownHolder", BindingFlags.NonPublic | BindingFlags.Instance);
-            f_currentCrownHolder.SetValue(crown, -1);
-
-            // Reset players and map
-            PlayerManager.instance.RemovePlayers();
-            GameManager.instance.isPlaying = false;
-            UIHandler.instance.HideRoundCounterSmall();
-            MapManager.instance.UnloadScene(MapManager.instance.currentMap.Scene);
-            MapManager.instance.currentMap = null;
-
-            // Open lobby
-            MainMenuHandler.instance.Open();
-            PrivateRoomHandler.instance.Open();
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
             return false;
         }
     }
@@ -71,7 +69,7 @@ namespace RWF.Patches
     [HarmonyPatch]
     class GM_ArmsRace_Patch_RoundTransition
     {
-        private static int GetPlayerIndex(Player player) {
+        public static int GetPlayerIndex(Player player) {
             return PlayerManager.instance.players.FindIndex(p => p.playerID == player.playerID);
         }
 
@@ -100,11 +98,11 @@ namespace RWF.Patches
 
             var f_cardChoiceInstance = AccessTools.Field(typeof(CardChoice), "instance");
             var f_cardChoiceVisualsInstance = AccessTools.Field(typeof(CardChoiceVisuals), "instance");
-            var m_cardChoiceVisualsShow = typeof(CardChoiceVisuals).GetMethod("Show", BindingFlags.Public | BindingFlags.Instance);
-            var m_getPlayerIndex = typeof(GM_ArmsRace_Patch_RoundTransition).GetMethod("GetPlayerIndex", BindingFlags.NonPublic | BindingFlags.Static);
+            var m_cardChoiceVisualsShow = ExtensionMethods.GetMethodInfo(typeof(CardChoiceVisuals), "Show");
+            var m_getPlayerIndex = ExtensionMethods.GetMethodInfo(typeof(GM_ArmsRace_Patch_RoundTransition), "GetPlayerIndex");
 
-            var f_iteratorIndex = GetNestedRoundTransitionType().GetField("<i>5__3", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            var f_players = GetNestedRoundTransitionType().GetField("<players>5__2", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var f_iteratorIndex = ExtensionMethods.GetFieldInfo(GetNestedRoundTransitionType(), "<i>5__3");
+            var f_players = ExtensionMethods.GetFieldInfo(GetNestedRoundTransitionType(), "<players>5__2");
 
             for (int i = 0; i < list.Count; i++) {
                 if (

@@ -6,14 +6,16 @@ namespace RWF.Patches
     class DevConsole_Patch_Send
     {
         static bool Prefix(string message) {
-            if (message.StartsWith("join:")) {
-                string[] parts = message.Split(':');
-                string region = parts[1];
-                string room = parts[2];
+            if (RWFMod.DEBUG) {
+                if (message.StartsWith("join:")) {
+                    string[] parts = message.Split(':');
+                    string region = parts[1];
+                    string room = parts[2];
 
-                NetworkConnectionHandler.instance.ForceRegionJoin(region, room);
+                    NetworkConnectionHandler.instance.ForceRegionJoin(region, room);
 
-                return false;
+                    return false;
+                }
             }
 
             return true;

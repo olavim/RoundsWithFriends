@@ -4,6 +4,11 @@
     <TargetFramework>net462</TargetFramework>
     <RootNamespace>RWF</RootNamespace>
   </PropertyGroup>
+  
+  <PropertyGroup>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="0Harmony">
@@ -37,7 +42,7 @@
       <HintPath>D:\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\PhotonUnityNetworking.Utilities.dll</HintPath>
     </Reference>
     <Reference Include="UnboundLib">
-      <HintPath>..\UnboundLib\bin\Debug\net461\UnboundLib.dll</HintPath>
+      <HintPath>..\Libs\UnboundLib.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>D:\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\Unity.TextMeshPro.dll</HintPath>
