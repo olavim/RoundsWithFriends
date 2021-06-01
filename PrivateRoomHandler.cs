@@ -499,8 +499,6 @@ namespace RWF
         public static void StartGame() {
             var instance = PrivateRoomHandler.instance;
             instance.StopAllCoroutines();
-
-            GM_ArmsRace.instance.roundsToWinGame = 1;
             GM_ArmsRace.instance.StartGame();
 
             // The main scene is reloaded after the game. After the reload is done, we want to reopen the lobby.
