@@ -43,21 +43,23 @@ namespace RWF.Patches
     {
         // Fixing rematch for >2 players is possible, but going back to lobby is enough for now
         static bool Prefix(GM_ArmsRace __instance) {
-            if (!PhotonNetwork.OfflineMode) {
-                // Enable rematch if playing against a single unmodded player
-                var allModded = PhotonNetwork.CurrentRoom.Players.Values.ToList().All(p => p.IsModded());
-                if (!allModded && PlayerManager.instance.players.Count == 2) {
-                    return true;
-                }
+            if (PhotonNetwork.OfflineMode) {
+                return true;
+            }
 
-                /* The master client destroys all networked player objects after each game. Otherwise, if someone
-                 * joins a lobby after a game has been played, all the previously created player objects will be
-                 * created for the new client as well, which causes a host of problems.
-                 */
-                if (PhotonNetwork.IsMasterClient) {
-                    foreach (var player in PhotonNetwork.CurrentRoom.Players.Values.ToList()) {
-                        PhotonNetwork.DestroyPlayerObjects(player);
-                    }
+            // Enable rematch if playing against a single unmodded player
+            var allModded = PhotonNetwork.CurrentRoom.Players.Values.ToList().All(p => p.IsModded());
+            if (!allModded && PlayerManager.instance.players.Count == 2) {
+                return true;
+            }
+
+            /* The master client destroys all networked player objects after each game. Otherwise, if someone
+             * joins a lobby after a game has been played, all the previously created player objects will be
+             * created for the new client as well, which causes a host of problems.
+             */
+            if (PhotonNetwork.IsMasterClient) {
+                foreach (var player in PhotonNetwork.CurrentRoom.Players.Values.ToList()) {
+                    PhotonNetwork.DestroyPlayerObjects(player);
                 }
             }
 
