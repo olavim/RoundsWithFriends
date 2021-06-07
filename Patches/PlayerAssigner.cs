@@ -94,24 +94,28 @@ namespace RWF.Patches
         }
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-            // Replace `this.playerIDToSet = PlayerManager.instance.players.Count;` with `this.playerIDToSet = PatchUtils.FindAvailablePlayerID();`
+            // Replace `this.playerIDToSet = PlayerManager.instance.players.Count;` with `this.playerIDToSet = PatchUtils.NextPlayerID();`
             var list = instructions.ToList();
             var newInstructions = new List<CodeInstruction>();
 
             var f_playerManagerInstance = AccessTools.Field(typeof(PlayerManager), "instance");
-            var f_playerManagerPlayers = ExtensionMethods.GetFieldInfo(typeof(PlayerManager), "players");
-            var m_playerManagerPlayersCountGet = ExtensionMethods.GetPropertyInfo(typeof(List<Player>), "Count").GetGetMethod();
-            var m_FindAvailablePlayerID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "FindAvailablePlayerID");
+            var f_playerIDToSet = ExtensionMethods.GetFieldInfo(typeof(PlayerAssigner), "playerIDToSet");
+            var f_teamIDToSet = ExtensionMethods.GetFieldInfo(typeof(PlayerAssigner), "teamIDToSet");
+
+            var m_NextPlayerID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextPlayerID");
+            var m_NextTeamID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextTeamID");
 
             for (int i = 0; i < list.Count; i++) {
-                if (
-                    i < list.Count - 2 &&
-                    list[i].LoadsField(f_playerManagerInstance) &&
-                    list[i + 1].LoadsField(f_playerManagerPlayers) &&
-                    list[i + 2].Calls(m_playerManagerPlayersCountGet)
-                ) {
-                    newInstructions.Add(new CodeInstruction(OpCodes.Call, m_FindAvailablePlayerID));
-                    i += 2;
+                if (list[i].LoadsField(f_playerManagerInstance) && list[i + 3].StoresField(f_playerIDToSet)) {
+                    newInstructions.Add(new CodeInstruction(OpCodes.Call, m_NextPlayerID));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Stfld, f_playerIDToSet));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Ldloc_1));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Call, m_NextTeamID));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Stfld, f_teamIDToSet));
+
+                    while (!list[i].StoresField(f_teamIDToSet)) {
+                        i++;
+                    }
                 } else {
                     newInstructions.Add(list[i]);
                 }
@@ -125,27 +129,34 @@ namespace RWF.Patches
     class PlayerAssigner_Patch_RPCM_RequestTeamAndPlayerID
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-            // Replace `int count = PlayerManager.instance.players.Count;` with `int count = PatchUtils.FindAvailablePlayerID();`
+            /* Replace
+             *   int count = PlayerManager.instance.players.Count;
+             *   int num = (count % 2 == 0) ? 0 : 1;
+             * with
+             *   int count = PatchUtils.NextPlayerID();
+             *   int count = PatchUtils.NextTeamID();
+             */
             var list = instructions.ToList();
             var newInstructions = new List<CodeInstruction>();
 
-            var f_playerManagerInstance = AccessTools.Field(typeof(PlayerManager), "instance");
-            var f_playerManagerPlayers = ExtensionMethods.GetFieldInfo(typeof(PlayerManager), "players");
-            var m_playerManagerPlayersCountGet = ExtensionMethods.GetPropertyInfo(typeof(List<Player>), "Count").GetGetMethod();
-            var m_FindAvailablePlayerID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "FindAvailablePlayerID");
+            var m_NextPlayerID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextPlayerID");
+            var m_NextTeamID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextTeamID");
 
-            for (int i = 0; i < list.Count; i++) {
-                if (
-                    i < list.Count - 2 &&
-                    list[i].LoadsField(f_playerManagerInstance) &&
-                    list[i + 1].LoadsField(f_playerManagerPlayers) &&
-                    list[i + 2].Calls(m_playerManagerPlayersCountGet)
-                ) {
-                    newInstructions.Add(new CodeInstruction(OpCodes.Call, m_FindAvailablePlayerID));
-                    i += 2;
-                } else {
-                    newInstructions.Add(list[i]);
+            int rangeStart;
+            for (rangeStart = 0; rangeStart < list.Count; rangeStart++) {
+                if (list[rangeStart].opcode == OpCodes.Stloc_1) {
+                    newInstructions.Add(new CodeInstruction(OpCodes.Call, m_NextPlayerID));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Stloc_0));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Call, m_NextTeamID));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Stloc_1));
+                    rangeStart++;
+                    break;
                 }
+            }
+
+
+            for (int i = rangeStart; i < list.Count; i++) {
+                newInstructions.Add(list[i]);
             }
 
             return newInstructions;

@@ -4,6 +4,16 @@ using UnboundLib;
 
 namespace RWF.Patches
 {
+    [HarmonyPatch(typeof(Player), "Start")]
+    class Player_Patch_Start
+    {
+        static void Postfix(Player __instance) {
+            if (__instance.data.view.IsMine) {
+
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(Player), "AssignTeamID")]
     class Player_Patch_AssignTeamID
     {

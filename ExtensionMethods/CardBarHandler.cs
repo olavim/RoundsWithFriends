@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
+using UnityEngine.UI.ProceduralImage;
 using UnboundLib;
+using System.Collections.Generic;
 
 namespace RWF
 {
@@ -11,30 +13,28 @@ namespace RWF
             }
 
             int numPlayers = PlayerManager.instance.players.Count;
-            int extraPlayers = numPlayers - 2;
-
-            var barGo1 = instance.transform.GetChild(0).gameObject;
-            var barGo2 = instance.transform.GetChild(1).gameObject;
+            var barGo = instance.transform.GetChild(0).gameObject;
 
             var deltaY = -50;
+            var cardBars = new List<CardBar>();
 
-            var teamSize = Mathf.Ceil(numPlayers / 2f);
-            barGo2.transform.localPosition = barGo1.transform.localPosition + new Vector3(0, teamSize * deltaY, 0);
+            for (int i = 0; i < numPlayers; i++) {
+                var newBarGo = GameObject.Instantiate(barGo, instance.transform);
+                newBarGo.name = "Bar" + (i + 1);
+                newBarGo.transform.localScale = Vector3.one;
+                newBarGo.transform.localPosition = barGo.transform.localPosition + new Vector3(0, deltaY * i, 0);
 
-            for (int i = 0; i < extraPlayers; i++) {
-                // The card viz component has one object we don't care about
-                int baseIndex = i >= 2 ? i + 1 : i;
+                var player = PlayerManager.instance.players.Find(p => p.playerID == i);
+                var teamColor = PlayerSkinBank.GetPlayerSkinColors(player.teamID).backgroundColor;
+                newBarGo.transform.GetChild(0).GetChild(0).gameObject.GetComponent<ProceduralImage>().color = new Color(teamColor.r, teamColor.g, teamColor.b, 0.9f);
 
-                var baseGo = instance.transform.GetChild(baseIndex).gameObject;
-
-                var barGo = UnityEngine.Object.Instantiate(baseGo);
-                barGo.name = "Bar" + (i + 3);
-                barGo.transform.SetParent(instance.transform);
-                barGo.transform.localScale = Vector3.one;
-                barGo.transform.localPosition = baseGo.transform.localPosition + new Vector3(0, deltaY, 0);
+                cardBars.Add(newBarGo.GetComponent<CardBar>());
             }
 
-            instance.SetFieldValue("cardBars", instance.GetComponentsInChildren<CardBar>());
+            barGo.SetActive(false);
+            instance.transform.GetChild(1).gameObject.SetActive(false);
+
+            instance.SetFieldValue("cardBars", cardBars.ToArray());
         }
     }
 }

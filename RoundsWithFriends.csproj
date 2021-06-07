@@ -41,6 +41,9 @@
     <Reference Include="PhotonUnityNetworking.Utilities">
       <HintPath>D:\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\PhotonUnityNetworking.Utilities.dll</HintPath>
     </Reference>
+    <Reference Include="SonigonAudioEngine.Runtime">
+      <HintPath>D:\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\SonigonAudioEngine.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="UnboundLib">
       <HintPath>..\Libs\UnboundLib.dll</HintPath>
     </Reference>

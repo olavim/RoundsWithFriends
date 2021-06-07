@@ -2,6 +2,7 @@
 using BepInEx.Logging;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RWF.Patches
 {
@@ -28,7 +29,7 @@ namespace RWF.Patches
             PatchLogger.logger.LogInfo("initialized");
         }
 
-        public static int FindAvailablePlayerID() {
+        public static int NextPlayerID() {
             for (int i = 0; i < RWFMod.instance.MaxPlayers; i++) {
                 var player = PlayerManager.instance.players.Find(p => p.playerID == i);
                 if (player == null) {
@@ -37,6 +38,10 @@ namespace RWF.Patches
             }
 
             return -1;
+        }
+
+        public static int NextTeamID() {
+            return NextPlayerID() % RWFMod.instance.MaxTeams;
         }
     }
 }

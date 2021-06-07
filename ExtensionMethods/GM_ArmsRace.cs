@@ -1,4 +1,5 @@
-﻿using UnboundLib;
+﻿using System;
+using UnboundLib;
 
 namespace RWF
 {
@@ -9,7 +10,7 @@ namespace RWF
         }
 
         public static int GetPlayersNeededToStart(this GM_ArmsRace instance) {
-            return (int)instance.GetFieldValue("playersNeededToStart");
+            return (int) instance.GetFieldValue("playersNeededToStart");
         }
     }
 }

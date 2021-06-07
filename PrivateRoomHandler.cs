@@ -58,7 +58,7 @@ namespace RWF
         }
 
         private void Start() {
-            this.gameMode = GameObject.Find("/Game/Code/Game Modes").transform.Find("[GameMode] Arms race").gameObject;
+            this.gameMode = RWFMod.instance.GameMode.gameObject;
             this.Init();
             this.BuildUI();
         }
@@ -106,8 +106,7 @@ namespace RWF
             this.waiting.transform.localScale = Vector3.one;
             this.waiting.transform.localPosition += new Vector3(0, 300, 0);
 
-            var waitingTextGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab);
-            waitingTextGo.transform.SetParent(this.waiting.transform);
+            var waitingTextGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.waiting.transform);
             waitingTextGo.transform.localScale = Vector3.one;
             waitingTextGo.transform.localPosition = Vector3.zero;
 

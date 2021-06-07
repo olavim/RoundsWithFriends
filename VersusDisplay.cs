@@ -22,9 +22,8 @@ namespace RWF
             team1Go.transform.SetParent(this.transform);
             team1Go.transform.localScale = Vector3.one;
 
-            var vsGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab);
+            var vsGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.transform);
             vsGo.name = "VS";
-            vsGo.transform.SetParent(this.transform);
             vsGo.transform.localScale = Vector3.one;
 
             var team2Go = new GameObject("Team2");
