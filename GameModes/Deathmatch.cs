@@ -48,10 +48,6 @@ namespace RWF.GameModes
 		private void Start() {
 			PlayerManager.instance.SetPlayersSimulated(false);
 			PlayerAssigner.instance.maxPlayers = this.playersNeededToStart;
-			PlayerAssigner.instance.SetPlayersCanJoin(true);
-
-			UIHandler.instance.InvokeMethod("SetNumberOfRounds", this.roundsToWinGame);
-			ArtHandler.instance.NextArt();
 
 			this.playersNeededToStart = RWFMod.instance.MinPlayers;
 			PlayerAssigner.instance.maxPlayers = RWFMod.instance.MaxPlayers;
@@ -126,10 +122,13 @@ namespace RWF.GameModes
 
 			GameManager.instance.isPlaying = true;
 			this.StartCoroutine(this.DoStartGame());
-			CardBarHandler.instance.Rebuild();
 		}
 
 		private IEnumerator DoStartGame() {
+			CardBarHandler.instance.Rebuild();
+			UIHandler.instance.InvokeMethod("SetNumberOfRounds", this.roundsToWinGame);
+			ArtHandler.instance.NextArt();
+
 			GameManager.instance.battleOngoing = false;
 
 			UIHandler.instance.ShowJoinGameText("LETS GOO!", PlayerSkinBank.GetPlayerSkinColors(1).winText);

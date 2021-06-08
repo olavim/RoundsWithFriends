@@ -1,12 +1,12 @@
-﻿using System;
-using System.Reflection;
+﻿using HarmonyLib;
+using Photon.Pun;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using HarmonyLib;
+using System.Reflection;
 using System.Reflection.Emit;
-using UnityEngine.SceneManagement;
-using Photon.Pun;
 using UnboundLib;
+using UnityEngine.SceneManagement;
 
 namespace RWF.Patches
 {
@@ -18,14 +18,49 @@ namespace RWF.Patches
             PlayerAssigner.instance.maxPlayers = RWFMod.instance.MaxPlayers;
             UIHandler.instance.HideJoinGameText();
         }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+            var list = instructions.ToList();
+            var newInstructions = new List<CodeInstruction>();
+
+            var f_pmInstance = AccessTools.Field(typeof(PlayerManager), "instance");
+            var f_artInstance = AccessTools.Field(typeof(ArtHandler), "instance");
+            var m_playerDied = ExtensionMethods.GetMethodInfo(typeof(GM_ArmsRace), "PlayerDied");
+            var m_addPlayerDied = ExtensionMethods.GetMethodInfo(typeof(PlayerManager), "AddPlayerDiedAction");
+            var m_getPlayerJoinedAction = ExtensionMethods.GetPropertyInfo(typeof(PlayerManager), "PlayerJoinedAction").GetGetMethod();
+            var m_setPlayerJoinedAction = ExtensionMethods.GetPropertyInfo(typeof(PlayerManager), "PlayerJoinedAction").GetSetMethod(true);
+
+            for (int i = 0; i < list.Count; i++) {
+                if (
+                    list[i].LoadsField(f_pmInstance) &&
+                    list[i + 2].OperandIs(m_playerDied) &&
+                    list[i + 4].Calls(m_addPlayerDied)
+                ) {
+                    i += 4;
+                } else if (
+                    list[i].LoadsField(f_pmInstance) &&
+                    list[i + 2].Calls(m_getPlayerJoinedAction) &&
+                    list[i + 8].Calls(m_setPlayerJoinedAction)
+                ) {
+                    i += 8;
+                } else if (list[i].LoadsField(f_artInstance)) {
+                    i += 1;
+                } else {
+                    newInstructions.Add(list[i]);
+                }
+            }
+
+            return newInstructions;
+        }
     }
 
-    [HarmonyPatch(typeof(GM_ArmsRace), "StartGame")]
-    class GM_ArmsRace_Patch_StartGame
+    [HarmonyPatch(typeof(GM_ArmsRace), "DoStartGame")]
+    class GM_ArmsRace_Patch_DoStartGame
     {
-        static void Postfix() {
+        static void Prefix(GM_ArmsRace __instance) {
             // Rebuild the top right player card visual to match the number of players
             CardBarHandler.instance.Rebuild();
+            UIHandler.instance.InvokeMethod("SetNumberOfRounds", __instance.roundsToWinGame);
         }
     }
 

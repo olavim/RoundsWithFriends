@@ -45,7 +45,7 @@ namespace RWF
         public string gameMode;
 
         public GameSettings() {
-            this.gameMode = RWFMod.instance.GameMode.Name;
+            this.gameMode = RWFMod.instance.GameMode?.Name;
         }
     }
 
@@ -316,6 +316,11 @@ namespace RWF
 
             if (RWFMod.DEBUG && PhotonNetwork.IsMasterClient) {
                 RWFMod.Log($"\n\n\tRoom join command:\n\tjoin:{PhotonNetwork.CloudRegion}:{PhotonNetwork.CurrentRoom.Name}\n");
+            }
+
+            if (PhotonNetwork.IsMasterClient) {
+                this.settings.gameMode = RWFMod.instance.GameMode?.Name ?? "ArmsRace";
+                PrivateRoomHandler.SetGameSettings(this.settings);
             }
 
             /* The local player's nickname is also set in NetworkConnectionHandler::OnJoinedRoom, but we'll do it here too so we don't

@@ -122,15 +122,21 @@ namespace RWF
                 this.GameMode.gameObject.SetActive(false);
             }
 
-            this.GameMode = this.gameModes[gameMode];
+            if (gameMode == null) {
+                this.GameMode = null;
+                PlayerAssigner.instance.InvokeMethod("SetPlayersCanJoin", false);
+            } else {
+                this.GameMode = this.gameModes[gameMode];
 
-            PlayerManager.instance.AddPlayerJoinedAction(this.GameMode.PlayerJoined);
-            PlayerManager.instance.AddPlayerDiedAction(this.GameMode.PlayerDied);
+                PlayerManager.instance.AddPlayerJoinedAction(this.GameMode.PlayerJoined);
+                PlayerManager.instance.AddPlayerDiedAction(this.GameMode.PlayerDied);
 
-            this.GameMode.gameObject.SetActive(true);
+                this.GameMode.gameObject.SetActive(true);
+                PlayerAssigner.instance.InvokeMethod("SetPlayersCanJoin", true);
 
-            this.RedrawCharacterSelections();
-            this.RedrawCharacterCreators();
+                this.RedrawCharacterSelections();
+                this.RedrawCharacterCreators();
+            }
         }
 
         private void RedrawCharacterSelections() {
@@ -234,7 +240,7 @@ namespace RWF
             this.gameModes.Add(armsRace.Name, armsRace);
             this.gameModes.Add(deathMatch.Name, deathMatch);
 
-            this.SetGameMode(prevGameMode ?? armsRace.Name);
+            this.ExecuteAfterFrames(1, () => this.SetGameMode(prevGameMode ?? armsRace.Name));
         }
 
         public void InjectUIElements() {
@@ -266,12 +272,12 @@ namespace RWF
                 charSelectInstanceGo4.transform.position = charSelectInstanceGo2.transform.position - new Vector3(0, 6, 0);
                 charSelectInstanceGo2.transform.position += new Vector3(0, 6, 0);
 
-                charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(charSelectInstanceGo3.GetComponent<CharacterSelectionInstance>().ResetMenu);
-                charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(charSelectInstanceGo4.GetComponent<CharacterSelectionInstance>().ResetMenu);
-
                 foreach (var portrait in charSelectInstanceGo4.transform.GetChild(0).GetChild(0).GetComponentsInChildren<CharacterCreatorPortrait>()) {
                     portrait.playerId = 3;
                 }
+
+                charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(charSelectInstanceGo3.GetComponent<CharacterSelectionInstance>().ResetMenu);
+                charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(charSelectInstanceGo4.GetComponent<CharacterSelectionInstance>().ResetMenu);
             }
 
             if (!gameGo.transform.Find("PrivateRoom")) {
