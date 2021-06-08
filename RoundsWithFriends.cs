@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BepInEx;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using UnboundLib;
 using Photon.Pun;
 using ExitGames.Client.Photon;
@@ -98,10 +99,18 @@ namespace RWF
 
         public void Start() {
             this.soundEnabled = new Dictionary<string, bool>();
+            SceneManager.sceneLoaded += this.OnSceneLoaded;
+            this.ExecuteAfterFrames(1, ArtHandler.instance.NextArt);
 
             Unbound.RegisterHandshake(ModId, () => {
                 PhotonNetwork.LocalPlayer.SetModded();
             });
+        }
+
+        public void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
+            if (scene.name == "Main") {
+                this.ExecuteAfterFrames(1, ArtHandler.instance.NextArt);
+            }
         }
 
         public void SetGameMode(string gameMode) {
@@ -119,7 +128,7 @@ namespace RWF
             }
 
             if (this.GameMode != null) {
-                this.GameMode.gameObject.SetActive(false);
+                this.GameMode.SetActive(false);
             }
 
             if (gameMode == null) {
@@ -131,7 +140,7 @@ namespace RWF
                 PlayerManager.instance.AddPlayerJoinedAction(this.GameMode.PlayerJoined);
                 PlayerManager.instance.AddPlayerDiedAction(this.GameMode.PlayerDied);
 
-                this.GameMode.gameObject.SetActive(true);
+                this.GameMode.SetActive(true);
                 PlayerAssigner.instance.InvokeMethod("SetPlayersCanJoin", true);
 
                 this.RedrawCharacterSelections();
@@ -204,18 +213,28 @@ namespace RWF
                 this.GameMode = null;
             }
 
-            var versusGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/GameMode").transform.Find("Group").Find("Versus").gameObject;
+            var gameModeGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/GameMode");
+            var versusGo = gameModeGo.transform.Find("Group").Find("Versus").gameObject;
+            var sandboxGo = gameModeGo.transform.Find("Group").Find("Test").gameObject;
             var characterSelectGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/CharacterSelect");
 
             var versusText = versusGo.GetComponentInChildren<TextMeshProUGUI>();
             versusText.text = "TEAM DEATHMATCH";
 
             var characterSelectPage = characterSelectGo.GetComponent<ListMenuPage>();
+
             GameObject.DestroyImmediate(versusGo.GetComponent<Button>());
             var versusButton = versusGo.AddComponent<Button>();
-
             versusButton.onClick.AddListener(characterSelectPage.Open);
             versusButton.onClick.AddListener(() => this.SetGameMode("ArmsRace"));
+
+            GameObject.DestroyImmediate(sandboxGo.GetComponent<Button>());
+            var sandboxButton = sandboxGo.AddComponent<Button>();
+            sandboxButton.onClick.AddListener(MainMenuHandler.instance.Close);
+            sandboxButton.onClick.AddListener(() => {
+                this.SetGameMode("Sandbox");
+                this.GameMode.StartGame();
+            });
 
             var deathmatchButtonGo = GameObject.Instantiate(versusGo, versusGo.transform.parent);
             deathmatchButtonGo.transform.localScale = Vector3.one;
@@ -235,10 +254,12 @@ namespace RWF
             deathmatchGo.transform.SetParent(gameModesGo.transform);
 
             var deathMatch = deathmatchGo.AddComponent<Deathmatch>();
-            var armsRace = new ArmsRace();
+            var armsRace = new ArmsRaceProxy();
+            var sandbox = new SandboxProxy();
 
             this.gameModes.Add(armsRace.Name, armsRace);
             this.gameModes.Add(deathMatch.Name, deathMatch);
+            this.gameModes.Add(sandbox.Name, sandbox);
 
             this.ExecuteAfterFrames(1, () => this.SetGameMode(prevGameMode ?? armsRace.Name));
         }
@@ -293,7 +314,6 @@ namespace RWF
 
                 button.onClick.AddListener(() => {
                     PrivateRoomHandler.instance.Open();
-                    ArtHandler.instance.NextArt();
                     NetworkConnectionHandler.instance.HostPrivate();
                 });
             }

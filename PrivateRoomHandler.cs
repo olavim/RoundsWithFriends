@@ -43,10 +43,6 @@ namespace RWF
         }
 
         public string gameMode;
-
-        public GameSettings() {
-            this.gameMode = RWFMod.instance.GameMode?.Name;
-        }
     }
 
     class PrivateRoomHandler : MonoBehaviourPunCallbacks
@@ -585,6 +581,7 @@ namespace RWF
             this.ExecuteAfterFrames(1, () => {
                 ListMenu.instance.OpenPage(this.MainPage);
                 this.MainPage.Open();
+                ArtHandler.instance.NextArt();
                 PrivateRoomHandler.UpdatePlayerDisplay();
             });
         }

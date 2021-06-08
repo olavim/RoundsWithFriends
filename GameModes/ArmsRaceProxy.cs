@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace RWF.GameModes
 {
-	public class ArmsRace : IGameMode
+	public class ArmsRaceProxy : IGameMode
 	{
 		public string Name {
 			get { return "ArmsRace"; }
@@ -21,6 +21,10 @@ namespace RWF.GameModes
             }
         }
 
+		public void SetActive(bool active) {
+			this.gameObject.SetActive(active);
+        }
+
 		public void StartGame() {
 			GM_ArmsRace.instance.StartGame();
 		}
@@ -31,10 +35,6 @@ namespace RWF.GameModes
 
 		public void PlayerDied(Player player, int playersAlive) {
 			GM_ArmsRace.instance.PlayerDied(player, playersAlive);
-		}
-
-		public void AddStartGameAction(Action action) {
-			GM_ArmsRace.instance.StartGameAction += action;
 		}
 	}
 }

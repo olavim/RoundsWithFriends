@@ -66,10 +66,7 @@ namespace RWF.Patches
             }
 
             CharacterCreatorHandler.instance.CloseMenus();
-
-            var page = PrivateRoomHandler.instance.gameObject.GetComponentInChildren<ListMenuPage>();
-            ListMenu.instance.OpenPage(page);
-            page.Open();
+            PrivateRoomHandler.instance.Open();
 
             RegionSelector.region = region;
             TimeHandler.instance.gameStartTime = 1f;

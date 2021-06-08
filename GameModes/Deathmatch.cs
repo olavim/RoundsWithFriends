@@ -53,6 +53,10 @@ namespace RWF.GameModes
 			PlayerAssigner.instance.maxPlayers = RWFMod.instance.MaxPlayers;
 		}
 
+		public void SetActive(bool active) {
+			this.gameObject.SetActive(active);
+		}
+
 		[UnboundRPC]
 		public static void RPCO_RequestSyncUp(int requestingPlayer) {
 			int playerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
