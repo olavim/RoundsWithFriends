@@ -300,11 +300,12 @@ namespace RWF
             }
 
             if (!gameGo.transform.Find("RoundStartText")) {
-                var newPos = gameGo.transform.position + new Vector3(0, 10, 0);
+                var newPos = gameGo.transform.position + new Vector3(0, 2, 0);
                 var baseGo = GameObject.Instantiate(gameGo.transform.Find("GameOverText").gameObject, newPos, Quaternion.identity, gameGo.transform);
                 baseGo.name = "RoundStartText";
                 baseGo.AddComponent<UI.ScalePulse>();
-                baseGo.GetComponent<TextMeshProUGUI>().fontSize = 80f;
+                baseGo.GetComponent<TextMeshProUGUI>().fontSize = 140f;
+                baseGo.GetComponent<TextMeshProUGUI>().fontWeight = FontWeight.Bold;
             }
         }
     }

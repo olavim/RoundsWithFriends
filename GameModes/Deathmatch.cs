@@ -238,11 +238,11 @@ namespace RWF.GameModes
 			this.isRoundStartCeaseFire = true;
 
 			for (int i = 4; i >= 1; i--) {
-				UIHandler.instance.DisplayRoundStartText($"FIGHT IN {i}...");
+				UIHandler.instance.DisplayRoundStartText($"{i}");
 				yield return new WaitForSeconds(0.5f);
 			}
 
-			UIHandler.instance.DisplayRoundStartText("GO");
+			UIHandler.instance.DisplayRoundStartText("FIGHT");
 			PlayerManager.instance.SetPlayersSimulated(true);
 			this.isRoundStartCeaseFire = false;
 

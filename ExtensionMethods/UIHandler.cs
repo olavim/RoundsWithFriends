@@ -25,7 +25,7 @@ namespace RWF
 			var roundStartText = roundStartTextGo.GetComponent<TextMeshProUGUI>();
 			var roundStartPulse = roundStartTextGo.GetComponent<UI.ScalePulse>();
 
-			roundStartTextPart.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(0).winText;
+			roundStartTextPart.particleSettings.color = Color.white;
 			roundStartTextPart.duration = 60f;
 			roundStartTextPart.loop = true;
 			roundStartTextPart.Play();
@@ -43,7 +43,6 @@ namespace RWF
 			var roundStartPulse = roundStartTextGo.GetComponent<UI.ScalePulse>();
 
 			roundStartTextPart.loop = false;
-			roundStartPulse.StopPulse();
 		}
 	}
 }
