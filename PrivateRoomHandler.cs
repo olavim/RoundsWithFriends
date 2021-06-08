@@ -182,7 +182,6 @@ namespace RWF
             var playersGoLayout = playersGo.AddComponent<LayoutElement>();
             this.versusDisplay = playersGo.AddComponent<VersusDisplay>();
             playersGoLayout.ignoreLayout = true;
-            playersGoRect.sizeDelta = new Vector2(900, 300);
 
             var waitingGoRect = this.waiting.AddComponent<RectTransform>();
             var waitingGoLayout = this.waiting.AddComponent<LayoutElement>();

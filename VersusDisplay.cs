@@ -14,78 +14,80 @@ namespace RWF
 
         private void Start() {
             this.gameObject.AddComponent<CanvasRenderer>();
+            var fitter = this.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var horizLayout = this.gameObject.AddComponent<HorizontalLayoutGroup>();
             horizLayout.childAlignment = TextAnchor.MiddleCenter;
 
-            var team1Go = new GameObject("Team1");
-            team1Go.transform.SetParent(this.transform);
-            team1Go.transform.localScale = Vector3.one;
+            this.UpdatePlayers();
+        }
 
-            var vsGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.transform);
-            vsGo.name = "VS";
-            vsGo.transform.localScale = Vector3.one;
+        public GameObject AddPlayerGroup() {
+            var go = new GameObject("Players");
+            go.transform.SetParent(this.transform);
+            go.transform.localScale = Vector3.one;
 
-            var team2Go = new GameObject("Team2");
-            team2Go.transform.SetParent(this.transform);
-            team2Go.transform.localScale = Vector3.one;
+            go.AddComponent<RectTransform>();
+            var layoutGroup = go.AddComponent<VerticalLayoutGroup>();
+            var sizer = go.AddComponent<ContentSizeFitter>();
+            sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
 
-            var team1Rect = team1Go.AddComponent<RectTransform>();
-            var team1LayoutGroup = team1Go.AddComponent<VerticalLayoutGroup>();
-            var team1Sizer = team1Go.AddComponent<ContentSizeFitter>();
-            team1Sizer.verticalFit = ContentSizeFitter.FitMode.MinSize;
-            team1Rect.sizeDelta = new Vector2(400, 300);
-            team1LayoutGroup.childAlignment = TextAnchor.MiddleRight;
+            return go;
+        }
 
-            var vsParticleSystem = vsGo.GetComponentInChildren<GeneralParticleSystem>();
+        public GameObject AddVSText() {
+            var teamCount = Mathf.Min(PhotonNetwork.CurrentRoom.PlayerCount, RWFMod.instance.MaxTeams);
+
+            var go = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.transform);
+            go.name = "VS";
+            go.transform.localScale = Vector3.one;
+
+            var layout = go.AddComponent<LayoutElement>();
+            layout.preferredWidth = 200;
+
+            var vsParticleSystem = go.GetComponentInChildren<GeneralParticleSystem>();
             vsParticleSystem.particleSettings.size = 4;
             vsParticleSystem.particleSettings.color = Color.white;
             vsParticleSystem.particleSettings.randomColor = new Color32(255, 0, 255, 255);
             vsParticleSystem.particleSettings.randomAddedColor = new Color32(72, 60, 43, 255);
 
-            var vsText = vsGo.GetComponent<TextMeshProUGUI>();
-            vsText.fontSize = 100;
+            var vsText = go.GetComponent<TextMeshProUGUI>();
+            vsText.fontSize = teamCount > 2 ? 60 : 100;
             vsText.font = RoundsResources.MenuFont;
             vsText.alignment = TextAlignmentOptions.Center;
             vsText.text = "VS";
 
-            var team2Rect = team2Go.AddComponent<RectTransform>();
-            var team2LayoutGroup = team2Go.AddComponent<VerticalLayoutGroup>();
-            var team2Sizer = team2Go.AddComponent<ContentSizeFitter>();
-            team2Sizer.verticalFit = ContentSizeFitter.FitMode.MinSize;
-            team2Rect.sizeDelta = new Vector2(400, 300);
-            team2LayoutGroup.childAlignment = TextAnchor.MiddleLeft;
-
-            this.UpdatePlayers();
+            return go;
         }
 
         public void UpdatePlayers() {
             this.StopAllCoroutines();
-            this.StartCoroutine(this.UpdatePlayersCoroutine());
+            this.UpdatePlayersCoroutine();
         }
 
-        private IEnumerator UpdatePlayersCoroutine() {
-            yield return null;
-
+        private void UpdatePlayersCoroutine() {
             this.teamPlayers.Clear();
-            this.teamPlayers.Add(0, 0);
-            this.teamPlayers.Add(1, 0);
 
-            var team1Go = this.transform.GetChild(0).gameObject;
-            var team2Go = this.transform.GetChild(2).gameObject;
-
-            foreach (Transform child in team1Go.transform) {
-                GameObject.Destroy(child.gameObject);
+            while (this.transform.childCount > 0) {
+                GameObject.DestroyImmediate(this.transform.GetChild(0).gameObject);
             }
 
-            foreach (Transform child in team2Go.transform) {
-                GameObject.Destroy(child.gameObject);
+            this.transform.localPosition = new Vector3(0, this.transform.localPosition.y, 0);
+            var groups = new List<GameObject>();
+            var teamCount = Mathf.Min(PhotonNetwork.CurrentRoom.PlayerCount, RWFMod.instance.MaxTeams);
+
+            for (int i = 0; i < teamCount; i++) {
+                this.teamPlayers.Add(i, 0);
+
+                if (i != 0) {
+                    this.AddVSText();
+                }
+
+                groups.Add(this.AddPlayerGroup());
             }
-
-            // Wait one frame for children to be destroyed
-            yield return null;
-
-            var playerNameHeight = 60;
 
             if (PhotonNetwork.CurrentRoom != null) {
                 var networkPlayers = PhotonNetwork.CurrentRoom.Players.Values.ToList();
@@ -109,10 +111,9 @@ namespace RWF
 
                 foreach (var networkPlayer in networkPlayers) {
                     var team = this.GetNetworkPlayerTeam(networkPlayer);
-                    var teamGo = (team % 2) == 0 ? team1Go : team2Go;
 
                     var playerGo = new GameObject("NetworkPlayer");
-                    playerGo.transform.SetParent(teamGo.transform);
+                    playerGo.transform.SetParent(groups[team].transform);
                     playerGo.transform.localScale = Vector3.one;
 
                     var playerNameGo = CreatePlayerName(networkPlayer.NickName, team, networkPlayer.GetProperty<bool>("ready"));
@@ -120,14 +121,19 @@ namespace RWF
                     playerNameGo.transform.localScale = Vector3.one;
 
                     playerGo.AddComponent<RectTransform>();
-                    var layout = playerGo.AddComponent<LayoutElement>();
-                    layout.minHeight = playerNameHeight;
+                    playerGo.AddComponent<VerticalLayoutGroup>();
+                    var sizer = playerGo.AddComponent<ContentSizeFitter>();
+                    sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                    sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-                    this.teamPlayers[team % 2] = this.teamPlayers[team % 2] + 1;
+                    this.teamPlayers[team] = this.teamPlayers[team] + 1;
                 }
             }
 
-            LayoutRebuilder.MarkLayoutForRebuild(this.gameObject.GetComponent<RectTransform>());
+            LayoutRebuilder.ForceRebuildLayoutImmediate(this.gameObject.GetComponent<RectTransform>());
+
+            var middleChild = this.transform.GetChild(Mathf.FloorToInt(this.transform.childCount / 2f));
+            this.transform.localPosition -= new Vector3(middleChild.localPosition.x, 0, 0);
         }
 
         private GameObject CreatePlayerName(string name, int team, bool isReady) {
@@ -137,18 +143,20 @@ namespace RWF
             var nameText = playerNameGo.GetComponent<TextMeshProUGUI>();
             nameText.fontSize = 40;
             nameText.font = RoundsResources.MenuFont;
-            nameText.alignment = (team % 2) == 0 ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
+            nameText.alignment = TextAlignmentOptions.Center;
             nameText.overflowMode = TextOverflowModes.Ellipsis;
             nameText.enableWordWrapping = false;
             nameText.color = new Color32(85, 90, 98, 255);
             nameText.text = name;
+            nameText.autoSizeTextContainer = true;
+
+            var sizer = playerNameGo.AddComponent<ContentSizeFitter>();
+            sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var particleSystem = playerNameGo.GetComponentInChildren<GeneralParticleSystem>();
 
             if (isReady) {
                 particleSystem.particleSettings.size = 4;
-                //particleSystem.particleSettings.color = team == 0 ? new Color32(197, 103, 0, 255) : new Color32(0, 117, 197, 255);
-                //particleSystem.particleSettings.randomAddedColor = team == 0 ? new Color32(72, 60, 43, 255) : new Color32(43, 46, 72, 255);
                 particleSystem.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(team).winText;
                 particleSystem.particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(team).backgroundColor;
                 particleSystem.particleSettings.randomColor = new Color32(255, 0, 255, 255);
@@ -165,7 +173,13 @@ namespace RWF
                 return networkPlayer.GetProperty<int>("readyOrder") % RWFMod.instance.MaxTeams;
             }
 
-            return this.teamPlayers[0] > this.teamPlayers[1] ? 1 : 0;
+            for (int i = 0; i < this.teamPlayers.Count - 1; i++) {
+                if (this.teamPlayers[i] > this.teamPlayers[i + 1]) {
+                    return i + 1;
+                }
+            }
+
+            return 0;
         }
     }
 }

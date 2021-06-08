@@ -7,6 +7,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnboundLib;
 using UnboundLib.Networking;
+using Sonigon;
+using Sonigon.Internal;
 
 namespace RWF.GameModes
 {
@@ -211,12 +213,15 @@ namespace RWF.GameModes
 
 			PlayerManager.instance.SetPlayersSimulated(false);
 			this.isRoundStartCeaseFire = true;
+			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
 			for (int i = 4; i >= 1; i--) {
 				UIHandler.instance.DisplayRoundStartText($"{i}");
+				SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_A_Ball_Shrink_Go_To_Left_Corner, this.transform);
 				yield return new WaitForSeconds(0.5f);
 			}
 
+			SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
 			UIHandler.instance.DisplayRoundStartText("FIGHT");
 			PlayerManager.instance.SetPlayersSimulated(true);
 			this.isRoundStartCeaseFire = false;

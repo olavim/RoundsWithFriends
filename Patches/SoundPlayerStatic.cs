@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using UnityEngine;
 using SoundImplementation;
 
 namespace RWF.Patches
