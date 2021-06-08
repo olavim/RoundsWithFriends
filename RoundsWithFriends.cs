@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnboundLib;
 using Photon.Pun;
+using ExitGames.Client.Photon;
 using RWF.GameModes;
 using TMPro;
 
@@ -88,6 +89,7 @@ namespace RWF
 
             try {
                 Patches.PatchUtils.ApplyPatches(ModId);
+                PhotonPeer.RegisterType(typeof(GameSettings), 177, GameSettings.Serialize, GameSettings.Deserialize);
                 this.Logger.LogInfo("initialized");
             } catch (Exception e) {
                 this.Logger.LogError(e.ToString());
@@ -102,11 +104,13 @@ namespace RWF
             });
         }
 
-        private void SetGameMode(string gameMode) {
+        public void SetGameMode(string gameMode) {
             PlayerManager.instance.SetPropertyValue("PlayerJoinedAction", null);
             PlayerManager.instance.SetFieldValue("PlayerDiedAction", null);
 
-            var charSelectGo = GameObject.Find("Game/UI/UI_MainMenu/Canvas/ListSelector/CharacterSelect");
+            var uiGo = GameObject.Find("/Game/UI");
+            var charSelectGo = uiGo.transform.Find("UI_MainMenu").Find("Canvas").Find("ListSelector").Find("CharacterSelect");
+
             if (charSelectGo) {
                 var menu = charSelectGo.GetComponent<CharacterSelectionMenu>();
                 var menuPlayerJoined = ExtensionMethods.GetMethodInfo(typeof(CharacterSelectionMenu), "PlayerJoined");
@@ -114,7 +118,10 @@ namespace RWF
                 PlayerManager.instance.SetPropertyValue("PlayerJoinedAction", Delegate.Combine(PlayerManager.instance.PlayerJoinedAction, playerJoinedAction));
             }
 
-            this.GameMode.gameObject.SetActive(false);
+            if (this.GameMode != null) {
+                this.GameMode.gameObject.SetActive(false);
+            }
+
             this.GameMode = this.gameModes[gameMode];
 
             PlayerManager.instance.AddPlayerJoinedAction(this.GameMode.PlayerJoined);
@@ -181,11 +188,14 @@ namespace RWF
 
         public void InjectGameModes() {
             var gameModesGo = GameObject.Find("/Game/Code/Game Modes");
+            string prevGameMode = null;
 
             if (gameModesGo.transform.Find("[GameMode] Deathmatch")) {
                 return;
-            } else {
+            } else if (this.gameModes.Count > 0) {
+                prevGameMode = this.GameMode.Name;
                 this.gameModes.Clear();
+                this.GameMode = null;
             }
 
             var versusGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/GameMode").transform.Find("Group").Find("Versus").gameObject;
@@ -217,11 +227,14 @@ namespace RWF
             var deathmatchGo = new GameObject("[GameMode] Deathmatch");
             deathmatchGo.SetActive(false);
             deathmatchGo.transform.SetParent(gameModesGo.transform);
-            var deathMatch = deathmatchGo.AddComponent<Deathmatch>();
 
-            this.gameModes.Add("ArmsRace", new ArmsRace());
-            this.gameModes.Add("Deathmatch", deathMatch);
-            this.GameMode = this.gameModes["ArmsRace"];
+            var deathMatch = deathmatchGo.AddComponent<Deathmatch>();
+            var armsRace = new ArmsRace();
+
+            this.gameModes.Add(armsRace.Name, armsRace);
+            this.gameModes.Add(deathMatch.Name, deathMatch);
+
+            this.SetGameMode(prevGameMode ?? armsRace.Name);
         }
 
         public void InjectUIElements() {

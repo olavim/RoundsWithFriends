@@ -5,6 +5,10 @@ namespace RWF.GameModes
 {
 	public class ArmsRace : IGameMode
 	{
+		public string Name {
+			get { return "ArmsRace"; }
+		}
+
 		public GameObject gameObject {
 			get {
 				return GameObject.Find("/Game/Code/Game Modes").transform.Find("[GameMode] Arms race").gameObject;

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UI.ProceduralImage;
@@ -19,23 +20,51 @@ using UnboundLib.Networking;
 
 namespace RWF
 {
+    [Serializable]
+    public class GameSettings
+    {
+        public static byte[] Serialize(object settings) {
+            using (MemoryStream m = new MemoryStream()) {
+                using (BinaryWriter writer = new BinaryWriter(m)) {
+                    writer.Write(((GameSettings)settings).gameMode);
+                }
+                return m.ToArray();
+            }
+        }
+
+        public static GameSettings Deserialize(byte[] data) {
+            var result = new GameSettings();
+            using (MemoryStream m = new MemoryStream(data)) {
+                using (BinaryReader reader = new BinaryReader(m)) {
+                    result.gameMode = reader.ReadString();
+                }
+            }
+            return result;
+        }
+
+        public string gameMode;
+
+        public GameSettings() {
+            this.gameMode = RWFMod.instance.GameMode.Name;
+        }
+    }
+
     class PrivateRoomHandler : MonoBehaviourPunCallbacks
     {
+        public static PrivateRoomHandler instance;
 
         private Button readyButton;
         private ListMenuButton readyListButton;
+        private TextMeshProUGUI gameModeText;
         private GameObject grid;
         private GameObject readyCheckbox;
         private GameObject waiting;
-        private GameObject gameMode;
         private VersusDisplay versusDisplay;
         private bool waitingForToggle;
         private bool lockReadyRequests;
         private Dictionary<int, bool> waitingForResponse;
         private Queue<Tuple<int, bool>> readyRequests;
-
-        public static PrivateRoomHandler instance;
-
+        private GameSettings settings;
         private bool spamReady;
         private InputDevice deviceToUse;
 
@@ -58,7 +87,6 @@ namespace RWF
         }
 
         private void Start() {
-            this.gameMode = RWFMod.instance.GameMode.gameObject;
             this.Init();
             this.BuildUI();
         }
@@ -70,7 +98,7 @@ namespace RWF
             this.readyRequests = new Queue<Tuple<int, bool>>();
             this.deviceToUse = null;
             this.lockReadyRequests = false;
-            this.gameMode.SetActive(true);
+            this.settings = new GameSettings();
 
             if (PhotonNetwork.CurrentRoom != null) {
                 this.NetworkInit();
@@ -134,6 +162,14 @@ namespace RWF
             inviteTextGo.transform.SetParent(inviteGo.transform);
             inviteTextGo.transform.localScale = Vector3.one;
 
+            var gameModeGo = new GameObject("GameMode");
+            gameModeGo.transform.SetParent(this.grid.transform);
+            gameModeGo.transform.localScale = Vector3.one;
+
+            var gameModeTextGo = GetText(this.settings.gameMode == "ArmsRace" ? "TEAM DEATHMATCH" : "DEATHMATCH");
+            gameModeTextGo.transform.SetParent(gameModeGo.transform);
+            gameModeTextGo.transform.localScale = Vector3.one;
+
             var backGo = new GameObject("Back");
             backGo.transform.SetParent(this.grid.transform);
             backGo.transform.localScale = Vector3.one;
@@ -188,6 +224,25 @@ namespace RWF
                 var lobby = (ClientSteamLobby) field.GetValue(null);
                 lobby.ShowInviteScreenWhenConnected();
             });
+
+            gameModeGo.AddComponent<RectTransform>();
+            gameModeGo.AddComponent<CanvasRenderer>();
+            var gameModeLayout = gameModeGo.AddComponent<LayoutElement>();
+            gameModeLayout.minHeight = 92;
+            var gameModeButton = gameModeGo.AddComponent<Button>();
+            var gameModeListButton = gameModeGo.AddComponent<ListMenuButton>();
+            gameModeListButton.setBarHeight = 92f;
+
+            gameModeButton.onClick.AddListener(() => {
+                this.settings.gameMode = this.settings.gameMode == "ArmsRace" ? "Deathmatch" : "ArmsRace";
+                if (PhotonNetwork.CurrentRoom == null) {
+                    PrivateRoomHandler.SetGameSettings(this.settings);
+                } else if (PhotonNetwork.IsMasterClient) {
+                    NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), this.settings);
+                }
+            });
+
+            this.gameModeText = gameModeTextGo.GetComponent<TextMeshProUGUI>();
 
             divGo1.AddComponent<RectTransform>();
 
@@ -288,6 +343,10 @@ namespace RWF
         override public void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer) {
             this.waitingForResponse.Add(newPlayer.ActorNumber, false);
 
+            if (PhotonNetwork.IsMasterClient) {
+                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), this.settings);
+            }
+
             this.ExecuteAfterSeconds(0.1f, () => {
                 PrivateRoomHandler.UpdatePlayerDisplay();
             });
@@ -371,6 +430,15 @@ namespace RWF
         // Called from PlayerManager after a player has been created.
         public void PlayerJoined(Player player) {
             player.data.isPlaying = false;
+        }
+
+        [UnboundRPC]
+        public static void SetGameSettings(GameSettings settings) {
+            PrivateRoomHandler.instance.settings = settings;
+
+            RWFMod.instance.SetGameMode(settings.gameMode);
+            PrivateRoomHandler.instance.gameModeText.text = settings.gameMode == "ArmsRace" ? "TEAM DEATHMATCH" : "DEATHMATCH";
+            PrivateRoomHandler.UpdatePlayerDisplay();
         }
 
         [UnboundRPC]
@@ -498,7 +566,7 @@ namespace RWF
         public static void StartGame() {
             var instance = PrivateRoomHandler.instance;
             instance.StopAllCoroutines();
-            GM_ArmsRace.instance.StartGame();
+            RWFMod.instance.GameMode.StartGame();
 
             // The main scene is reloaded after the game. After the reload is done, we want to reopen the lobby.
             SceneManager.sceneLoaded += PrivateRoomHandler.OnSceneLoad;

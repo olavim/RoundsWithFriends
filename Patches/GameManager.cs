@@ -6,8 +6,8 @@ namespace RWF.Patches
     class MainMenuHandler_Patch_Awake
     {
         static void Postfix() {
-            RWFMod.instance.InjectGameModes();
             RWFMod.instance.InjectUIElements();
+            RWFMod.instance.InjectGameModes();
         }
     }
 }

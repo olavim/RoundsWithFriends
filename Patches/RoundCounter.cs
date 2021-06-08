@@ -46,7 +46,7 @@ namespace RWF.Patches
             var parent = __instance.p1Parent.parent;
             var counter = parent.GetChild(teamID + 1);
             
-            __result = counter.GetChild(teamRounds[teamID] - 1).transform.position;
+            __result = counter.GetChild(teamRounds[teamID]).transform.position;
             return false;
         }
     }

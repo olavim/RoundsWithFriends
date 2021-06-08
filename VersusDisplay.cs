@@ -109,7 +109,7 @@ namespace RWF
 
                 foreach (var networkPlayer in networkPlayers) {
                     var team = this.GetNetworkPlayerTeam(networkPlayer);
-                    var teamGo = team == 0 ? team1Go : team2Go;
+                    var teamGo = (team % 2) == 0 ? team1Go : team2Go;
 
                     var playerGo = new GameObject("NetworkPlayer");
                     playerGo.transform.SetParent(teamGo.transform);
@@ -123,7 +123,7 @@ namespace RWF
                     var layout = playerGo.AddComponent<LayoutElement>();
                     layout.minHeight = playerNameHeight;
 
-                    this.teamPlayers[team] = this.teamPlayers[team] + 1;
+                    this.teamPlayers[team % 2] = this.teamPlayers[team % 2] + 1;
                 }
             }
 
@@ -137,7 +137,7 @@ namespace RWF
             var nameText = playerNameGo.GetComponent<TextMeshProUGUI>();
             nameText.fontSize = 40;
             nameText.font = RoundsResources.MenuFont;
-            nameText.alignment = team == 0 ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
+            nameText.alignment = (team % 2) == 0 ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
             nameText.overflowMode = TextOverflowModes.Ellipsis;
             nameText.enableWordWrapping = false;
             nameText.color = new Color32(85, 90, 98, 255);
@@ -147,9 +147,11 @@ namespace RWF
 
             if (isReady) {
                 particleSystem.particleSettings.size = 4;
-                particleSystem.particleSettings.color = team == 0 ? new Color32(197, 103, 0, 255) : new Color32(0, 117, 197, 255);
+                //particleSystem.particleSettings.color = team == 0 ? new Color32(197, 103, 0, 255) : new Color32(0, 117, 197, 255);
+                //particleSystem.particleSettings.randomAddedColor = team == 0 ? new Color32(72, 60, 43, 255) : new Color32(43, 46, 72, 255);
+                particleSystem.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(team).winText;
+                particleSystem.particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(team).backgroundColor;
                 particleSystem.particleSettings.randomColor = new Color32(255, 0, 255, 255);
-                particleSystem.particleSettings.randomAddedColor = team == 0 ? new Color32(72, 60, 43, 255) : new Color32(43, 46, 72, 255);
             } else {
                 playerNameGo.GetComponent<Mask>().enabled = false;
                 playerNameGo.transform.Find("UI_ParticleSystem").gameObject.SetActive(false);
@@ -160,7 +162,7 @@ namespace RWF
 
         private int GetNetworkPlayerTeam(Photon.Realtime.Player networkPlayer) {
             if (networkPlayer.GetProperty<bool>("ready")) {
-                return networkPlayer.GetProperty<int>("readyOrder") % 2;
+                return networkPlayer.GetProperty<int>("readyOrder") % RWFMod.instance.MaxTeams;
             }
 
             return this.teamPlayers[0] > this.teamPlayers[1] ? 1 : 0;

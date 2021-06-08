@@ -21,12 +21,15 @@ namespace RWF.GameModes
 		public Dictionary<int, int> teamPoints = new Dictionary<int, int>();
 		public Dictionary<int, int> teamRounds = new Dictionary<int, int>();
 
-		private PhotonView view;
 		private bool isTransitioning;
 		private Dictionary<int, bool> waitingForPlayer = new Dictionary<int, bool>();
 		private int playersNeededToStart = 2;
 		private int pointsToWinRound = 1;
 		private int currentWinningTeamID = -1;
+
+		public string Name {
+			get { return "Deathmatch"; }
+		}
 
 		private bool isRoundStartCeaseFire = false;
 
@@ -41,7 +44,6 @@ namespace RWF.GameModes
 		}
 
 		private void Start() {
-			this.view = base.GetComponent<PhotonView>();
 			PlayerManager.instance.SetPlayersSimulated(false);
 			PlayerAssigner.instance.maxPlayers = this.playersNeededToStart;
 			PlayerAssigner.instance.SetPlayersCanJoin(true);
@@ -55,13 +57,13 @@ namespace RWF.GameModes
 
 		[UnboundRPC]
 		public static void RPCO_RequestSyncUp(int requestingPlayer) {
-			int playerID = PlayerManager.instance.players.Find(p => p.data.view.AmOwner).playerID;
+			int playerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
 			NetworkingManager.RPC(typeof(Deathmatch), nameof(Deathmatch.RPCM_ReturnSyncUp), requestingPlayer, playerID);
 		}
 
 		[UnboundRPC]
 		public static void RPCM_ReturnSyncUp(int requestingPlayer, int readyPlayer) {
-			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.AmOwner).playerID;
+			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
 			if (myPlayerID == requestingPlayer) {
 				Deathmatch.instance.waitingForPlayer[readyPlayer] = false;
 			}
@@ -73,10 +75,10 @@ namespace RWF.GameModes
 			}
 
 			foreach (var player in PlayerManager.instance.players) {
-				this.waitingForPlayer.Add(player.playerID, true);
+				this.waitingForPlayer[player.playerID] = true;
 			}
 
-			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.AmOwner).playerID;
+			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
 			NetworkingManager.RPC(typeof(Deathmatch), nameof(Deathmatch.RPCO_RequestSyncUp), myPlayerID);
 
 			while (this.waitingForPlayer.Values.ToList().Any(isWaiting => isWaiting)) {
@@ -161,33 +163,6 @@ namespace RWF.GameModes
 			this.StartCoroutine(this.DoRoundStart());
 		}
 
-		private IEnumerator PointTransition(int winningPlayerID) {
-			base.StartCoroutine(PointVisualizer.instance.DoSequence(0, 0, true));
-
-			yield return new WaitForSecondsRealtime(1f);
-
-			MapManager.instance.LoadNextLevel(false, false);
-
-			yield return new WaitForSecondsRealtime(0.5f);
-			yield return this.WaitForSyncUp();
-
-			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
-			PlayerManager.instance.RevivePlayers();
-
-			yield return new WaitForSecondsRealtime(0.3f);
-
-			TimeHandler.instance.DoSpeedUp();
-			GameManager.instance.battleOngoing = true;
-			this.isTransitioning = false;
-
-			this.StartCoroutine(this.DoRoundStart());
-		}
-
-		private void PointOver(int winningTeamID) {
-			this.StartCoroutine(this.PointTransition(winningTeamID));
-			UIHandler.instance.ShowRoundCounterSmall(this.teamPoints, this.teamRounds);
-		}
-
 		private IEnumerator RoundTransition(int winningTeamID) {
 			yield return new WaitForSecondsRealtime(1f);
 			MapManager.instance.LoadNextLevel(false, false);
@@ -258,7 +233,7 @@ namespace RWF.GameModes
 				this.teamPoints[teamID] = 0;
 			}
 
-			this.StartCoroutine(PointVisualizer.instance.DoWinSequence(teamPoints, teamRounds, winningTeamID));
+			this.StartCoroutine(PointVisualizer.instance.DoWinSequence(this.teamPoints, this.teamRounds, winningTeamID));
 			this.StartCoroutine(this.RoundTransition(winningTeamID));
 		}
 
@@ -271,10 +246,21 @@ namespace RWF.GameModes
 		}
 
 		private void GameOverRematch(int winningPlayerID) {
-			var winningPlayer = PlayerManager.instance.players.Find(p => p.playerID == winningPlayerID);
-			UIHandler.instance.DisplayScreenTextLoop(PlayerManager.instance.GetColorFromPlayer(winningPlayerID).winText, "REMATCH?");
-			UIHandler.instance.popUpHandler.StartPicking(winningPlayer, this.GetRematchYesNo);
-			MapManager.instance.LoadNextLevel(false, false);
+			if (PhotonNetwork.OfflineMode) {
+				var winningPlayer = PlayerManager.instance.players.Find(p => p.playerID == winningPlayerID);
+				UIHandler.instance.DisplayScreenTextLoop(PlayerManager.instance.GetColorFromPlayer(winningPlayerID).winText, "REMATCH?");
+				UIHandler.instance.popUpHandler.StartPicking(winningPlayer, this.GetRematchYesNo);
+				MapManager.instance.LoadNextLevel(false, false);
+				return;
+			}
+
+			if (PhotonNetwork.IsMasterClient) {
+				foreach (var player in PhotonNetwork.CurrentRoom.Players.Values.ToList()) {
+					PhotonNetwork.DestroyPlayerObjects(player);
+				}
+			}
+
+			SceneManager.LoadScene(SceneManager.GetActiveScene().name);
 		}
 
 		private void GetRematchYesNo(PopUpHandler.YesNo yesNo) {
@@ -338,16 +324,16 @@ namespace RWF.GameModes
 
 			PlayerManager.instance.SetPlayersSimulated(false);
 
-			teamPoints[winningTeamID] = teamPoints[winningTeamID] + 1;
+			instance.teamPoints[winningTeamID] = instance.teamPoints[winningTeamID] + 1;
 
-			if (teamPoints[winningTeamID] < instance.pointsToWinRound) {
-				instance.PointOver(winningTeamID);
+			if (instance.teamPoints[winningTeamID] < instance.pointsToWinRound) {
+				// Not implemented
 				return;
 			}
 
-			teamRounds[winningTeamID] = teamRounds[winningTeamID] + 1;
+			instance.teamRounds[winningTeamID] = instance.teamRounds[winningTeamID] + 1;
 
-			if (teamRounds[winningTeamID] >= instance.roundsToWinGame) {
+			if (instance.teamRounds[winningTeamID] >= instance.roundsToWinGame) {
 				instance.GameOver(winningTeamID);
 				return;
 			}
