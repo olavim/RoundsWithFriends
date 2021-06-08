@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using UnityEngine;
 using System.Collections.Generic;
 using UnboundLib;
 using System.Reflection.Emit;
@@ -7,17 +6,8 @@ using System.Linq;
 
 namespace RWF.Patches
 {
-    [HarmonyPatch(typeof(HealthHandler), "Revive")]
-    class HealthHandler_Patch_Revive
-    {
-        static void Postfix(SpriteRenderer ___hpSprite, Player ___player) {
-            // For reasons unknown, "Health" is actually player color
-            ___hpSprite.color = PlayerSkinBank.GetPlayerSkinColors(___player.teamID).color;
-        }
-    }
-
-    [HarmonyPatch(typeof(HealthHandler), "TakeForce")]
-    class HealthHandler_Patch_TakeForce
+    [HarmonyPatch(typeof(CharacterData), "Update")]
+    class CharacterData_Patch_Update
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
             var list = instructions.ToList();

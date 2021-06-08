@@ -7,6 +7,8 @@ namespace RWF.GameModes
     {
         GameObject gameObject { get; }
 
+        bool IsRoundStartCeaseFire { get; }
+
         void StartGame();
         void PlayerJoined(Player player);
         void PlayerDied(Player player, int playersAlive);

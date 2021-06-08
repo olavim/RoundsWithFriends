@@ -90,7 +90,6 @@ namespace RWF.Patches
         }
 
         static MethodBase TargetMethod() {
-
             return AccessTools.Method(GetNestedRoundTransitionType(), "MoveNext");
         }
 

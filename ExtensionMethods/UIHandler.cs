@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
 
 namespace RWF
 {
@@ -13,5 +15,35 @@ namespace RWF
 				instance.roundCounterAnimSmall.PlayIn();
 			}
 		}
-    }
+
+		public static void DisplayRoundStartText(this UIHandler instance, string text) {
+			var uiGo = GameObject.Find("/Game/UI");
+			var gameGo = uiGo.transform.Find("UI_Game").Find("Canvas").gameObject;
+			var roundStartTextGo = gameGo.transform.Find("RoundStartText");
+
+			var roundStartTextPart = roundStartTextGo.GetComponentInChildren<GeneralParticleSystem>();
+			var roundStartText = roundStartTextGo.GetComponent<TextMeshProUGUI>();
+			var roundStartPulse = roundStartTextGo.GetComponent<UI.ScalePulse>();
+
+			roundStartTextPart.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(0).winText;
+			roundStartTextPart.duration = 60f;
+			roundStartTextPart.loop = true;
+			roundStartTextPart.Play();
+			roundStartText.text = text;
+			instance.StopAllCoroutines();
+			instance.StartCoroutine(roundStartPulse.StartPulse());
+		}
+
+		public static void HideRoundStartText(this UIHandler instance) {
+			var uiGo = GameObject.Find("/Game/UI");
+			var gameGo = uiGo.transform.Find("UI_Game").Find("Canvas").gameObject;
+			var roundStartTextGo = gameGo.transform.Find("RoundStartText");
+
+			var roundStartTextPart = roundStartTextGo.GetComponentInChildren<GeneralParticleSystem>();
+			var roundStartPulse = roundStartTextGo.GetComponent<UI.ScalePulse>();
+
+			roundStartTextPart.loop = false;
+			roundStartPulse.StopPulse();
+		}
+	}
 }

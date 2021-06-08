@@ -298,6 +298,14 @@ namespace RWF
                 creatorGo4.transform.localScale = Vector3.one;
                 creatorGo4.GetComponent<CharacterCreator>().playerID = 3;
             }
+
+            if (!gameGo.transform.Find("RoundStartText")) {
+                var newPos = gameGo.transform.position + new Vector3(0, 10, 0);
+                var baseGo = GameObject.Instantiate(gameGo.transform.Find("GameOverText").gameObject, newPos, Quaternion.identity, gameGo.transform);
+                baseGo.name = "RoundStartText";
+                baseGo.AddComponent<UI.ScalePulse>();
+                baseGo.GetComponent<TextMeshProUGUI>().fontSize = 80f;
+            }
         }
     }
 }

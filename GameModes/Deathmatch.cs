@@ -28,6 +28,14 @@ namespace RWF.GameModes
 		private int pointsToWinRound = 1;
 		private int currentWinningTeamID = -1;
 
+		private bool isRoundStartCeaseFire = false;
+
+		public bool IsRoundStartCeaseFire {
+			get {
+				return this.isRoundStartCeaseFire;
+			}
+		}
+
 		private void Awake() {
 			Deathmatch.instance = this;
 		}
@@ -149,6 +157,8 @@ namespace RWF.GameModes
 			GameManager.instance.battleOngoing = true;
 			UIHandler.instance.ShowRoundCounterSmall(this.teamPoints, this.teamRounds);
 			PlayerManager.instance.InvokeMethod("SetPlayersVisible", true);
+
+			this.StartCoroutine(this.DoRoundStart());
 		}
 
 		private IEnumerator PointTransition(int winningPlayerID) {
@@ -169,6 +179,8 @@ namespace RWF.GameModes
 			TimeHandler.instance.DoSpeedUp();
 			GameManager.instance.battleOngoing = true;
 			this.isTransitioning = false;
+
+			this.StartCoroutine(this.DoRoundStart());
 		}
 
 		private void PointOver(int winningTeamID) {
@@ -182,6 +194,7 @@ namespace RWF.GameModes
 
 			yield return new WaitForSecondsRealtime(1.3f);
 
+			PlayerManager.instance.SetPlayersSimulated(false);
 			TimeHandler.instance.DoSpeedUp();
 
 			if (this.pickPhase) {
@@ -202,14 +215,40 @@ namespace RWF.GameModes
 
 			yield return this.StartCoroutine(this.WaitForSyncUp());
 			TimeHandler.instance.DoSlowDown();
+
 			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
+
 			PlayerManager.instance.RevivePlayers();
 			yield return new WaitForSecondsRealtime(0.3f);
 			TimeHandler.instance.DoSpeedUp();
 			this.isTransitioning = false;
 			GameManager.instance.battleOngoing = true;
 			UIHandler.instance.ShowRoundCounterSmall(this.teamPoints, this.teamRounds);
-			yield break;
+
+			this.StartCoroutine(this.DoRoundStart());
+		}
+
+		private IEnumerator DoRoundStart() {
+			// Wait for MapManager to set all players to simulated after map transition
+			while (PlayerManager.instance.players.ToList().Any(p => !(bool) p.data.playerVel.GetFieldValue("simulated"))) {
+				yield return null;
+			}
+
+			PlayerManager.instance.SetPlayersSimulated(false);
+			this.isRoundStartCeaseFire = true;
+
+			for (int i = 4; i >= 1; i--) {
+				UIHandler.instance.DisplayRoundStartText($"FIGHT IN {i}...");
+				yield return new WaitForSeconds(0.5f);
+			}
+
+			UIHandler.instance.DisplayRoundStartText("GO");
+			PlayerManager.instance.SetPlayersSimulated(true);
+			this.isRoundStartCeaseFire = false;
+
+			this.ExecuteAfterSeconds(1f, () => {
+				UIHandler.instance.HideRoundStartText();
+			});
 		}
 
 		private void RoundOver(int winningTeamID) {

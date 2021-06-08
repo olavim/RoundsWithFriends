@@ -11,6 +11,12 @@ namespace RWF.GameModes
 			}
         }
 
+		public bool IsRoundStartCeaseFire {
+			get {
+				return false;
+            }
+        }
+
 		public void StartGame() {
 			GM_ArmsRace.instance.StartGame();
 		}
