@@ -9,13 +9,7 @@ namespace RWF.GameModes
 			get { return "Sandbox"; }
 		}
 
-		public GameObject gameObject {
-			get {
-				return GameObject.Find("/Game/Code/Game Modes").transform.Find("[GameMode] Test").gameObject;
-			}
-		}
-
-		public bool IsRoundStartCeaseFire {
+		public bool IsCeaseFire {
 			get {
 				return false;
 			}
@@ -23,12 +17,12 @@ namespace RWF.GameModes
 
 		public void SetActive(bool active) {
 			if (!active) {
-				this.gameObject.SetActive(false);
+				GameMode.GetGameObject(this.Name).SetActive(false);
 			}
 		}
 
 		public void StartGame() {
-			this.gameObject.SetActive(true);
+			GameMode.GetGameObject(this.Name).SetActive(true);
 		}
 
 		public void PlayerJoined(Player player) {

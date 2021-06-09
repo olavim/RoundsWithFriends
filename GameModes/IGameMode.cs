@@ -5,8 +5,7 @@ namespace RWF.GameModes
 {
     public interface IGameMode
     {
-        GameObject gameObject { get; }
-        bool IsRoundStartCeaseFire { get; }
+        bool IsCeaseFire { get; }
         string Name { get; }
 
         void SetActive(bool active);

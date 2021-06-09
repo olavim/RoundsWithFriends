@@ -22,7 +22,7 @@ namespace RWF.Patches
 
             if (numReady == numPlayers && numReady >= RWFMod.instance.MinPlayers) {
                 MainMenuHandler.instance.Close();
-                RWFMod.instance.GameMode.StartGame();
+                RWFMod.instance.gameSettings.GameMode.StartGame();
                 return false;
             }
 

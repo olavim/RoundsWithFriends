@@ -7,7 +7,7 @@ namespace RWF.Patches.Cards
     class Chase_Patch_Update
     {
         static bool Prefix(Player ___player) {
-            return (bool) ___player.data.playerVel.GetFieldValue("simulated") && !RWFMod.instance.GameMode.IsRoundStartCeaseFire;
+            return (bool) ___player.data.playerVel.GetFieldValue("simulated") && !RWFMod.instance.gameSettings.GameMode.IsCeaseFire;
         }
     }
 }

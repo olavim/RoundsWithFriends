@@ -7,7 +7,7 @@ namespace RWF.Patches
     class PlayerInRangeTrigger_Patch_Update
     {
         static bool Prefix(ref bool ___inRange, Player ___ownPlayer) {
-            if (!(bool)___ownPlayer.data.playerVel.GetFieldValue("simulated") || RWFMod.instance.GameMode.IsRoundStartCeaseFire) {
+            if (!(bool)___ownPlayer.data.playerVel.GetFieldValue("simulated") || RWFMod.instance.gameSettings.GameMode.IsCeaseFire) {
                 ___inRange = false;
                 return false;
             }

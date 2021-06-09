@@ -20,6 +20,7 @@ namespace RWF
 
             for (int i = 0; i < numPlayers; i++) {
                 var newBarGo = GameObject.Instantiate(barGo, instance.transform);
+                newBarGo.SetActive(true);
                 newBarGo.name = "Bar" + (i + 1);
                 newBarGo.transform.localScale = Vector3.one;
                 newBarGo.transform.localPosition = barGo.transform.localPosition + new Vector3(0, deltaY * i, 0);

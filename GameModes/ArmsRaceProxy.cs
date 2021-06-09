@@ -6,23 +6,17 @@ namespace RWF.GameModes
 	public class ArmsRaceProxy : IGameMode
 	{
 		public string Name {
-			get { return "ArmsRace"; }
+			get { return "Arms race"; }
 		}
 
-		public GameObject gameObject {
-			get {
-				return GameObject.Find("/Game/Code/Game Modes").transform.Find("[GameMode] Arms race").gameObject;
-			}
-        }
-
-		public bool IsRoundStartCeaseFire {
+		public bool IsCeaseFire {
 			get {
 				return false;
             }
         }
 
 		public void SetActive(bool active) {
-			this.gameObject.SetActive(active);
+			GameMode.GetGameObject(this.Name).SetActive(active);
         }
 
 		public void StartGame() {

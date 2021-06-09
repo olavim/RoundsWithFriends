@@ -8,13 +8,12 @@ using UnityEngine.SceneManagement;
 using UnboundLib;
 using UnboundLib.Networking;
 using Sonigon;
-using Sonigon.Internal;
 
 namespace RWF.GameModes
 {
-	public class Deathmatch : MonoBehaviour, IGameMode
+	public class GM_Deathmatch : MonoBehaviour
 	{
-		public static Deathmatch instance;
+		public static GM_Deathmatch instance;
 
 		public int roundsToWinGame = 3;
 		public Action StartGameAction;
@@ -29,20 +28,16 @@ namespace RWF.GameModes
 		private int pointsToWinRound = 1;
 		private int currentWinningTeamID = -1;
 
-		public string Name {
-			get { return "Deathmatch"; }
-		}
+		private bool isCeaseFire = false;
 
-		private bool isRoundStartCeaseFire = false;
-
-		public bool IsRoundStartCeaseFire {
+		public bool IsCeaseFire {
 			get {
-				return this.isRoundStartCeaseFire;
+				return this.isCeaseFire;
 			}
 		}
 
 		private void Awake() {
-			Deathmatch.instance = this;
+			GM_Deathmatch.instance = this;
 		}
 
 		private void Start() {
@@ -53,21 +48,17 @@ namespace RWF.GameModes
 			PlayerAssigner.instance.maxPlayers = RWFMod.instance.MaxPlayers;
 		}
 
-		public void SetActive(bool active) {
-			this.gameObject.SetActive(active);
-		}
-
 		[UnboundRPC]
 		public static void RPCO_RequestSyncUp(int requestingPlayer) {
 			int playerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
-			NetworkingManager.RPC(typeof(Deathmatch), nameof(Deathmatch.RPCM_ReturnSyncUp), requestingPlayer, playerID);
+			NetworkingManager.RPC(typeof(GM_Deathmatch), nameof(GM_Deathmatch.RPCM_ReturnSyncUp), requestingPlayer, playerID);
 		}
 
 		[UnboundRPC]
 		public static void RPCM_ReturnSyncUp(int requestingPlayer, int readyPlayer) {
 			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
 			if (myPlayerID == requestingPlayer) {
-				Deathmatch.instance.waitingForPlayer[readyPlayer] = false;
+				GM_Deathmatch.instance.waitingForPlayer[readyPlayer] = false;
 			}
 		}
 
@@ -81,7 +72,7 @@ namespace RWF.GameModes
 			}
 
 			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
-			NetworkingManager.RPC(typeof(Deathmatch), nameof(Deathmatch.RPCO_RequestSyncUp), myPlayerID);
+			NetworkingManager.RPC(typeof(GM_Deathmatch), nameof(GM_Deathmatch.RPCO_RequestSyncUp), myPlayerID);
 
 			while (this.waitingForPlayer.Values.ToList().Any(isWaiting => isWaiting)) {
 				yield return null;
@@ -95,21 +86,17 @@ namespace RWF.GameModes
 		}
 
 		public void PlayerDied(Player killedPlayer, int playersAlive) {
-			if (playersAlive < 2) {
+			if (playersAlive == 1) {
 				TimeHandler.instance.DoSlowDown();
 
 				if (PhotonNetwork.IsMasterClient) {
-					if (PhotonNetwork.OfflineMode) {
-						Deathmatch.RPCA_NextRound(PlayerManager.instance.GetLastPlayerAlive().teamID, this.teamPoints, this.teamRounds);
-					} else {
-						NetworkingManager.RPC(
-							typeof(Deathmatch),
-							nameof(Deathmatch.RPCA_NextRound),
-							PlayerManager.instance.GetLastPlayerAlive().teamID,
-							this.teamPoints,
-							this.teamRounds
-						);
-					}
+					NetworkingManager.RPC(
+						typeof(GM_Deathmatch),
+						nameof(GM_Deathmatch.RPCA_NextRound),
+						PlayerManager.instance.GetLastPlayerAlive().teamID,
+						this.teamPoints,
+						this.teamRounds
+					);
 				}
 			}
 		}
@@ -215,7 +202,7 @@ namespace RWF.GameModes
 			}
 
 			PlayerManager.instance.SetPlayersSimulated(false);
-			this.isRoundStartCeaseFire = true;
+			this.isCeaseFire = true;
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
 			for (int i = 4; i >= 1; i--) {
@@ -227,7 +214,7 @@ namespace RWF.GameModes
 			SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
 			UIHandler.instance.DisplayRoundStartText("FIGHT");
 			PlayerManager.instance.SetPlayersSimulated(true);
-			this.isRoundStartCeaseFire = false;
+			this.isCeaseFire = false;
 
 			this.ExecuteAfterSeconds(1f, () => {
 				UIHandler.instance.HideRoundStartText();
@@ -319,7 +306,7 @@ namespace RWF.GameModes
 
 		[UnboundRPC]
 		public static void RPCA_NextRound(int winningTeamID, Dictionary<int, int> teamPoints, Dictionary<int, int> teamRounds) {
-			var instance = Deathmatch.instance;
+			var instance = GM_Deathmatch.instance;
 
 			if (instance.isTransitioning) {
 				return;

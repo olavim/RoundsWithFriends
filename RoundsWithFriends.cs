@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using BepInEx;
 using UnityEngine;
@@ -18,8 +19,71 @@ namespace RWF
         public static string SetTeamSize = "set_team_size";
     }
 
-    [BepInDependency("com.willis.rounds.unbound", "1.0.0.4")]
-    [BepInPlugin(ModId, "RoundsWithFriends", "1.0.0")]
+    [Serializable]
+    public class GameSettings
+    {
+        public static byte[] Serialize(object settings) {
+            using (MemoryStream m = new MemoryStream()) {
+                using (BinaryWriter writer = new BinaryWriter(m)) {
+                    writer.Write(((GameSettings) settings).GameMode.Name);
+                }
+                return m.ToArray();
+            }
+        }
+
+        public static GameSettings Deserialize(byte[] data) {
+            var result = new GameSettings();
+            using (MemoryStream m = new MemoryStream(data)) {
+                using (BinaryReader reader = new BinaryReader(m)) {
+                    result.SetGameMode(reader.ReadString());
+                }
+            }
+            return result;
+        }
+        public void SetGameMode(string gameModeName) {
+            this.SetGameMode(GameModes.GameMode.GetGameMode(gameModeName));
+        }
+
+        public void SetGameMode(IGameMode gameMode) {
+            PlayerManager.instance.SetPropertyValue("PlayerJoinedAction", null);
+            PlayerManager.instance.SetFieldValue("PlayerDiedAction", null);
+
+            var uiGo = GameObject.Find("/Game/UI");
+            var charSelectGo = uiGo.transform.Find("UI_MainMenu").Find("Canvas").Find("ListSelector").Find("CharacterSelect");
+
+            if (charSelectGo) {
+                var menu = charSelectGo.GetComponent<CharacterSelectionMenu>();
+                var menuPlayerJoined = ExtensionMethods.GetMethodInfo(typeof(CharacterSelectionMenu), "PlayerJoined");
+                Action<Player> playerJoinedAction = (player) => menu.InvokeMethod("PlayerJoined", player);
+                PlayerManager.instance.SetPropertyValue("PlayerJoinedAction", Delegate.Combine(PlayerManager.instance.PlayerJoinedAction, playerJoinedAction));
+            }
+
+            if (this.GameMode != null) {
+                this.GameMode.SetActive(false);
+            }
+
+            if (gameMode == null) {
+                this.GameMode = null;
+                PlayerAssigner.instance.InvokeMethod("SetPlayersCanJoin", false);
+            } else {
+                this.GameMode = gameMode;
+
+                PlayerManager.instance.AddPlayerJoinedAction(this.GameMode.PlayerJoined);
+                PlayerManager.instance.AddPlayerDiedAction(this.GameMode.PlayerDied);
+
+                this.GameMode.SetActive(true);
+                PlayerAssigner.instance.InvokeMethod("SetPlayersCanJoin", true);
+
+                RWFMod.instance.RedrawCharacterSelections();
+                RWFMod.instance.RedrawCharacterCreators();
+            }
+        }
+
+        public IGameMode GameMode { get; private set; }
+    }
+
+    [BepInDependency("com.willis.rounds.unbound", "1.0.0.7")]
+    [BepInPlugin(ModId, "RoundsWithFriends", "1.1.0")]
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
@@ -75,15 +139,14 @@ namespace RWF
 
         public int MaxTeams {
             get {
-                return this.GameMode == this.gameModes["Deathmatch"] ? 4 : 2;
+                return this.gameSettings.GameMode == GameMode.GetGameMode("Deathmatch") ? 4 : 2;
             }
         }
 
-        public IGameMode GameMode { get; private set; }
+        public GameSettings gameSettings = new GameSettings();
 
         public Text infoText;
         private Dictionary<string, bool> soundEnabled;
-        private Dictionary<string, IGameMode> gameModes = new Dictionary<string, IGameMode>();
 
         public void Awake() {
             RWFMod.instance = this;
@@ -113,42 +176,7 @@ namespace RWF
             }
         }
 
-        public void SetGameMode(string gameMode) {
-            PlayerManager.instance.SetPropertyValue("PlayerJoinedAction", null);
-            PlayerManager.instance.SetFieldValue("PlayerDiedAction", null);
-
-            var uiGo = GameObject.Find("/Game/UI");
-            var charSelectGo = uiGo.transform.Find("UI_MainMenu").Find("Canvas").Find("ListSelector").Find("CharacterSelect");
-
-            if (charSelectGo) {
-                var menu = charSelectGo.GetComponent<CharacterSelectionMenu>();
-                var menuPlayerJoined = ExtensionMethods.GetMethodInfo(typeof(CharacterSelectionMenu), "PlayerJoined");
-                Action<Player> playerJoinedAction = (player) => menu.InvokeMethod("PlayerJoined", player);
-                PlayerManager.instance.SetPropertyValue("PlayerJoinedAction", Delegate.Combine(PlayerManager.instance.PlayerJoinedAction, playerJoinedAction));
-            }
-
-            if (this.GameMode != null) {
-                this.GameMode.SetActive(false);
-            }
-
-            if (gameMode == null) {
-                this.GameMode = null;
-                PlayerAssigner.instance.InvokeMethod("SetPlayersCanJoin", false);
-            } else {
-                this.GameMode = this.gameModes[gameMode];
-
-                PlayerManager.instance.AddPlayerJoinedAction(this.GameMode.PlayerJoined);
-                PlayerManager.instance.AddPlayerDiedAction(this.GameMode.PlayerDied);
-
-                this.GameMode.SetActive(true);
-                PlayerAssigner.instance.InvokeMethod("SetPlayersCanJoin", true);
-
-                this.RedrawCharacterSelections();
-                this.RedrawCharacterCreators();
-            }
-        }
-
-        private void RedrawCharacterSelections() {
+        public void RedrawCharacterSelections() {
             var uiGo = GameObject.Find("/Game/UI").gameObject;
             var mainMenuGo = uiGo.transform.Find("UI_MainMenu").Find("Canvas").gameObject;
             var charSelectionGroupGo = mainMenuGo.transform.Find("ListSelector").Find("CharacterSelect").GetChild(0).gameObject;
@@ -171,7 +199,7 @@ namespace RWF
             }
         }
 
-        private void RedrawCharacterCreators() {
+        public void RedrawCharacterCreators() {
             var charGo = GameObject.Find("/CharacterCustom");
 
             for (int i = 1; i < charGo.transform.childCount; i++) {
@@ -203,14 +231,9 @@ namespace RWF
 
         public void InjectGameModes() {
             var gameModesGo = GameObject.Find("/Game/Code/Game Modes");
-            string prevGameMode = null;
 
-            if (gameModesGo.transform.Find("[GameMode] Deathmatch")) {
+            if (GameMode.GetGameObject("Deathmatch") != null) {
                 return;
-            } else if (this.gameModes.Count > 0) {
-                prevGameMode = this.GameMode.Name;
-                this.gameModes.Clear();
-                this.GameMode = null;
             }
 
             var gameModeGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/GameMode");
@@ -226,14 +249,14 @@ namespace RWF
             GameObject.DestroyImmediate(versusGo.GetComponent<Button>());
             var versusButton = versusGo.AddComponent<Button>();
             versusButton.onClick.AddListener(characterSelectPage.Open);
-            versusButton.onClick.AddListener(() => this.SetGameMode("ArmsRace"));
+            versusButton.onClick.AddListener(() => this.gameSettings.SetGameMode("Arms race"));
 
             GameObject.DestroyImmediate(sandboxGo.GetComponent<Button>());
             var sandboxButton = sandboxGo.AddComponent<Button>();
             sandboxButton.onClick.AddListener(MainMenuHandler.instance.Close);
             sandboxButton.onClick.AddListener(() => {
-                this.SetGameMode("Sandbox");
-                this.GameMode.StartGame();
+                this.gameSettings.SetGameMode("Sandbox");
+                this.gameSettings.GameMode.StartGame();
             });
 
             var deathmatchButtonGo = GameObject.Instantiate(versusGo, versusGo.transform.parent);
@@ -247,21 +270,14 @@ namespace RWF
             var deathmatchButton = deathmatchButtonGo.AddComponent<Button>();
 
             deathmatchButton.onClick.AddListener(characterSelectPage.Open);
-            deathmatchButton.onClick.AddListener(() => this.SetGameMode("Deathmatch"));
+            deathmatchButton.onClick.AddListener(() => this.gameSettings.SetGameMode("Deathmatch"));
 
             var deathmatchGo = new GameObject("[GameMode] Deathmatch");
             deathmatchGo.SetActive(false);
             deathmatchGo.transform.SetParent(gameModesGo.transform);
+            deathmatchGo.AddComponent<GM_Deathmatch>();
 
-            var deathMatch = deathmatchGo.AddComponent<Deathmatch>();
-            var armsRace = new ArmsRaceProxy();
-            var sandbox = new SandboxProxy();
-
-            this.gameModes.Add(armsRace.Name, armsRace);
-            this.gameModes.Add(deathMatch.Name, deathMatch);
-            this.gameModes.Add(sandbox.Name, sandbox);
-
-            this.ExecuteAfterFrames(1, () => this.SetGameMode(prevGameMode ?? armsRace.Name));
+            this.ExecuteAfterFrames(1, () => this.gameSettings.SetGameMode(this.gameSettings.GameMode?.Name ?? "Arms race"));
         }
 
         public void InjectUIElements() {
@@ -340,11 +356,11 @@ namespace RWF
 
             if (!gameGo.transform.Find("RoundStartText")) {
                 var newPos = gameGo.transform.position + new Vector3(0, 2, 0);
-                var baseGo = GameObject.Instantiate(gameGo.transform.Find("GameOverText").gameObject, newPos, Quaternion.identity, gameGo.transform);
+                var baseGo = GameObject.Instantiate(gameGo.transform.Find("PopUpHandler").Find("Yes").gameObject, newPos, Quaternion.identity, gameGo.transform);
                 baseGo.name = "RoundStartText";
                 baseGo.AddComponent<UI.ScalePulse>();
                 baseGo.GetComponent<TextMeshProUGUI>().fontSize = 140f;
-                baseGo.GetComponent<TextMeshProUGUI>().fontWeight = FontWeight.Bold;
+                baseGo.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
             }
         }
     }

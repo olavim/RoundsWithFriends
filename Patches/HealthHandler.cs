@@ -26,8 +26,9 @@ namespace RWF.Patches
             var f_simulated = ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "simulated");
 
             var f_rwfInstance = AccessTools.Field(typeof(RWFMod), "instance");
-            var m_gameMode = ExtensionMethods.GetPropertyInfo(typeof(RWFMod), "GameMode").GetGetMethod();
-            var m_isCeaseFire = ExtensionMethods.GetPropertyInfo(typeof(GameModes.IGameMode), "IsRoundStartCeaseFire").GetGetMethod();
+            var f_gameSettings = ExtensionMethods.GetFieldInfo(typeof(RWFMod), "gameSettings");
+            var m_gameMode = ExtensionMethods.GetPropertyInfo(typeof(GameSettings), "GameMode").GetGetMethod();
+            var m_isCeaseFire = ExtensionMethods.GetPropertyInfo(typeof(GameModes.IGameMode), "IsCeaseFire").GetGetMethod();
 
             for (int i = 0; i < list.Count; i++) {
                 if (list[i].LoadsField(f_simulated) && list[i + 1].opcode == OpCodes.Brtrue) {
@@ -36,6 +37,7 @@ namespace RWF.Patches
                     newInstructions.Add(list[i]);
                     newInstructions.Add(list[i + 1]);
                     newInstructions.Add(new CodeInstruction(OpCodes.Ldsfld, f_rwfInstance));
+                    newInstructions.Add(new CodeInstruction(OpCodes.Ldfld, f_gameSettings));
                     newInstructions.Add(new CodeInstruction(OpCodes.Callvirt, m_gameMode));
                     newInstructions.Add(new CodeInstruction(OpCodes.Callvirt, m_isCeaseFire));
                     newInstructions.Add(new CodeInstruction(OpCodes.Brtrue, label));

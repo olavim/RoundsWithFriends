@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UI.ProceduralImage;
@@ -20,31 +19,6 @@ using UnboundLib.Networking;
 
 namespace RWF
 {
-    [Serializable]
-    public class GameSettings
-    {
-        public static byte[] Serialize(object settings) {
-            using (MemoryStream m = new MemoryStream()) {
-                using (BinaryWriter writer = new BinaryWriter(m)) {
-                    writer.Write(((GameSettings)settings).gameMode);
-                }
-                return m.ToArray();
-            }
-        }
-
-        public static GameSettings Deserialize(byte[] data) {
-            var result = new GameSettings();
-            using (MemoryStream m = new MemoryStream(data)) {
-                using (BinaryReader reader = new BinaryReader(m)) {
-                    result.gameMode = reader.ReadString();
-                }
-            }
-            return result;
-        }
-
-        public string gameMode;
-    }
-
     class PrivateRoomHandler : MonoBehaviourPunCallbacks
     {
         public static PrivateRoomHandler instance;
@@ -58,9 +32,7 @@ namespace RWF
         private VersusDisplay versusDisplay;
         private bool waitingForToggle;
         private bool lockReadyRequests;
-        private Dictionary<int, bool> waitingForResponse;
         private Queue<Tuple<int, bool>> readyRequests;
-        private GameSettings settings;
         private bool spamReady;
         private InputDevice deviceToUse;
 
@@ -90,21 +62,9 @@ namespace RWF
         private void Init() {
             this.spamReady = false;
             this.waitingForToggle = false;
-            this.waitingForResponse = new Dictionary<int, bool>();
             this.readyRequests = new Queue<Tuple<int, bool>>();
             this.deviceToUse = null;
             this.lockReadyRequests = false;
-            this.settings = new GameSettings();
-
-            if (PhotonNetwork.CurrentRoom != null) {
-                this.NetworkInit();
-            }
-        }
-
-        private void NetworkInit() {
-            foreach (var networkPlayer in PhotonNetwork.CurrentRoom.Players.Values.ToList()) {
-                this.waitingForResponse.Add(networkPlayer.ActorNumber, false);
-            }
         }
 
         private void BuildUI() {
@@ -162,7 +122,7 @@ namespace RWF
             gameModeGo.transform.SetParent(this.grid.transform);
             gameModeGo.transform.localScale = Vector3.one;
 
-            var gameModeTextGo = GetText(this.settings.gameMode == "ArmsRace" ? "TEAM DEATHMATCH" : "DEATHMATCH");
+            var gameModeTextGo = GetText(RWFMod.instance.gameSettings.GameMode?.Name == "Deathmatch" ? "DEATHMATCH" : "TEAM DEATHMATCH");
             gameModeTextGo.transform.SetParent(gameModeGo.transform);
             gameModeTextGo.transform.localScale = Vector3.one;
 
@@ -229,11 +189,10 @@ namespace RWF
             gameModeListButton.setBarHeight = 92f;
 
             gameModeButton.onClick.AddListener(() => {
-                this.settings.gameMode = this.settings.gameMode == "ArmsRace" ? "Deathmatch" : "ArmsRace";
-                if (PhotonNetwork.CurrentRoom == null) {
-                    PrivateRoomHandler.SetGameSettings(this.settings);
-                } else if (PhotonNetwork.IsMasterClient) {
-                    NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), this.settings);
+                if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null) {
+                    string nextGameMode = RWFMod.instance.gameSettings.GameMode?.Name == "Arms race" ? "Deathmatch" : "Arms race";
+                    RWFMod.instance.gameSettings.SetGameMode(nextGameMode);
+                    this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, RWFMod.instance.gameSettings);
                 }
             });
 
@@ -315,8 +274,10 @@ namespace RWF
             }
 
             if (PhotonNetwork.IsMasterClient) {
-                this.settings.gameMode = RWFMod.instance.GameMode?.Name ?? "ArmsRace";
-                PrivateRoomHandler.SetGameSettings(this.settings);
+                if (RWFMod.instance.gameSettings.GameMode == null) {
+                    RWFMod.instance.gameSettings.SetGameMode("Arms race");
+                }
+                PrivateRoomHandler.SetGameSettings(RWFMod.instance.gameSettings);
             }
 
             /* The local player's nickname is also set in NetworkConnectionHandler::OnJoinedRoom, but we'll do it here too so we don't
@@ -327,8 +288,6 @@ namespace RWF
             } else {
                 PhotonNetwork.LocalPlayer.NickName = $"Player {PhotonNetwork.LocalPlayer.ActorNumber}";
             }
-
-            this.NetworkInit();
 
             // If we handled this from OnPlayerEnteredRoom handler for other clients, the joined client's nickname might not have been set yet
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdatePlayerDisplay));
@@ -341,10 +300,8 @@ namespace RWF
         }
 
         override public void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer) {
-            this.waitingForResponse.Add(newPlayer.ActorNumber, false);
-
             if (PhotonNetwork.IsMasterClient) {
-                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), this.settings);
+                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), RWFMod.instance.gameSettings);
             }
 
             this.ExecuteAfterSeconds(0.1f, () => {
@@ -355,7 +312,7 @@ namespace RWF
         }
 
         override public void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer) {
-            this.waitingForResponse.Remove(otherPlayer.ActorNumber);
+            this.ClearPendingRequests(otherPlayer.ActorNumber);
             PrivateRoomHandler.UpdatePlayerDisplay();
             base.OnPlayerLeftRoom(otherPlayer);
         }
@@ -414,14 +371,6 @@ namespace RWF
             this.waitingForToggle = false;
         }
 
-        private bool IsWaitingForResponse(int playerId = -1) {
-            if (playerId == -1) {
-                return this.waitingForResponse.Values.ToList().Any(p => p);
-            }
-
-            return this.waitingForResponse[playerId];
-        }
-
         private void UpdateReadyBox() {
             var img = this.readyCheckbox.GetComponent<ProceduralImage>();
             img.BorderWidth = PhotonNetwork.LocalPlayer.GetProperty<bool>("ready") ? 0 : 3;
@@ -434,11 +383,18 @@ namespace RWF
 
         [UnboundRPC]
         public static void SetGameSettings(GameSettings settings) {
-            PrivateRoomHandler.instance.settings = settings;
-
-            RWFMod.instance.SetGameMode(settings.gameMode);
-            PrivateRoomHandler.instance.gameModeText.text = settings.gameMode == "ArmsRace" ? "TEAM DEATHMATCH" : "DEATHMATCH";
+            RWFMod.instance.gameSettings.SetGameMode(settings.GameMode);
+            PrivateRoomHandler.instance.gameModeText.text = settings.GameMode.Name == "Arms race" ? "TEAM DEATHMATCH" : "DEATHMATCH";
             PrivateRoomHandler.UpdatePlayerDisplay();
+
+            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettingsResponse), PhotonNetwork.LocalPlayer.ActorNumber);
+        }
+
+        [UnboundRPC]
+        public static void SetGameSettingsResponse(int respondingPlayer) {
+            if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null) {
+                PrivateRoomHandler.instance.RemovePendingRequest(respondingPlayer, nameof(PrivateRoomHandler.SetGameSettings));
+            }
         }
 
         [UnboundRPC]
@@ -517,16 +473,8 @@ namespace RWF
         private IEnumerator StartGamePreparation() {
             var players = PhotonNetwork.CurrentRoom.Players.Values.ToList();
 
-            foreach (var player in players) {
-                this.waitingForResponse[player.ActorNumber] = true;
-            }
-
             foreach (var player in players.OrderBy(p => p.GetProperty<int>("readyOrder"))) {
-                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.CreatePlayer), player.ActorNumber);
-
-                while (this.IsWaitingForResponse(player.ActorNumber)) {
-                    yield return null;
-                }
+                yield return this.SyncMethod(nameof(PrivateRoomHandler.CreatePlayer), player.ActorNumber, player.ActorNumber);
             }
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.StartGame));
@@ -555,10 +503,7 @@ namespace RWF
         [UnboundRPC]
         public static void CreatePlayerResponse(int respondingPlayer) {
             if (PhotonNetwork.IsMasterClient) {
-                var instance = PrivateRoomHandler.instance;
-                if (instance.waitingForResponse.ContainsKey(respondingPlayer)) {
-                    instance.waitingForResponse[respondingPlayer] = false;
-                }
+                PrivateRoomHandler.instance.RemovePendingRequest(respondingPlayer, nameof(PrivateRoomHandler.CreatePlayer));
             }
         }
 
@@ -566,7 +511,7 @@ namespace RWF
         public static void StartGame() {
             var instance = PrivateRoomHandler.instance;
             instance.StopAllCoroutines();
-            RWFMod.instance.GameMode.StartGame();
+            RWFMod.instance.gameSettings.GameMode.StartGame();
 
             // The main scene is reloaded after the game. After the reload is done, we want to reopen the lobby.
             SceneManager.sceneLoaded += PrivateRoomHandler.OnSceneLoad;

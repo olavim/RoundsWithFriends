@@ -29,7 +29,7 @@ namespace RWF.Patches
 					return false;
 				}
 
-				RWFMod.instance.SetGameMode(null);
+				RWFMod.instance.gameSettings.SetGameMode((string)null);
 			}
 
 			return true;
