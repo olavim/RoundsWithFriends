@@ -1,12 +1,11 @@
-﻿using UnityEngine;
-using UnboundLib;
+﻿using UnboundLib;
 
 namespace RWF.GameModes
 {
 	public class SandboxProxy : IGameMode
 	{
 		public string Name {
-			get { return "Sandbox"; }
+			get { return "Test"; }
 		}
 
 		public bool IsCeaseFire {
