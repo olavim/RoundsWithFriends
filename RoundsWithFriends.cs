@@ -83,7 +83,7 @@ namespace RWF
     }
 
     [BepInDependency("com.willis.rounds.unbound", "1.0.0.7")]
-    [BepInPlugin(ModId, "RoundsWithFriends", "1.1.0")]
+    [BepInPlugin(ModId, "RoundsWithFriends", "1.1.1")]
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";

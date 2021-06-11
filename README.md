@@ -4,14 +4,20 @@ A [ROUNDS](https://landfall.se/rounds) mod to extend the game's multiplayer capa
 
 ## Current Features
 
-### 2v2
+The mod supports up to four players in local and private online lobbies.
 
-The mod supports up to four players in local and private online lobbies. Playing in a 2v1 setting is also possible, although there are currently no special rules or handicaps for uneven team sizes.
+### Team Deathmatch / 2v2
+
+The game mode you are used to, except now it supports two additional players. Playing in a 2v1 setting is also possible, although there are currently no special rules or handicaps for uneven team sizes.
+
+### Deathmatch / Free for all
+
+Deathmatch follows the heart of the original team deathmatch game mode, but now it's just you against everyone else.
 
 ## Dependencies
 
 - [BepInEx](https://docs.bepinex.dev/master/articles/index.html) plugin framework
-- [UnboundLib](https://github.com/willis81808/UnboundLib) version **>=1.0.0.6**
+- [UnboundLib](https://github.com/willis81808/UnboundLib) version **>=1.0.0.7**
 
 ## Installation
 
