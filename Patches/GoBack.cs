@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using InControl;
 using UnityEngine;
+using UnboundLib.GameModes;
 
 namespace RWF.Patches
 {
@@ -29,7 +30,7 @@ namespace RWF.Patches
 					return false;
 				}
 
-				RWFMod.instance.gameSettings.SetGameMode((string)null);
+				GameModeManager.SetGameMode(null);
 			}
 
 			return true;

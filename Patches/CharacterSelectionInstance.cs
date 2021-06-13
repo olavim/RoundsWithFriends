@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using UnboundLib.GameModes;
 
 namespace RWF.Patches
 {
@@ -22,7 +23,7 @@ namespace RWF.Patches
 
             if (numReady == numPlayers && numReady >= RWFMod.instance.MinPlayers) {
                 MainMenuHandler.instance.Close();
-                RWFMod.instance.gameSettings.GameMode.StartGame();
+                GameModeManager.CurrentHandler.StartGame();
                 return false;
             }
 
