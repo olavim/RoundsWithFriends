@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnboundLib;
 using UnboundLib.Networking;
+using UnboundLib.GameModes;
 using Sonigon;
 
 namespace RWF.GameModes
@@ -15,37 +16,27 @@ namespace RWF.GameModes
 	{
 		public static GM_Deathmatch instance;
 
-		public int roundsToWinGame = 3;
-		public Action StartGameAction;
-		public bool pickPhase = true;
-		public bool isPicking;
-		public Dictionary<int, int> teamPoints = new Dictionary<int, int>();
-		public Dictionary<int, int> teamRounds = new Dictionary<int, int>();
-
-		private bool isTransitioning;
+		private Dictionary<int, int> teamPoints = new Dictionary<int, int>();
+		private Dictionary<int, int> teamRounds = new Dictionary<int, int>();
 		private Dictionary<int, bool> waitingForPlayer = new Dictionary<int, bool>();
+		private bool isTransitioning;
 		private int playersNeededToStart = 2;
-		private int pointsToWinRound = 1;
 		private int currentWinningTeamID = -1;
-
-		private bool isCeaseFire = false;
-
-		public bool IsCeaseFire {
-			get {
-				return this.isCeaseFire;
-			}
-		}
 
 		private void Awake() {
 			GM_Deathmatch.instance = this;
 		}
 
 		private void Start() {
+			GameModeManager.TriggerHook(GameModeHooks.HookInitStart);
+
 			PlayerManager.instance.SetPlayersSimulated(false);
 			PlayerAssigner.instance.maxPlayers = this.playersNeededToStart;
 
 			this.playersNeededToStart = RWFMod.instance.MinPlayers;
 			PlayerAssigner.instance.maxPlayers = RWFMod.instance.MaxPlayers;
+
+			GameModeManager.TriggerHook(GameModeHooks.HookInitEnd);
 		}
 
 		[UnboundRPC]
@@ -106,18 +97,15 @@ namespace RWF.GameModes
 				return;
 			}
 
-			Action startGameAction = this.StartGameAction;
-			if (startGameAction != null) {
-				startGameAction();
-			}
-
 			GameManager.instance.isPlaying = true;
 			this.StartCoroutine(this.DoStartGame());
 		}
 
 		private IEnumerator DoStartGame() {
+			GameModeManager.TriggerHook(GameModeHooks.HookGameStart);
+
 			CardBarHandler.instance.Rebuild();
-			UIHandler.instance.InvokeMethod("SetNumberOfRounds", this.roundsToWinGame);
+			UIHandler.instance.InvokeMethod("SetNumberOfRounds", (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"]);
 			ArtHandler.instance.NextArt();
 
 			GameManager.instance.battleOngoing = false;
@@ -133,17 +121,25 @@ namespace RWF.GameModes
 
 			yield return new WaitForSecondsRealtime(1f);
 
-			if (this.pickPhase) {
-				for (int i = 0; i < PlayerManager.instance.players.Count; i++) {
-					yield return this.WaitForSyncUp();
-					CardChoiceVisuals.instance.Show(i, true);
-					yield return CardChoice.instance.DoPick(1, PlayerManager.instance.players[i].playerID, PickerType.Player);
-					yield return new WaitForSecondsRealtime(0.1f);
-				}
+			GameModeManager.TriggerHook(GameModeHooks.HookPickStart);
 
+			for (int i = 0; i < PlayerManager.instance.players.Count; i++) {
 				yield return this.WaitForSyncUp();
-				CardChoiceVisuals.instance.Hide();
+
+				GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
+
+				CardChoiceVisuals.instance.Show(i, true);
+				yield return CardChoice.instance.DoPick(1, PlayerManager.instance.players[i].playerID, PickerType.Player);
+
+				GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickEnd);
+
+				yield return new WaitForSecondsRealtime(0.1f);
 			}
+
+			yield return this.WaitForSyncUp();
+			CardChoiceVisuals.instance.Hide();
+
+			GameModeManager.TriggerHook(GameModeHooks.HookPickEnd);
 
 			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
 			TimeHandler.instance.DoSpeedUp();
@@ -164,35 +160,66 @@ namespace RWF.GameModes
 			PlayerManager.instance.SetPlayersSimulated(false);
 			TimeHandler.instance.DoSpeedUp();
 
-			if (this.pickPhase) {
-				PlayerManager.instance.InvokeMethod("SetPlayersVisible", false);
-				var players = PlayerManager.instance.players;
+			GameModeManager.TriggerHook(GameModeHooks.HookPickStart);
 
-				for (int i = 0; i < players.Count; i++) {
-					if (players[i].teamID != winningTeamID) {
-						yield return base.StartCoroutine(this.WaitForSyncUp());
-						CardChoiceVisuals.instance.Show(i, true);
-						yield return CardChoice.instance.DoPick(1, players[i].playerID, PickerType.Player);
-						yield return new WaitForSecondsRealtime(0.1f);
-					}
+			PlayerManager.instance.InvokeMethod("SetPlayersVisible", false);
+			var players = PlayerManager.instance.players;
+
+			for (int i = 0; i < players.Count; i++) {
+				if (players[i].teamID != winningTeamID) {
+					yield return base.StartCoroutine(this.WaitForSyncUp());
+
+					GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
+
+					CardChoiceVisuals.instance.Show(i, true);
+					yield return CardChoice.instance.DoPick(1, players[i].playerID, PickerType.Player);
+
+					GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickEnd);
+
+					yield return new WaitForSecondsRealtime(0.1f);
 				}
-
-				PlayerManager.instance.InvokeMethod("SetPlayersVisible", true);
 			}
 
+			PlayerManager.instance.InvokeMethod("SetPlayersVisible", true);
+
+			GameModeManager.TriggerHook(GameModeHooks.HookPickEnd);
+
 			yield return this.StartCoroutine(this.WaitForSyncUp());
+
 			TimeHandler.instance.DoSlowDown();
-
 			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
-
 			PlayerManager.instance.RevivePlayers();
+
 			yield return new WaitForSecondsRealtime(0.3f);
+
 			TimeHandler.instance.DoSpeedUp();
-			this.isTransitioning = false;
 			GameManager.instance.battleOngoing = true;
+			this.isTransitioning = false;
 			UIHandler.instance.ShowRoundCounterSmall(this.teamPoints, this.teamRounds);
 
 			this.StartCoroutine(this.DoRoundStart());
+		}
+
+		private IEnumerator PointTransition()
+		{
+			yield return new WaitForSecondsRealtime(1f);
+
+			MapManager.instance.LoadNextLevel(false, false);
+
+			yield return new WaitForSecondsRealtime(0.5f);
+			yield return base.StartCoroutine(this.WaitForSyncUp());
+
+			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
+			PlayerManager.instance.RevivePlayers();
+
+			yield return new WaitForSecondsRealtime(0.3f);
+
+			TimeHandler.instance.DoSpeedUp();
+			GameManager.instance.battleOngoing = true;
+			this.isTransitioning = false;
+			UIHandler.instance.ShowRoundCounterSmall(this.teamPoints, this.teamRounds);
+
+			this.StartCoroutine(this.DoPointStart());
 		}
 
 		private IEnumerator DoRoundStart() {
@@ -202,7 +229,10 @@ namespace RWF.GameModes
 			}
 
 			PlayerManager.instance.SetPlayersSimulated(false);
-			this.isCeaseFire = true;
+
+			GameModeManager.TriggerHook(GameModeHooks.HookRoundStart);
+			GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
+
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
 			for (int i = 4; i >= 1; i--) {
@@ -214,14 +244,51 @@ namespace RWF.GameModes
 			SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
 			UIHandler.instance.DisplayRoundStartText("FIGHT");
 			PlayerManager.instance.SetPlayersSimulated(true);
-			this.isCeaseFire = false;
+
+			GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
 
 			this.ExecuteAfterSeconds(1f, () => {
 				UIHandler.instance.HideRoundStartText();
 			});
 		}
 
-		private void RoundOver(int winningTeamID) {
+		private IEnumerator DoPointStart()
+		{
+			// Wait for MapManager to set all players to simulated after map transition
+			while (PlayerManager.instance.players.ToList().Any(p => !(bool) p.data.playerVel.GetFieldValue("simulated")))
+			{
+				yield return null;
+			}
+
+			PlayerManager.instance.SetPlayersSimulated(false);
+
+			GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
+
+			var sounds = GameObject.Find("/SonigonSoundEventPool");
+
+			for (int i = 4; i >= 1; i--)
+			{
+				UIHandler.instance.DisplayRoundStartText($"{i}");
+				SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_A_Ball_Shrink_Go_To_Left_Corner, this.transform);
+				yield return new WaitForSeconds(0.5f);
+			}
+
+			SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
+			UIHandler.instance.DisplayRoundStartText("FIGHT");
+			PlayerManager.instance.SetPlayersSimulated(true);
+
+			GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
+
+			this.ExecuteAfterSeconds(1f, () => {
+				UIHandler.instance.HideRoundStartText();
+			});
+		}
+
+		private void RoundOver(int winningTeamID)
+		{
+			GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
+			GameModeManager.TriggerHook(GameModeHooks.HookRoundEnd);
+
 			this.currentWinningTeamID = winningTeamID;
 
 			foreach (var teamID in this.teamPoints.Keys.ToList()) {
@@ -232,7 +299,20 @@ namespace RWF.GameModes
 			this.StartCoroutine(this.RoundTransition(winningTeamID));
 		}
 
-		private IEnumerator GameOverTransition(int winningTeamID) {
+		private void PointOver(int winningTeamID)
+		{
+			GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
+
+			this.currentWinningTeamID = winningTeamID;
+
+			this.StartCoroutine(PointVisualizer.instance.DoSequence(this.teamPoints, this.teamRounds, winningTeamID));
+			this.StartCoroutine(this.PointTransition());
+		}
+
+		private IEnumerator GameOverTransition(int winningTeamID)
+		{
+			GameModeManager.TriggerHook(GameModeHooks.HookGameEnd);
+
 			UIHandler.instance.ShowRoundCounterSmall(this.teamPoints, this.teamRounds);
 			UIHandler.instance.DisplayScreenText(PlayerManager.instance.GetColorFromPlayer(winningTeamID).winText, "VICTORY!", 1f);
 			yield return new WaitForSecondsRealtime(2f);
@@ -290,6 +370,14 @@ namespace RWF.GameModes
 			PointVisualizer.instance.ResetPoints();
 		}
 
+		public void Reset()
+		{
+			this.teamPoints.Clear();
+			this.teamRounds.Clear();
+			this.waitingForPlayer.Clear();
+			this.isTransitioning = false;
+		}
+
 		private void DoRestart() {
 			GameManager.instance.battleOngoing = false;
 			if (PhotonNetwork.OfflineMode) {
@@ -321,14 +409,15 @@ namespace RWF.GameModes
 
 			instance.teamPoints[winningTeamID] = instance.teamPoints[winningTeamID] + 1;
 
-			if (instance.teamPoints[winningTeamID] < instance.pointsToWinRound) {
-				// Not implemented
+			if (instance.teamPoints[winningTeamID] < (int) GameModeManager.CurrentHandler.Settings["pointsToWinRound"])
+			{
+				instance.PointOver(winningTeamID);
 				return;
 			}
 
 			instance.teamRounds[winningTeamID] = instance.teamRounds[winningTeamID] + 1;
 
-			if (instance.teamRounds[winningTeamID] >= instance.roundsToWinGame) {
+			if (instance.teamRounds[winningTeamID] >= (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"]) {
 				instance.GameOver(winningTeamID);
 				return;
 			}

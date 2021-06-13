@@ -7,7 +7,7 @@ namespace RWF.Patches
     {
         static void Postfix() {
             RWFMod.instance.InjectUIElements();
-            RWFMod.instance.InjectGameModes();
+            RWFMod.instance.SetupGameModes();
         }
     }
 }

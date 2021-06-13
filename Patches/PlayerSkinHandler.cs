@@ -1,21 +1,11 @@
 ﻿using HarmonyLib;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace RWF.Patches
 {
-    [HarmonyPatch(typeof(SetTeamColorSpecific), "Start")]
-    class SetTeamColorSpecific_Patch_Start
+    [HarmonyPatch(typeof(PlayerSkinHandler), "Init")]
+    class PlayerSkinHandler_Patch_Init
     {
-        static void Prefix(SetTeamColorSpecific __instance)
-        {
-            __instance.colors = PlayerManager.instance.players
-                .Select(p => p.teamID)
-                .Distinct()
-                .Select(id => PlayerSkinBank.GetPlayerSkinColors(id).color)
-                .ToArray();
-        }
-
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
             var f_playerID = AccessTools.Field(typeof(Player), "playerID");
             var f_teamID = AccessTools.Field(typeof(Player), "teamID");

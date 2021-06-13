@@ -16,6 +16,7 @@ using Steamworks;
 using SoundImplementation;
 using UnboundLib;
 using UnboundLib.Networking;
+using UnboundLib.GameModes;
 
 namespace RWF
 {
@@ -122,7 +123,7 @@ namespace RWF
             gameModeGo.transform.SetParent(this.grid.transform);
             gameModeGo.transform.localScale = Vector3.one;
 
-            var gameModeTextGo = GetText(RWFMod.instance.gameSettings.GameMode?.Name == "Deathmatch" ? "DEATHMATCH" : "TEAM DEATHMATCH");
+            var gameModeTextGo = GetText(GameModeManager.CurrentHandlerID == "Deathmatch" ? "DEATHMATCH" : "TEAM DEATHMATCH");
             gameModeTextGo.transform.SetParent(gameModeGo.transform);
             gameModeTextGo.transform.localScale = Vector3.one;
 
@@ -189,10 +190,12 @@ namespace RWF
             gameModeListButton.setBarHeight = 92f;
 
             gameModeButton.onClick.AddListener(() => {
-                if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null) {
-                    string nextGameMode = RWFMod.instance.gameSettings.GameMode?.Name == "Arms race" ? "Deathmatch" : "Arms race";
-                    RWFMod.instance.gameSettings.SetGameMode(nextGameMode);
-                    this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, RWFMod.instance.gameSettings);
+                if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
+                {
+                    string nextGameMode = GameModeManager.CurrentHandlerID == "ArmsRace" ? "Deathmatch" : "ArmsRace";
+                    GameModeManager.SetGameMode(nextGameMode);
+
+                    this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
                 }
             });
 
@@ -274,10 +277,10 @@ namespace RWF
             }
 
             if (PhotonNetwork.IsMasterClient) {
-                if (RWFMod.instance.gameSettings.GameMode == null) {
-                    RWFMod.instance.gameSettings.SetGameMode("Arms race");
+                if (GameModeManager.CurrentHandler == null) {
+                    GameModeManager.SetGameMode("ArmsRace");
                 }
-                PrivateRoomHandler.SetGameSettings(RWFMod.instance.gameSettings);
+                PrivateRoomHandler.SetGameSettings(GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
             }
 
             /* The local player's nickname is also set in NetworkConnectionHandler::OnJoinedRoom, but we'll do it here too so we don't
@@ -301,7 +304,7 @@ namespace RWF
 
         override public void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer) {
             if (PhotonNetwork.IsMasterClient) {
-                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), RWFMod.instance.gameSettings);
+                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
             }
 
             this.ExecuteAfterSeconds(0.1f, () => {
@@ -382,9 +385,11 @@ namespace RWF
         }
 
         [UnboundRPC]
-        public static void SetGameSettings(GameSettings settings) {
-            RWFMod.instance.gameSettings.SetGameMode(settings.GameMode);
-            PrivateRoomHandler.instance.gameModeText.text = settings.GameMode.Name == "Arms race" ? "TEAM DEATHMATCH" : "DEATHMATCH";
+        public static void SetGameSettings(string gameMode, GameSettings settings) {
+            GameModeManager.SetGameMode(gameMode);
+            GameModeManager.CurrentHandler.SetSettings(settings);
+
+            PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "ArmsRace" ? "TEAM DEATHMATCH" : "DEATHMATCH";
             PrivateRoomHandler.UpdatePlayerDisplay();
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettingsResponse), PhotonNetwork.LocalPlayer.ActorNumber);
@@ -511,7 +516,7 @@ namespace RWF
         public static void StartGame() {
             var instance = PrivateRoomHandler.instance;
             instance.StopAllCoroutines();
-            RWFMod.instance.gameSettings.GameMode.StartGame();
+            GameModeManager.CurrentHandler.StartGame();
 
             // The main scene is reloaded after the game. After the reload is done, we want to reopen the lobby.
             SceneManager.sceneLoaded += PrivateRoomHandler.OnSceneLoad;

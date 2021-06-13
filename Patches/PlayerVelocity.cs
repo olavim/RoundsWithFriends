@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using Photon.Pun;
 using UnityEngine;
 
 namespace RWF.Patches
@@ -8,7 +7,7 @@ namespace RWF.Patches
     class PlayerVelocity_Patch_FixedUpdate
     {
         static void Postfix(PlayerVelocity __instance, bool ___simulated, bool ___isKinematic, ref Vector2 ___velocity) {
-            if (!___simulated && !___isKinematic && RWFMod.instance.gameSettings.GameMode.IsCeaseFire) {
+            if (!___simulated && !___isKinematic && RWFMod.instance.IsCeaseFire) {
                 ___velocity += Vector2.down * Time.fixedDeltaTime * TimeHandler.timeScale * 20f;
                 var deltaPos = Time.fixedDeltaTime * TimeHandler.timeScale * ___velocity;
                 __instance.transform.position += new Vector3(deltaPos.x, deltaPos.y, 0);
