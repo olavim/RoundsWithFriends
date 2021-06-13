@@ -174,8 +174,40 @@ namespace RWF
 			}
 
 			instance.InvokeMethod("Close");
+		}
 
-			yield break;
+		// Overload for the existing DoSequence method to support more than two teams
+		public static IEnumerator DoSequence(this PointVisualizer instance, Dictionary<int, int> teamPoints, Dictionary<int, int> teamRounds, int winnerTeamID)
+		{
+			yield return new WaitForSecondsRealtime(0.45f);
+
+			SoundManager.Instance.Play(instance.soundWinRound, instance.transform);
+			instance.ResetBalls(teamPoints.Count);
+			instance.bg.SetActive(true);
+
+			instance.transform.Find("Orange").gameObject.SetActive(true);
+			instance.transform.Find("Blue").gameObject.SetActive(true);
+
+			for (int i = 2; i < teamPoints.Count; i++)
+			{
+				instance.transform.GetChild(i + 2).gameObject.SetActive(true);
+			}
+
+			yield return new WaitForSecondsRealtime(0.2f);
+
+			GamefeelManager.instance.AddUIGameFeelOverTime(10f, 0.1f);
+			instance.DoShowPoints(teamPoints, winnerTeamID);
+
+			yield return new WaitForSecondsRealtime(1.8f);
+
+			for (int i = 0; i < teamPoints.Count; i++)
+			{
+				instance.GetData().teamBall[i].GetComponent<CurveAnimation>().PlayOut();
+			}
+
+			yield return new WaitForSecondsRealtime(0.25f);
+
+			instance.InvokeMethod("Close");
 		}
 
 		// Overload for the existing DoShowPoints method to support more than two teams
