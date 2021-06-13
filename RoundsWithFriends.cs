@@ -1,5 +1,4 @@
 ﻿using BepInEx;
-using ExitGames.Client.Photon;
 using Photon.Pun;
 using System;
 using System.Collections.Generic;
@@ -18,8 +17,8 @@ namespace RWF
         public static string SetTeamSize = "set_team_size";
     }
 
-    [BepInDependency("com.willis.rounds.unbound", "1.0.0.7")]
-    [BepInPlugin(ModId, "RoundsWithFriends", "1.1.1")]
+    [BepInDependency("com.willis.rounds.unbound", "1.1.0")]
+    [BepInPlugin(ModId, "RoundsWithFriends", "1.2.0")]
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";

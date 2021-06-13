@@ -16,7 +16,6 @@ namespace RWF.GameModes
 	{
 		public static GM_Deathmatch instance;
 
-		private Action StartGameAction;
 		private Dictionary<int, int> teamPoints = new Dictionary<int, int>();
 		private Dictionary<int, int> teamRounds = new Dictionary<int, int>();
 		private Dictionary<int, bool> waitingForPlayer = new Dictionary<int, bool>();
@@ -96,11 +95,6 @@ namespace RWF.GameModes
 		public void StartGame() {
 			if (GameManager.instance.isPlaying) {
 				return;
-			}
-
-			Action startGameAction = this.StartGameAction;
-			if (startGameAction != null) {
-				startGameAction();
 			}
 
 			GameManager.instance.isPlaying = true;
