@@ -6,14 +6,9 @@ using System.Collections.Generic;
 
 namespace RWF.Patches.Cards
 {
-    [HarmonyPatch(typeof(Chase), "Update")]
-    class Chase_Patch_Update
+    [HarmonyPatch(typeof(LineRangeEffect), "Update")]
+    class LineRangeEffect_Patch_Update
     {
-        static bool Prefix(Player ___player)
-        {
-            return (bool) ___player.data.playerVel.GetFieldValue("simulated") && !RWFMod.instance.IsCeaseFire;
-        }
-
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var list = instructions.ToList();
