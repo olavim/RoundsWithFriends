@@ -1,10 +1,10 @@
 {
 	"name": "RoundsWithFriends",
 	"description": "ROUNDS multiplayer extension",
-	"version_number": "1.1.1",
+	"version_number": "1.2.1",
 	"dependencies": [
 		"BepInEx-BepInExPack_ROUNDS-5.4.1100",
-		"willis81808-UnboundLib-1.0.7"
+		"willis81808-UnboundLib-1.1.1"
 	],
 	"website_url": "https://github.com/olavim/RoundsWithFriends"
 }

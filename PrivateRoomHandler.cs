@@ -39,6 +39,13 @@ namespace RWF
 
         public ListMenuPage MainPage { get; private set; }
 
+        public bool IsOpen { 
+            get
+            {
+                return this.grid.activeSelf;
+            }
+        }
+
         private static void OnSceneLoad(Scene scene, LoadSceneMode mode) {
             // Map changes also cause scene loads. We don't want to open the lobby during those...
             if (scene.name == "Main") {
@@ -269,6 +276,11 @@ namespace RWF
         }
 
         override public void OnJoinedRoom() {
+            if (!this.IsOpen)
+            {
+                return;
+            }
+
             PhotonNetwork.LocalPlayer.SetProperty("ready", false);
             PhotonNetwork.LocalPlayer.SetProperty("readyOrder", -1);
 

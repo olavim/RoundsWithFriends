@@ -17,8 +17,8 @@ namespace RWF
         public static string SetTeamSize = "set_team_size";
     }
 
-    [BepInDependency("com.willis.rounds.unbound", "1.1.0")]
-    [BepInPlugin(ModId, "RoundsWithFriends", "1.2.0")]
+    [BepInDependency("com.willis.rounds.unbound", "1.1.2")]
+    [BepInPlugin(ModId, "RoundsWithFriends", "1.2.1")]
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
