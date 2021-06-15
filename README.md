@@ -35,7 +35,7 @@ You can download the latest release directly from [BepInEx/releases](https://git
 
 #### 2. Download **UnboundLib**.
 
-Download the [latest release](https://github.com/willis81808/UnboundLib/releases/latest) of **[UnboundLib](https://github.com/willis81808/UnboundLib)** and extract the downloaded dll files to `ROUNDS/BepInEx/plugins`.
+Download the [latest release](https://github.com/Rounds-Modding/UnboundLib/releases/latest) of **[UnboundLib](https://github.com/Rounds-Modding/UnboundLib)** and extract the downloaded dll files to `ROUNDS/BepInEx/plugins`.
 
 #### 3. Download **RoundsWithFriends**.
 
