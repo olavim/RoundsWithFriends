@@ -9,7 +9,6 @@ using UnboundLib.GameModes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using System.Linq;
 
 namespace RWF
 {
@@ -20,7 +19,7 @@ namespace RWF
     }
 
     [BepInDependency("com.willis.rounds.unbound", "1.1.2")]
-    [BepInPlugin(ModId, "RoundsWithFriends", "1.2.3")]
+    [BepInPlugin(ModId, "RoundsWithFriends", "1.2.4")]
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";

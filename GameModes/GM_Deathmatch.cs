@@ -18,7 +18,6 @@ namespace RWF.GameModes
 		internal Dictionary<int, int> teamPoints = new Dictionary<int, int>();
 		internal Dictionary<int, int> teamRounds = new Dictionary<int, int>();
 
-		private Dictionary<int, bool> waitingForPlayer = new Dictionary<int, bool>();
 		private bool isTransitioning;
 		private int playersNeededToStart = 2;
 		private int currentWinningTeamID = -1;
@@ -36,7 +35,6 @@ namespace RWF.GameModes
 			this.ResetMatch();
 			this.teamPoints.Clear();
 			this.teamRounds.Clear();
-			this.waitingForPlayer.Clear();
 		}
 
 		private IEnumerator Init()
@@ -54,14 +52,13 @@ namespace RWF.GameModes
 
 		[UnboundRPC]
 		public static void RPC_RequestSync(int requestingPlayer) {
-			int playerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
-			NetworkingManager.RPC(typeof(GM_Deathmatch), nameof(GM_Deathmatch.RPC_SyncResponse), requestingPlayer, playerID);
+			NetworkingManager.RPC(typeof(GM_Deathmatch), nameof(GM_Deathmatch.RPC_SyncResponse), requestingPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
 		}
 
 		[UnboundRPC]
 		public static void RPC_SyncResponse(int requestingPlayer, int readyPlayer) {
-			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
-			if (myPlayerID == requestingPlayer) {
+			if (PhotonNetwork.LocalPlayer.ActorNumber == requestingPlayer)
+			{
 				GM_Deathmatch.instance.RemovePendingRequest(readyPlayer, nameof(GM_Deathmatch.RPC_RequestSync));
 			}
 		}
@@ -71,12 +68,10 @@ namespace RWF.GameModes
 				yield break;
 			}
 
-			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
-			yield return this.SyncMethod(nameof(GM_Deathmatch.RPC_RequestSync), null, myPlayerID);
+			yield return this.SyncMethod(nameof(GM_Deathmatch.RPC_RequestSync), null, PhotonNetwork.LocalPlayer.ActorNumber);
 		}
 
 		public void PlayerJoined(Player player) {
-			this.waitingForPlayer.Add(player.playerID, false);
 			this.teamPoints.Add(player.teamID, 0);
 			this.teamRounds.Add(player.teamID, 0);
 		}
@@ -366,7 +361,6 @@ namespace RWF.GameModes
 			foreach (var player in PlayerManager.instance.players) {
 				this.teamPoints[player.teamID] = 0;
 				this.teamRounds[player.teamID] = 0;
-				this.waitingForPlayer[player.playerID] = false;
 			}
 
 			this.isTransitioning = false;

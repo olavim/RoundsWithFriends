@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using UnboundLib.GameModes;
+﻿using UnboundLib.GameModes;
 
 namespace RWF.GameModes
 {
@@ -12,23 +10,6 @@ namespace RWF.GameModes
         }
 
         public override GameSettings Settings { get; protected set; }
-
-        public override ReadOnlyDictionary<int, TeamScore> TeamScore
-        {
-            get
-            {
-                var dict = new Dictionary<int, TeamScore>();
-
-                foreach (int teamID in GM_Deathmatch.instance.teamPoints.Keys)
-                {
-                    int points = GM_Deathmatch.instance.teamPoints[teamID];
-                    int rounds = GM_Deathmatch.instance.teamRounds[teamID];
-                    dict.Add(teamID, new TeamScore(points, rounds));
-                }
-
-                return new ReadOnlyDictionary<int, TeamScore>(dict);
-            }
-        }
 
         public DeathmatchHandler() : base("Deathmatch")
         {
