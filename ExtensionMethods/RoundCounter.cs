@@ -41,7 +41,7 @@ namespace RWF
             }
             if (teamRounds.ContainsKey(1))
             {
-                instance.p1Rounds = teamRounds[1];
+                instance.p2Rounds = teamRounds[1];
             }
 
             instance.GetData().teamRounds = teamRounds.ToDictionary(e => e.Key, e => e.Value);
