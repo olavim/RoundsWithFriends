@@ -1,11 +1,13 @@
 ﻿using HarmonyLib;
 using Photon.Pun;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnboundLib;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace RWF.Patches
@@ -111,6 +113,12 @@ namespace RWF.Patches
             return AccessTools.Method(GetNestedRoundTransitionType(), "MoveNext");
         }
 
+        static void ResetPoints()
+        {
+            GM_ArmsRace.instance.p1Points = 0;
+            GM_ArmsRace.instance.p2Points = 0;
+        }
+
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
             var list = instructions.ToList();
             var newInstructions = new List<CodeInstruction>();
@@ -119,6 +127,8 @@ namespace RWF.Patches
             var f_cardChoiceVisualsInstance = AccessTools.Field(typeof(CardChoiceVisuals), "instance");
             var m_cardChoiceVisualsShow = ExtensionMethods.GetMethodInfo(typeof(CardChoiceVisuals), "Show");
             var m_getPlayerIndex = ExtensionMethods.GetMethodInfo(typeof(GM_ArmsRace_Patch_RoundTransition), "GetPlayerIndex");
+            var m_winSequence = ExtensionMethods.GetMethodInfo(typeof(PointVisualizer), "DoWinSequence");
+            var m_startCoroutine = ExtensionMethods.GetMethodInfo(typeof(MonoBehaviour), "StartCoroutine", new Type[] { typeof(IEnumerator) });
 
             var f_iteratorIndex = ExtensionMethods.GetFieldInfo(GetNestedRoundTransitionType(), "<i>5__3");
             var f_players = ExtensionMethods.GetFieldInfo(GetNestedRoundTransitionType(), "<players>5__2");
@@ -140,9 +150,44 @@ namespace RWF.Patches
                     newInstructions.Add(new CodeInstruction(OpCodes.Ldc_I4_1));
                     newInstructions.Add(new CodeInstruction(OpCodes.Callvirt, m_cardChoiceVisualsShow));
                     newInstructions.Add(list[i]);
+                } else if (
+                    list[i].Calls(m_winSequence) &&
+                    list[i + 1].Calls(m_startCoroutine) &&
+                    list[i + 2].opcode == OpCodes.Pop
+                ) {
+                    newInstructions.AddRange(list.GetRange(i, 3));
+                    newInstructions.Add(CodeInstruction.Call(typeof(GM_ArmsRace_Patch_RoundTransition), "ResetPoints"));
+                    i += 2;
                 } else {
                     newInstructions.Add(list[i]);
                 }
+            }
+
+            return newInstructions;
+        }
+    }
+
+    [HarmonyPatch(typeof(GM_ArmsRace), "RoundOver")]
+    class GM_ArmsRace_Patch_RoundOver
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator gen)
+        {
+            // Do not set p1Points and p2Points to zero in RoundOver. We want to do it only after we've displayed them in RoundTransition.
+            var list = instructions.ToList();
+            var newInstructions = new List<CodeInstruction>();
+
+            var f_p1Points = ExtensionMethods.GetFieldInfo(typeof(GM_ArmsRace), "p1Points");
+            var f_p2Points = ExtensionMethods.GetFieldInfo(typeof(GM_ArmsRace), "p2Points");
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (i < list.Count - 2 && (list[i + 2].StoresField(f_p1Points) || list[i + 2].StoresField(f_p2Points)))
+                {
+                    i += 2;
+                    continue;
+                }
+
+                newInstructions.Add(list[i]);
             }
 
             return newInstructions;

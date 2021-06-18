@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using Photon.Pun;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnboundLib;
@@ -8,6 +9,7 @@ using UnboundLib.GameModes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Linq;
 
 namespace RWF
 {
@@ -18,7 +20,7 @@ namespace RWF
     }
 
     [BepInDependency("com.willis.rounds.unbound", "1.1.2")]
-    [BepInPlugin(ModId, "RoundsWithFriends", "1.2.2")]
+    [BepInPlugin(ModId, "RoundsWithFriends", "1.2.3")]
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
@@ -133,8 +135,14 @@ namespace RWF
                 this.RedrawCharacterCreators();
             };
 
-            GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => this.IsCeaseFire = true);
-            GameModeManager.AddHook(GameModeHooks.HookBattleStart, (gm) => this.IsCeaseFire = false);
+            GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => this.ToggleCeaseFire(true));
+            GameModeManager.AddHook(GameModeHooks.HookBattleStart, (gm) => this.ToggleCeaseFire(false));
+        }
+
+        private IEnumerator ToggleCeaseFire(bool isCeaseFire)
+        {
+            this.IsCeaseFire = isCeaseFire;
+            yield break;
         }
 
         public void OnSceneLoaded(Scene scene, LoadSceneMode mode)

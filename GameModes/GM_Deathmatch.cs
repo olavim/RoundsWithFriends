@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Photon.Pun;
@@ -16,8 +15,9 @@ namespace RWF.GameModes
 	{
 		public static GM_Deathmatch instance;
 
-		private Dictionary<int, int> teamPoints = new Dictionary<int, int>();
-		private Dictionary<int, int> teamRounds = new Dictionary<int, int>();
+		internal Dictionary<int, int> teamPoints = new Dictionary<int, int>();
+		internal Dictionary<int, int> teamRounds = new Dictionary<int, int>();
+
 		private Dictionary<int, bool> waitingForPlayer = new Dictionary<int, bool>();
 		private bool isTransitioning;
 		private int playersNeededToStart = 2;
@@ -28,7 +28,20 @@ namespace RWF.GameModes
 		}
 
 		private void Start() {
-			GameModeManager.TriggerHook(GameModeHooks.HookInitStart);
+			this.StartCoroutine(this.Init());
+		}
+
+		public void OnDisable()
+		{
+			this.ResetMatch();
+			this.teamPoints.Clear();
+			this.teamRounds.Clear();
+			this.waitingForPlayer.Clear();
+		}
+
+		private IEnumerator Init()
+		{
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookInitStart);
 
 			PlayerManager.instance.SetPlayersSimulated(false);
 			PlayerAssigner.instance.maxPlayers = this.playersNeededToStart;
@@ -36,20 +49,20 @@ namespace RWF.GameModes
 			this.playersNeededToStart = RWFMod.instance.MinPlayers;
 			PlayerAssigner.instance.maxPlayers = RWFMod.instance.MaxPlayers;
 
-			GameModeManager.TriggerHook(GameModeHooks.HookInitEnd);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookInitEnd);
 		}
 
 		[UnboundRPC]
-		public static void RPCO_RequestSyncUp(int requestingPlayer) {
+		public static void RPC_RequestSync(int requestingPlayer) {
 			int playerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
-			NetworkingManager.RPC(typeof(GM_Deathmatch), nameof(GM_Deathmatch.RPCM_ReturnSyncUp), requestingPlayer, playerID);
+			NetworkingManager.RPC(typeof(GM_Deathmatch), nameof(GM_Deathmatch.RPC_SyncResponse), requestingPlayer, playerID);
 		}
 
 		[UnboundRPC]
-		public static void RPCM_ReturnSyncUp(int requestingPlayer, int readyPlayer) {
+		public static void RPC_SyncResponse(int requestingPlayer, int readyPlayer) {
 			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
 			if (myPlayerID == requestingPlayer) {
-				GM_Deathmatch.instance.waitingForPlayer[readyPlayer] = false;
+				GM_Deathmatch.instance.RemovePendingRequest(readyPlayer, nameof(GM_Deathmatch.RPC_RequestSync));
 			}
 		}
 
@@ -58,16 +71,8 @@ namespace RWF.GameModes
 				yield break;
 			}
 
-			foreach (var player in PlayerManager.instance.players) {
-				this.waitingForPlayer[player.playerID] = true;
-			}
-
 			int myPlayerID = PlayerManager.instance.players.Find(p => p.data.view.IsMine).playerID;
-			NetworkingManager.RPC(typeof(GM_Deathmatch), nameof(GM_Deathmatch.RPCO_RequestSyncUp), myPlayerID);
-
-			while (this.waitingForPlayer.Values.ToList().Any(isWaiting => isWaiting)) {
-				yield return null;
-			}
+			yield return this.SyncMethod(nameof(GM_Deathmatch.RPC_RequestSync), null, myPlayerID);
 		}
 
 		public void PlayerJoined(Player player) {
@@ -102,11 +107,11 @@ namespace RWF.GameModes
 		}
 
 		private IEnumerator DoStartGame() {
-			GameModeManager.TriggerHook(GameModeHooks.HookGameStart);
-
 			CardBarHandler.instance.Rebuild();
 			UIHandler.instance.InvokeMethod("SetNumberOfRounds", (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"]);
 			ArtHandler.instance.NextArt();
+
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookGameStart);
 
 			GameManager.instance.battleOngoing = false;
 
@@ -121,17 +126,17 @@ namespace RWF.GameModes
 
 			yield return new WaitForSecondsRealtime(1f);
 
-			GameModeManager.TriggerHook(GameModeHooks.HookPickStart);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookPickStart);
 
 			for (int i = 0; i < PlayerManager.instance.players.Count; i++) {
 				yield return this.WaitForSyncUp();
 
-				GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
+				yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
 
 				CardChoiceVisuals.instance.Show(i, true);
 				yield return CardChoice.instance.DoPick(1, PlayerManager.instance.players[i].playerID, PickerType.Player);
 
-				GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickEnd);
+				yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickEnd);
 
 				yield return new WaitForSecondsRealtime(0.1f);
 			}
@@ -139,7 +144,7 @@ namespace RWF.GameModes
 			yield return this.WaitForSyncUp();
 			CardChoiceVisuals.instance.Hide();
 
-			GameModeManager.TriggerHook(GameModeHooks.HookPickEnd);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookPickEnd);
 
 			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
 			TimeHandler.instance.DoSpeedUp();
@@ -151,7 +156,11 @@ namespace RWF.GameModes
 			this.StartCoroutine(this.DoRoundStart());
 		}
 
-		private IEnumerator RoundTransition(int winningTeamID) {
+		private IEnumerator RoundTransition(int winningTeamID)
+		{
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookRoundEnd);
+
 			yield return new WaitForSecondsRealtime(1f);
 			MapManager.instance.LoadNextLevel(false, false);
 
@@ -160,7 +169,7 @@ namespace RWF.GameModes
 			PlayerManager.instance.SetPlayersSimulated(false);
 			TimeHandler.instance.DoSpeedUp();
 
-			GameModeManager.TriggerHook(GameModeHooks.HookPickStart);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookPickStart);
 
 			PlayerManager.instance.InvokeMethod("SetPlayersVisible", false);
 			var players = PlayerManager.instance.players;
@@ -169,12 +178,12 @@ namespace RWF.GameModes
 				if (players[i].teamID != winningTeamID) {
 					yield return base.StartCoroutine(this.WaitForSyncUp());
 
-					GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
+					yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
 
 					CardChoiceVisuals.instance.Show(i, true);
 					yield return CardChoice.instance.DoPick(1, players[i].playerID, PickerType.Player);
 
-					GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickEnd);
+					yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickEnd);
 
 					yield return new WaitForSecondsRealtime(0.1f);
 				}
@@ -182,7 +191,7 @@ namespace RWF.GameModes
 
 			PlayerManager.instance.InvokeMethod("SetPlayersVisible", true);
 
-			GameModeManager.TriggerHook(GameModeHooks.HookPickEnd);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookPickEnd);
 
 			yield return this.StartCoroutine(this.WaitForSyncUp());
 
@@ -202,6 +211,8 @@ namespace RWF.GameModes
 
 		private IEnumerator PointTransition()
 		{
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
+
 			yield return new WaitForSecondsRealtime(1f);
 
 			MapManager.instance.LoadNextLevel(false, false);
@@ -230,8 +241,8 @@ namespace RWF.GameModes
 
 			PlayerManager.instance.SetPlayersSimulated(false);
 
-			GameModeManager.TriggerHook(GameModeHooks.HookRoundStart);
-			GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookRoundStart);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
 
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
@@ -245,7 +256,7 @@ namespace RWF.GameModes
 			UIHandler.instance.DisplayRoundStartText("FIGHT");
 			PlayerManager.instance.SetPlayersSimulated(true);
 
-			GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
 
 			this.ExecuteAfterSeconds(1f, () => {
 				UIHandler.instance.HideRoundStartText();
@@ -262,7 +273,7 @@ namespace RWF.GameModes
 
 			PlayerManager.instance.SetPlayersSimulated(false);
 
-			GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
 
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
@@ -277,7 +288,7 @@ namespace RWF.GameModes
 			UIHandler.instance.DisplayRoundStartText("FIGHT");
 			PlayerManager.instance.SetPlayersSimulated(true);
 
-			GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
 
 			this.ExecuteAfterSeconds(1f, () => {
 				UIHandler.instance.HideRoundStartText();
@@ -286,9 +297,6 @@ namespace RWF.GameModes
 
 		private void RoundOver(int winningTeamID)
 		{
-			GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
-			GameModeManager.TriggerHook(GameModeHooks.HookRoundEnd);
-
 			this.currentWinningTeamID = winningTeamID;
 
 			foreach (var teamID in this.teamPoints.Keys.ToList()) {
@@ -301,8 +309,6 @@ namespace RWF.GameModes
 
 		private void PointOver(int winningTeamID)
 		{
-			GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
-
 			this.currentWinningTeamID = winningTeamID;
 
 			this.StartCoroutine(PointVisualizer.instance.DoSequence(this.teamPoints, this.teamRounds, winningTeamID));
@@ -311,7 +317,7 @@ namespace RWF.GameModes
 
 		private IEnumerator GameOverTransition(int winningTeamID)
 		{
-			GameModeManager.TriggerHook(GameModeHooks.HookGameEnd);
+			yield return GameModeManager.TriggerHook(GameModeHooks.HookGameEnd);
 
 			UIHandler.instance.ShowRoundCounterSmall(this.teamPoints, this.teamRounds);
 			UIHandler.instance.DisplayScreenText(PlayerManager.instance.GetColorFromPlayer(winningTeamID).winText, "VICTORY!", 1f);
@@ -348,16 +354,15 @@ namespace RWF.GameModes
 
 		private IEnumerator IDoRematch() {
 			yield return null;
-			UIHandler.instance.StopScreenTextLoop();
-			CardBarHandler.instance.ResetCardBards();
-
-			PlayerManager.instance.InvokeMethod("ResetCharacters");
-
 			this.ResetMatch();
 			this.StartCoroutine(this.DoStartGame());
 		}
 
-		private void ResetMatch() {
+		public void ResetMatch()
+		{
+			UIHandler.instance.StopScreenTextLoop();
+			PlayerManager.instance.InvokeMethod("ResetCharacters");
+
 			foreach (var player in PlayerManager.instance.players) {
 				this.teamPoints[player.teamID] = 0;
 				this.teamRounds[player.teamID] = 0;
@@ -368,14 +373,6 @@ namespace RWF.GameModes
 			UIHandler.instance.ShowRoundCounterSmall(this.teamPoints, this.teamRounds);
 			CardBarHandler.instance.ResetCardBards();
 			PointVisualizer.instance.ResetPoints();
-		}
-
-		public void Reset()
-		{
-			this.teamPoints.Clear();
-			this.teamRounds.Clear();
-			this.waitingForPlayer.Clear();
-			this.isTransitioning = false;
 		}
 
 		private void DoRestart() {

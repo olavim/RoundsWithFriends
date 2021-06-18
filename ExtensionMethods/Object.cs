@@ -13,6 +13,13 @@ namespace RWF
     {
         private static readonly ConditionalWeakTable<MonoBehaviour, HashSet<Tuple<int, string>>> pendingRequests = new ConditionalWeakTable<MonoBehaviour, HashSet<Tuple<int, string>>>();
 
+        /// <summary>
+        ///     Executes a method as an UnboundRPC for the specified actors, and marks the actors as waiting for response.
+        /// </summary>
+        /// <param name="methodName">Method to execute as an UnboundRPC</param>
+        /// <param name="actors">Array of actor numbers to execute the method for and mark as waiting for response. Null means all connected actors</param>
+        /// <param name="data">Arguments for the UnboundRPC method</param>
+        /// <returns></returns>
         public static Coroutine SyncMethod(this MonoBehaviour instance, string methodName, int[] actors, params object[] data) {
             return instance.StartCoroutine(instance.SyncMethodCoroutine(methodName, actors, data));
         }
