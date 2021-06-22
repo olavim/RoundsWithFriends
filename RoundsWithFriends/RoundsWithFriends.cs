@@ -19,10 +19,11 @@ namespace RWF
     }
 
     [BepInDependency("com.willis.rounds.unbound", "1.1.2")]
-    [BepInPlugin(ModId, "RoundsWithFriends", "1.2.4")]
+    [BepInPlugin(ModId, "RoundsWithFriends", Version)]
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
+        public const string Version = "1.2.4";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
@@ -91,7 +92,7 @@ namespace RWF
         {
             get
             {
-                return GameModeManager.CurrentHandlerID == "Deathmatch" ? 4 : 2;
+                return GameModeManager.CurrentHandlerID == "Deathmatch" ? this.MaxPlayers : 2;
             }
         }
 

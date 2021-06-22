@@ -17,7 +17,7 @@ Deathmatch follows the heart of the original team deathmatch game mode, but now 
 ## Dependencies
 
 - [BepInEx](https://docs.bepinex.dev/master/articles/index.html) plugin framework
-- [UnboundLib](https://github.com/Rounds-Modding/UnboundLib) version **>=2.1.0**
+- [UnboundLib](https://github.com/Rounds-Modding/UnboundLib) version **>=2.1.2**
 
 ## Manual Installation
 

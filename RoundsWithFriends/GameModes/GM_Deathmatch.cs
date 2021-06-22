@@ -408,13 +408,13 @@ namespace RWF.GameModes
 
 			instance.teamRounds[winningTeamID] = instance.teamRounds[winningTeamID] + 1;
 
-			if (instance.teamRounds[winningTeamID] >= (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"]) {
-				instance.GameOver(winningTeamID);
+			if (instance.teamRounds[winningTeamID] < (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"])
+			{
+				instance.RoundOver(winningTeamID);
 				return;
 			}
 
-			instance.RoundOver(winningTeamID);
-			return;
+			instance.GameOver(winningTeamID);
 		}
 	}
 }
