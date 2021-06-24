@@ -1,11 +1,25 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using TMPro;
+using UnboundLib;
 
 namespace RWF
 {
-    public static class UIHandlerExtensions
-    {
+	public class UIHandlerAdditionalData
+	{
+		public bool disableTexts = false;
+	}
+
+	public static class UIHandlerExtensions
+	{
+		private static readonly ConditionalWeakTable<UIHandler, UIHandlerAdditionalData> additionalData = new ConditionalWeakTable<UIHandler, UIHandlerAdditionalData>();
+
+		public static UIHandlerAdditionalData GetData(this UIHandler instance)
+		{
+			return additionalData.GetOrCreateValue(instance);
+		}
+
 		// Overload for the existing ShowRoundCounterSmall method to support more than two teams
 		public static void ShowRoundCounterSmall(this UIHandler instance, Dictionary<int, int> teamPoints, Dictionary<int, int> teamRounds) {
 			instance.roundCounterSmall.gameObject.SetActive(true);
@@ -44,5 +58,11 @@ namespace RWF
 
 			roundStartTextPart.loop = false;
 		}
+
+		public static void DisableTexts(this UIHandler instance, float duration)
+        {
+			instance.GetData().disableTexts = true;
+			instance.ExecuteAfterSeconds(duration, () => instance.GetData().disableTexts = false);
+        }
 	}
 }

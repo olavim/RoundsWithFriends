@@ -4,7 +4,7 @@
 	"version_number": "#VERSION#",
 	"dependencies": [
 		"BepInEx-BepInExPack_ROUNDS-5.4.1100",
-		"willis81808-UnboundLib-2.1.2"
+		"willis81808-UnboundLib-2.1.3"
 	],
 	"website_url": "https://github.com/olavim/RoundsWithFriends"
 }

@@ -1,14 +1,17 @@
 ﻿using BepInEx;
 using Photon.Pun;
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnboundLib;
 using UnboundLib.GameModes;
+using UnboundLib.Networking;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Sonigon;
 
 namespace RWF
 {
@@ -18,7 +21,7 @@ namespace RWF
         public static string SetTeamSize = "set_team_size";
     }
 
-    [BepInDependency("com.willis.rounds.unbound", "1.1.2")]
+    [BepInDependency("com.willis.rounds.unbound", "2.1.3")]
     [BepInPlugin(ModId, "RoundsWithFriends", Version)]
     public class RWFMod : BaseUnityPlugin
     {
@@ -67,6 +70,7 @@ namespace RWF
                 }
                 catch (Exception e)
                 {
+                    _ = e;
                     return false;
                 }
             }
@@ -135,8 +139,10 @@ namespace RWF
                 this.RedrawCharacterCreators();
             };
 
-            GameModeManager.AddHook(GameModeHooks.HookPointStart, (gm) => this.ToggleCeaseFire(true));
-            GameModeManager.AddHook(GameModeHooks.HookBattleStart, (gm) => this.ToggleCeaseFire(false));
+            GameModeManager.AddHook(GameModeHooks.HookPointStart, gm => this.ToggleCeaseFire(true));
+            GameModeManager.AddHook(GameModeHooks.HookBattleStart, gm => this.ToggleCeaseFire(false));
+
+            this.gameObject.AddComponent<RoundEndHandler>();
         }
 
         private IEnumerator ToggleCeaseFire(bool isCeaseFire)
@@ -152,17 +158,6 @@ namespace RWF
                 this.ExecuteAfterFrames(1, () =>
                 {
                     ArtHandler.instance.NextArt();
-
-                    var uiGo = GameObject.Find("/Game/UI");
-                    var charSelectGo = uiGo.transform.Find("UI_MainMenu").Find("Canvas").Find("ListSelector").Find("CharacterSelect");
-
-                    if (charSelectGo)
-                    {
-                        var menu = charSelectGo.GetComponent<CharacterSelectionMenu>();
-                        var menuPlayerJoined = ExtensionMethods.GetMethodInfo(typeof(CharacterSelectionMenu), "PlayerJoined");
-                        Action<Player> playerJoinedAction = (player) => menu.InvokeMethod("PlayerJoined", player);
-                        PlayerManager.instance.SetPropertyValue("PlayerJoinedAction", Delegate.Combine(PlayerManager.instance.PlayerJoinedAction, playerJoinedAction));
-                    }
                 });
             }
         }
@@ -345,6 +340,14 @@ namespace RWF
                 baseGo.AddComponent<UI.ScalePulse>();
                 baseGo.GetComponent<TextMeshProUGUI>().fontSize = 140f;
                 baseGo.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+            }
+
+            if (!gameGo.transform.Find("PopUpMenu"))
+            {
+                var popupGo = new GameObject("PopUpMenu");
+                popupGo.transform.SetParent(gameGo.transform);
+                popupGo.transform.localScale = Vector3.one;
+                popupGo.AddComponent<UI.PopUpMenu>();
             }
         }
     }

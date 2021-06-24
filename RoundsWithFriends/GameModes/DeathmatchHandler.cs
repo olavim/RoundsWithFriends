@@ -1,4 +1,5 @@
-﻿using UnboundLib.GameModes;
+﻿using UnboundLib;
+using UnboundLib.GameModes;
 
 namespace RWF.GameModes
 {
@@ -53,6 +54,16 @@ namespace RWF.GameModes
         public override void ResetGame()
         {
             GM_Deathmatch.instance.ResetMatch();
+        }
+
+        public override void ChangeSetting(string name, object value)
+        {
+            base.ChangeSetting(name, value);
+
+            if (name == "roundsToWinGame")
+            {
+                UIHandler.instance.InvokeMethod("SetNumberOfRounds", (int) value);
+            }
         }
     }
 }

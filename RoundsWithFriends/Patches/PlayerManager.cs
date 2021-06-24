@@ -28,4 +28,14 @@ namespace RWF.Patches
             }
         }
     }
+
+    [HarmonyPatch(typeof(PlayerManager), "GetOtherPlayer")]
+    class PlayerManager_Patch_GetOtherPlayer
+    {
+        static bool Prefix(PlayerManager __instance, Player asker, ref Player __result)
+        {
+            __result = __instance.GetClosestPlayerInOtherTeam(asker.transform.position, asker.teamID, false);
+            return false;
+        }
+    }
 }

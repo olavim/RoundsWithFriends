@@ -156,6 +156,14 @@ namespace RWF.GameModes
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookRoundEnd);
 
+			if (this.teamRounds[winningTeamID] >= (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"])
+			{
+				this.GameOver(winningTeamID);
+				yield break;
+			}
+
+			this.StartCoroutine(PointVisualizer.instance.DoWinSequence(this.teamPoints, this.teamRounds, winningTeamID));
+
 			yield return new WaitForSecondsRealtime(1f);
 			MapManager.instance.LoadNextLevel(false, false);
 
@@ -204,10 +212,11 @@ namespace RWF.GameModes
 			this.StartCoroutine(this.DoRoundStart());
 		}
 
-		private IEnumerator PointTransition()
+		private IEnumerator PointTransition(int winningTeamID)
 		{
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
 
+			this.StartCoroutine(PointVisualizer.instance.DoSequence(this.teamPoints, this.teamRounds, winningTeamID));
 			yield return new WaitForSecondsRealtime(1f);
 
 			MapManager.instance.LoadNextLevel(false, false);
@@ -298,16 +307,13 @@ namespace RWF.GameModes
 				this.teamPoints[teamID] = 0;
 			}
 
-			this.StartCoroutine(PointVisualizer.instance.DoWinSequence(this.teamPoints, this.teamRounds, winningTeamID));
 			this.StartCoroutine(this.RoundTransition(winningTeamID));
 		}
 
 		private void PointOver(int winningTeamID)
 		{
 			this.currentWinningTeamID = winningTeamID;
-
-			this.StartCoroutine(PointVisualizer.instance.DoSequence(this.teamPoints, this.teamRounds, winningTeamID));
-			this.StartCoroutine(this.PointTransition());
+			this.StartCoroutine(this.PointTransition(winningTeamID));
 		}
 
 		private IEnumerator GameOverTransition(int winningTeamID)
@@ -407,14 +413,7 @@ namespace RWF.GameModes
 			}
 
 			instance.teamRounds[winningTeamID] = instance.teamRounds[winningTeamID] + 1;
-
-			if (instance.teamRounds[winningTeamID] < (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"])
-			{
-				instance.RoundOver(winningTeamID);
-				return;
-			}
-
-			instance.GameOver(winningTeamID);
+			instance.RoundOver(winningTeamID);
 		}
 	}
 }

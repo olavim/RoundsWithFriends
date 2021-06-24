@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
+using UnboundLib;
 
 namespace RWF.Patches
 {
@@ -15,8 +16,21 @@ namespace RWF.Patches
     [HarmonyPatch(typeof(RoundCounter), "UpdateRounds")]
     class RoundCounter_Patch_UpdateRounds
     {
-        static void Prefix(RoundCounter __instance) {
+        static void Prefix(RoundCounter __instance, int r1, int r2)
+        {
             __instance.GetData().teamRounds = null;
+        }
+    }
+
+    [HarmonyPatch(typeof(RoundCounter), "SetNumberOfRounds")]
+    class RoundCounter_Patch_SetNumberOfRounds
+    {
+        static void Postfix(RoundCounter __instance)
+        {
+            if (__instance.gameObject.activeInHierarchy)
+            {
+                __instance.ExecuteAfterFrames(1, () => __instance.InvokeMethod("ReDraw"));
+            }
         }
     }
 

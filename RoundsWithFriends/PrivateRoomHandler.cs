@@ -221,7 +221,6 @@ namespace RWF
                 {
                     string nextGameMode = GameModeManager.CurrentHandlerID == "ArmsRace" ? "Deathmatch" : "ArmsRace";
                     GameModeManager.SetGameMode(nextGameMode);
-
                     this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
                 }
             });

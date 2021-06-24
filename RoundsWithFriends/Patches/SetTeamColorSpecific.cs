@@ -9,11 +9,18 @@ namespace RWF.Patches
     {
         static void Prefix(SetTeamColorSpecific __instance)
         {
+            float alpha = __instance.colors[0].a;
+
             __instance.colors = PlayerManager.instance.players
                 .Select(p => p.teamID)
                 .Distinct()
                 .Select(id => PlayerSkinBank.GetPlayerSkinColors(id).color)
                 .ToArray();
+
+            for (int i = 0; i < __instance.colors.Length; i++)
+            {
+                __instance.colors[i].a = alpha;
+            }
         }
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
