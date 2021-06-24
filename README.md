@@ -20,7 +20,7 @@ After the game ends, you can choose to play a little longer, or to start a new g
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md) for version changes.
+See [CHANGELOG.md](https://github.com/olavim/RoundsWithFriends/blob/main/CHANGELOG.md) for version changes.
 
 ## Dependencies
 
