@@ -39,10 +39,12 @@ namespace RWF.UI
             this.choiceParticleSystems = new List<GeneralParticleSystem>();
             this.isOpen = true;
 
-            foreach (Transform child in this.transform)
+            while (this.transform.childCount > 0)
             {
-                GameObject.DestroyImmediate(child.gameObject);
+                GameObject.DestroyImmediate(this.transform.GetChild(0).gameObject);
             }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(this.gameObject.GetComponent<RectTransform>());
 
             for (int i = 0; i < this.choices.Count; i++)
             {
