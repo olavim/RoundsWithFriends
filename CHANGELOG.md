@@ -1,7 +1,7 @@
 ## v1.3.0
 
 - Added possibility to continue or rematch after game ends.
-- Fixed **Chilling Presence** effect color (Fixes #6).
+- Fixed **Chilling Presence** effect color (Fixes [#6](https://github.com/olavim/RoundsWithFriends/issues/6)).
 
 ## v1.2.5
 
