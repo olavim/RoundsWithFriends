@@ -56,18 +56,27 @@ if($Target.Equals("Release") -and $name.Equals("RoundsWithFriends")) {
     Copy-Item -Path "$TargetPath\$name.dll" -Destination "$thunder\plugins\"
     Copy-Item -Path "$ProjectPath\README.md" -Destination "$thunder\README.md"
     Copy-Item -Path "$ProjectPath\manifest.json" -Destination "$thunder\manifest.json"
+    Copy-Item -Path "$ProjectPath\icon.png" -Destination "$thunder\icon.png"
 
     ((Get-Content -path "$thunder\manifest.json" -Raw) -replace "#VERSION#", "$Version") | Set-Content -Path "$thunder\manifest.json"
 
     Remove-Item -Path "$package\Thunderstore\$name.$Version.zip" -Force
-    Copy-Item -Path "$(Get-Location)\icon.png" -Destination "$thunder\icon.png"
     Compress-Archive -Path "$thunder\*" -DestinationPath "$package\Thunderstore\$name.$Version.zip"
     $thunder.Delete($true)
 }
 
-if($Target.Equals("Release")) {
+# Release package for GitHub
+if($Target.Equals("Release") -and $name.Equals("RoundsWithFriends")) {
     $package = "$ProjectPath\release"
-    Copy-Item -Path "$TargetPath\$name.dll" -Destination "$package\$name.$Version.dll"
+
+    Write-Host "Packaging for GitHub"
+    $pkg = New-Item -Type Directory -Path "$package\package"
+    $pkg.CreateSubdirectory('BepInEx\plugins')
+    Copy-Item -Path "$TargetPath\$name.dll" -Destination "$pkg\BepInEx\plugins\$name.dll"
+
+    Remove-Item -Path "$package\$name.$Version.zip" -Force
+    Compress-Archive -Path "$pkg\*" -DestinationPath "$package\$name.$Version.zip"
+    $pkg.Delete($true)
 }
 
 Pop-Location
