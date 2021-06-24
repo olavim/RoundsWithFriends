@@ -14,6 +14,14 @@ The game mode you are used to, except now it supports two additional players. Pl
 
 Deathmatch follows the heart of the original team deathmatch game mode, but now it's just you against everyone else.
 
+### Continue or rematch
+
+After the game ends, you can choose to play a little longer, or to start a new game.
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for version changes.
+
 ## Dependencies
 
 - [BepInEx](https://docs.bepinex.dev/master/articles/index.html) plugin framework
