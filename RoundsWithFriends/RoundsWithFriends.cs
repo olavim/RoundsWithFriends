@@ -1,17 +1,14 @@
 ﻿using BepInEx;
 using Photon.Pun;
 using System;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnboundLib;
 using UnboundLib.GameModes;
-using UnboundLib.Networking;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Sonigon;
 
 namespace RWF
 {
@@ -26,7 +23,7 @@ namespace RWF
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "1.2.4";
+        public const string Version = "1.3.0";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
