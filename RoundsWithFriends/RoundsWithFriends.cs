@@ -170,8 +170,7 @@ namespace RWF
 
                 if (RWFMod.DEBUG)
                 {
-                    gm.ChangeSetting("roundsToWinGame", this.debugOptions.rounds);
-                    gm.ChangeSetting("pointsToWinRound", this.debugOptions.points);
+                    RWFMod.SetDebugOptions(this.debugOptions);
                 }
             };
 
@@ -204,14 +203,16 @@ namespace RWF
         {
             if (PhotonNetwork.IsMasterClient)
             {
-                NetworkingManager.RPC(typeof(RWFMod), nameof(RWFMod.RPC_SyncDebugOptions), this.debugOptions);
+                NetworkingManager.RPC(typeof(RWFMod), nameof(RWFMod.SetDebugOptions), this.debugOptions);
             }
         }
 
         [UnboundRPC]
-        public static void RPC_SyncDebugOptions(DebugOptions opts)
+        public static void SetDebugOptions(DebugOptions opts)
         {
             RWFMod.instance.debugOptions = opts;
+            GameModeManager.CurrentHandler?.ChangeSetting("roundsToWinGame", opts.rounds);
+            GameModeManager.CurrentHandler?.ChangeSetting("pointsToWinRound", opts.points);
         }
 
         private IEnumerator ToggleCeaseFire(bool isCeaseFire)
