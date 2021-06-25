@@ -1,14 +1,19 @@
 ﻿using BepInEx;
 using Photon.Pun;
 using System;
+using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.Serialization.Formatters.Binary;
 using TMPro;
 using UnboundLib;
 using UnboundLib.GameModes;
+using UnboundLib.Networking;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Photon.Pun.UtilityScripts;
+using ExitGames.Client.Photon;
 
 namespace RWF
 {
@@ -18,12 +23,38 @@ namespace RWF
         public static string SetTeamSize = "set_team_size";
     }
 
+    [Serializable]
+    public class DebugOptions
+    {
+        public static byte[] Serialize(object opts)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(ms, (DebugOptions) opts);
+                return ms.ToArray();
+            }
+        }
+
+        public static DebugOptions Deserialize(byte[] data)
+        {
+            using (MemoryStream ms = new MemoryStream(data))
+            {
+                var formatter = new BinaryFormatter();
+                return (DebugOptions) formatter.Deserialize(ms);
+            }
+        }
+
+        public int rounds = 5;
+        public int points = 2;
+    }
+
     [BepInDependency("com.willis.rounds.unbound", "2.1.3")]
     [BepInPlugin(ModId, "RoundsWithFriends", Version)]
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "1.3.0";
+        public const string Version = "1.3.1";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
@@ -102,6 +133,8 @@ namespace RWF
         public Text infoText;
         private Dictionary<string, bool> soundEnabled;
 
+        public DebugOptions debugOptions = new DebugOptions();
+
         public void Awake()
         {
             RWFMod.instance = this;
@@ -134,12 +167,51 @@ namespace RWF
             {
                 this.RedrawCharacterSelections();
                 this.RedrawCharacterCreators();
+
+                if (RWFMod.DEBUG)
+                {
+                    gm.ChangeSetting("roundsToWinGame", this.debugOptions.rounds);
+                    gm.ChangeSetting("pointsToWinRound", this.debugOptions.points);
+                }
             };
 
             GameModeManager.AddHook(GameModeHooks.HookPointStart, gm => this.ToggleCeaseFire(true));
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, gm => this.ToggleCeaseFire(false));
 
-            this.gameObject.AddComponent<RoundEndHandler>();
+            if (RWFMod.DEBUG)
+            {
+                this.gameObject.AddComponent<RoundEndHandler>();
+                var debugWindow = this.gameObject.AddComponent<DebugWindow>();
+                debugWindow.enabled = false;
+
+                var sim = this.gameObject.AddComponent<PhotonLagSimulationGui>();
+                sim.enabled = false;
+
+                PhotonPeer.RegisterType(typeof(DebugOptions), 77, DebugOptions.Serialize, DebugOptions.Deserialize);
+            }
+        }
+
+        public void Update()
+        {
+            if (RWFMod.DEBUG && Input.GetKeyDown(KeyCode.F8))
+            {
+                var debugWindow = this.gameObject.GetComponent<DebugWindow>();
+                debugWindow.enabled = !debugWindow.enabled;
+            }
+        }
+
+        internal void SyncDebugOptions()
+        {
+            if (PhotonNetwork.IsMasterClient)
+            {
+                NetworkingManager.RPC(typeof(RWFMod), nameof(RWFMod.RPC_SyncDebugOptions), this.debugOptions);
+            }
+        }
+
+        [UnboundRPC]
+        public static void RPC_SyncDebugOptions(DebugOptions opts)
+        {
+            RWFMod.instance.debugOptions = opts;
         }
 
         private IEnumerator ToggleCeaseFire(bool isCeaseFire)

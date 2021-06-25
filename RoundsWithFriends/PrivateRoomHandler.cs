@@ -9,7 +9,6 @@ using UnityEngine.UI.ProceduralImage;
 using UnityEngine.SceneManagement;
 using TMPro;
 using Photon.Pun;
-using Photon.Pun.UtilityScripts;
 using Landfall.Network;
 using InControl;
 using Steamworks;
@@ -76,10 +75,6 @@ namespace RWF
 
         private void Awake() {
             PrivateRoomHandler.instance = this;
-
-            if (RWFMod.DEBUG) {
-                this.gameObject.AddComponent<PhotonLagSimulationGui>();
-            }
         }
 
         private void Start() {
@@ -336,6 +331,11 @@ namespace RWF
         override public void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer) {
             if (PhotonNetwork.IsMasterClient) {
                 NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
+
+                if (RWFMod.DEBUG)
+                {
+                    RWFMod.instance.SyncDebugOptions();
+                }
             }
 
             this.ExecuteAfterSeconds(0.1f, () => {

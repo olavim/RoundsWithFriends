@@ -97,6 +97,9 @@
     <Reference Include="UnityEngine.UIModule">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.UIModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <Target Name="ReadPackageVersionFromOutputAssembly" DependsOnTargets="Build" Outputs="$(PackageVersion)">
