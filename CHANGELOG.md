@@ -1,3 +1,7 @@
+## v1.3.2
+
+- Fixed inviting players after returning to lobby from a game.
+
 ## v1.3.0
 
 - Added possibility to continue or rematch after game ends.
