@@ -12,6 +12,36 @@ using UnboundLib;
 
 namespace RWF.Patches
 {
+    [HarmonyPatch(typeof(NetworkConnectionHandler), "Start")]
+    class NetworkConnectionHandler_Patch_Start
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            // Do not leave lobby when NetworkConnectionHandler is reloaded
+            var list = instructions.ToList();
+            var newInstructions = new List<CodeInstruction>();
+
+            var f_lobby = AccessTools.Field(typeof(NetworkConnectionHandler), "m_SteamLobby");
+            var m_leaveLobby = ExtensionMethods.GetMethodInfo(typeof(ClientSteamLobby), "LeaveLobby");
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].LoadsField(f_lobby) && list[i + 1].Calls(m_leaveLobby))
+                {
+                    // Copy labels to a no-op from the previous instruction
+                    newInstructions.Add(new CodeInstruction(OpCodes.Nop).WithLabels(list[i].labels));
+                    i++;
+                }
+                else
+                {
+                    newInstructions.Add(list[i]);
+                }
+            }
+
+            return newInstructions;
+        }
+    }
+
     [HarmonyPatch(typeof(NetworkConnectionHandler), "OnJoinedRoom")]
     class NetworkConnectionHandler_Patch_OnJoinedRoom
     {
