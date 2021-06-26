@@ -1,21 +1,21 @@
-﻿using System;
+﻿using InControl;
+using Landfall.Network;
+using Photon.Pun;
+using SoundImplementation;
+using Steamworks;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using TMPro;
+using UnboundLib;
+using UnboundLib.GameModes;
+using UnboundLib.Networking;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.UI.ProceduralImage;
-using UnityEngine.SceneManagement;
-using TMPro;
-using Photon.Pun;
-using Landfall.Network;
-using InControl;
-using Steamworks;
-using SoundImplementation;
-using UnboundLib;
-using UnboundLib.Networking;
-using UnboundLib.GameModes;
 
 namespace RWF
 {
@@ -40,16 +40,19 @@ namespace RWF
 
         public ListMenuPage MainPage { get; private set; }
 
-        public bool IsOpen { 
+        public bool IsOpen
+        {
             get
             {
                 return this.grid.activeSelf;
             }
         }
 
-        private static void OnSceneLoad(Scene scene, LoadSceneMode mode) {
+        private static void OnSceneLoad(Scene scene, LoadSceneMode mode)
+        {
             // Map changes also cause scene loads. We don't want to open the lobby during those...
-            if (scene.name == "Main") {
+            if (scene.name == "Main")
+            {
                 SceneManager.sceneLoaded -= PrivateRoomHandler.OnSceneLoad;
                 PrivateRoomHandler.instance.Open();
 
@@ -73,16 +76,19 @@ namespace RWF
             PrivateRoomHandler.PrevSettings = null;
         }
 
-        private void Awake() {
+        private void Awake()
+        {
             PrivateRoomHandler.instance = this;
         }
 
-        private void Start() {
+        private void Start()
+        {
             this.Init();
             this.BuildUI();
         }
 
-        private void Init() {
+        private void Init()
+        {
             this.spamReady = false;
             this.waitingForToggle = false;
             this.readyRequests = new Queue<Tuple<int, bool>>();
@@ -90,7 +96,8 @@ namespace RWF
             this.lockReadyRequests = false;
         }
 
-        private void BuildUI() {
+        private void BuildUI()
+        {
             var rect = this.gameObject.AddComponent<RectTransform>();
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
@@ -197,7 +204,8 @@ namespace RWF
             var inviteListButton = inviteGo.AddComponent<ListMenuButton>();
             inviteListButton.setBarHeight = 92f;
 
-            inviteButton.onClick.AddListener(() => {
+            inviteButton.onClick.AddListener(() =>
+            {
                 var field = typeof(NetworkConnectionHandler).GetField("m_SteamLobby", BindingFlags.Static | BindingFlags.NonPublic);
                 var lobby = (ClientSteamLobby) field.GetValue(null);
                 lobby.ShowInviteScreenWhenConnected();
@@ -211,12 +219,16 @@ namespace RWF
             var gameModeListButton = gameModeGo.AddComponent<ListMenuButton>();
             gameModeListButton.setBarHeight = 92f;
 
-            gameModeButton.onClick.AddListener(() => {
+            gameModeButton.onClick.AddListener(() =>
+            {
                 if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
                 {
                     string nextGameMode = GameModeManager.CurrentHandlerID == "ArmsRace" ? "Deathmatch" : "ArmsRace";
                     GameModeManager.SetGameMode(nextGameMode);
-                    this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
+                    this.ExecuteAfterGameModeInitialized(nextGameMode, () =>
+                    {
+                        this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
+                    });
                 }
             });
 
@@ -230,7 +242,8 @@ namespace RWF
             backLayout.minHeight = 92;
             var backButton = backGo.AddComponent<Button>();
 
-            backButton.onClick.AddListener(() => {
+            backButton.onClick.AddListener(() =>
+            {
                 NetworkConnectionHandler.instance.NetworkRestart();
             });
 
@@ -253,7 +266,8 @@ namespace RWF
             playersGo.SetActive(false);
         }
 
-        private GameObject GetText(string str) {
+        private GameObject GetText(string str)
+        {
             var textGo = new GameObject("Text");
 
             textGo.AddComponent<CanvasRenderer>();
@@ -269,13 +283,17 @@ namespace RWF
             return textGo;
         }
 
-        private void Update() {
-            if (RWFMod.DEBUG) {
-                if (Input.GetKeyDown(KeyCode.T)) {
+        private void Update()
+        {
+            if (RWFMod.DEBUG)
+            {
+                if (Input.GetKeyDown(KeyCode.T))
+                {
                     this.spamReady = !this.spamReady;
                 }
 
-                if (this.spamReady) {
+                if (this.spamReady)
+                {
                     this.StartCoroutine(this.ToggleReady());
                 }
             }
@@ -283,13 +301,15 @@ namespace RWF
             /* Ready toggle requests are handled by master client in the order they arrive. If at any point all players are ready
              * (even if there would be more toggle requests remaining), the game starts immediately.
              */
-            if (this.readyRequests.Count > 0 && !this.lockReadyRequests) {
+            if (this.readyRequests.Count > 0 && !this.lockReadyRequests)
+            {
                 var request = this.readyRequests.Dequeue();
                 this.HandlePlayerReadyToggle(request.Item1, request.Item2);
             }
         }
 
-        override public void OnJoinedRoom() {
+        override public void OnJoinedRoom()
+        {
             if (!this.IsOpen)
             {
                 return;
@@ -298,23 +318,31 @@ namespace RWF
             PhotonNetwork.LocalPlayer.SetProperty("ready", false);
             PhotonNetwork.LocalPlayer.SetProperty("readyOrder", -1);
 
-            if (RWFMod.DEBUG && PhotonNetwork.IsMasterClient) {
+            if (RWFMod.DEBUG && PhotonNetwork.IsMasterClient)
+            {
                 RWFMod.Log($"\n\n\tRoom join command:\n\tjoin:{PhotonNetwork.CloudRegion}:{PhotonNetwork.CurrentRoom.Name}\n");
             }
 
-            if (PhotonNetwork.IsMasterClient) {
-                if (GameModeManager.CurrentHandler == null) {
+            if (PhotonNetwork.IsMasterClient)
+            {
+                if (GameModeManager.CurrentHandler == null)
+                {
                     GameModeManager.SetGameMode("ArmsRace");
                 }
-                PrivateRoomHandler.SetGameSettings(GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
+
+                PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "ArmsRace" ? "TEAM DEATHMATCH" : "DEATHMATCH";
+                PrivateRoomHandler.UpdatePlayerDisplay();
             }
 
             /* The local player's nickname is also set in NetworkConnectionHandler::OnJoinedRoom, but we'll do it here too so we don't
              * need to worry about timing issues
              */
-            if (RWFMod.IsSteamConnected) {
+            if (RWFMod.IsSteamConnected)
+            {
                 PhotonNetwork.LocalPlayer.NickName = SteamFriends.GetPersonaName();
-            } else {
+            }
+            else
+            {
                 PhotonNetwork.LocalPlayer.NickName = $"Player {PhotonNetwork.LocalPlayer.ActorNumber}";
             }
 
@@ -323,44 +351,53 @@ namespace RWF
             base.OnJoinedRoom();
         }
 
-        override public void OnMasterClientSwitched(Photon.Realtime.Player newMaster) {
+        override public void OnMasterClientSwitched(Photon.Realtime.Player newMaster)
+        {
             NetworkConnectionHandler.instance.NetworkRestart();
             base.OnMasterClientSwitched(newMaster);
         }
 
-        override public void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer) {
-            if (PhotonNetwork.IsMasterClient) {
-                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
+        override public void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
+        {
+            if (PhotonNetwork.IsMasterClient)
+            {
+                NetworkingManager.RPC_Others(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettings), GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
 
-                if (RWFMod.DEBUG)
+                if (RWFMod.DEBUG && RWFMod.instance.gameObject.GetComponent<DebugWindow>().enabled)
                 {
                     RWFMod.instance.SyncDebugOptions();
                 }
             }
 
-            this.ExecuteAfterSeconds(0.1f, () => {
+            this.ExecuteAfterSeconds(0.1f, () =>
+            {
                 PrivateRoomHandler.UpdatePlayerDisplay();
             });
 
             base.OnPlayerEnteredRoom(newPlayer);
         }
 
-        override public void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer) {
+        override public void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
+        {
             this.ClearPendingRequests(otherPlayer.ActorNumber);
             PrivateRoomHandler.UpdatePlayerDisplay();
             base.OnPlayerLeftRoom(otherPlayer);
         }
 
-        private IEnumerator ToggleReady() {
-            if (DevConsole.isTyping) {
+        private IEnumerator ToggleReady()
+        {
+            if (DevConsole.isTyping)
+            {
                 yield break;
             }
 
-            while (PhotonNetwork.CurrentRoom == null) {
+            while (PhotonNetwork.CurrentRoom == null)
+            {
                 yield return null;
             }
 
-            if (this.waitingForToggle) {
+            if (this.waitingForToggle)
+            {
                 yield break;
             }
 
@@ -368,19 +405,22 @@ namespace RWF
 
             var ready = PhotonNetwork.LocalPlayer.GetProperty<bool>("ready");
 
-            if (!ready) {
+            if (!ready)
+            {
                 InputDevice playerDevice = null;
 
                 var m_JoinButtonWasPressedOnDevice = typeof(PlayerAssigner).GetMethod("JoinButtonWasPressedOnDevice", BindingFlags.Instance | BindingFlags.NonPublic);
                 var m_ThereIsNoPlayerUsingDevice = typeof(PlayerAssigner).GetMethod("ThereIsNoPlayerUsingDevice", BindingFlags.Instance | BindingFlags.NonPublic);
 
-                for (int i = 0; i < InputManager.ActiveDevices.Count; i++) {
+                for (int i = 0; i < InputManager.ActiveDevices.Count; i++)
+                {
                     InputDevice device = InputManager.ActiveDevices[i];
 
                     var joinButtonPressed = (bool) m_JoinButtonWasPressedOnDevice.Invoke(PlayerAssigner.instance, new object[] { device });
                     var nobodyUsingDevice = (bool) m_ThereIsNoPlayerUsingDevice.Invoke(PlayerAssigner.instance, new object[] { device });
 
-                    if (joinButtonPressed && nobodyUsingDevice) {
+                    if (joinButtonPressed && nobodyUsingDevice)
+                    {
                         playerDevice = device;
                         break;
                     }
@@ -394,7 +434,8 @@ namespace RWF
              */
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RequestReady), PhotonNetwork.LocalPlayer.ActorNumber, !ready);
 
-            while (PhotonNetwork.LocalPlayer.GetProperty<bool>("ready") != !ready) {
+            while (PhotonNetwork.LocalPlayer.GetProperty<bool>("ready") != !ready)
+            {
                 yield return null;
             }
 
@@ -405,18 +446,21 @@ namespace RWF
             this.waitingForToggle = false;
         }
 
-        private void UpdateReadyBox() {
+        private void UpdateReadyBox()
+        {
             var img = this.readyCheckbox.GetComponent<ProceduralImage>();
             img.BorderWidth = PhotonNetwork.LocalPlayer.GetProperty<bool>("ready") ? 0 : 3;
         }
 
         // Called from PlayerManager after a player has been created.
-        public void PlayerJoined(Player player) {
+        public void PlayerJoined(Player player)
+        {
             player.data.isPlaying = false;
         }
 
         [UnboundRPC]
-        public static void SetGameSettings(string gameMode, GameSettings settings) {
+        public static void SetGameSettings(string gameMode, GameSettings settings)
+        {
             GameModeManager.SetGameMode(gameMode);
             GameModeManager.CurrentHandler.SetSettings(settings);
 
@@ -427,62 +471,78 @@ namespace RWF
         }
 
         [UnboundRPC]
-        public static void SetGameSettingsResponse(int respondingPlayer) {
-            if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null) {
+        public static void SetGameSettingsResponse(int respondingPlayer)
+        {
+            if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
+            {
                 PrivateRoomHandler.instance.RemovePendingRequest(respondingPlayer, nameof(PrivateRoomHandler.SetGameSettings));
             }
         }
 
         [UnboundRPC]
-        public static void RequestReady(int askingPlayer, bool ready) {
-            if (PhotonNetwork.IsMasterClient) {
+        public static void RequestReady(int askingPlayer, bool ready)
+        {
+            if (PhotonNetwork.IsMasterClient)
+            {
                 PrivateRoomHandler.instance.readyRequests.Enqueue(new Tuple<int, bool>(askingPlayer, ready));
             }
         }
 
         [UnboundRPC]
-        public static void UpdatePlayerDisplay() {
+        public static void UpdatePlayerDisplay()
+        {
             var instance = PrivateRoomHandler.instance;
 
-            if (instance == null) {
+            if (instance == null)
+            {
                 return;
             }
 
-            if (PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= 2 && !instance.versusDisplay.gameObject.activeSelf) {
+            if (PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= 2 && !instance.versusDisplay.gameObject.activeSelf)
+            {
                 instance.versusDisplay.gameObject.SetActive(true);
                 instance.readyListButton.gameObject.SetActive(true);
                 instance.waiting.SetActive(false);
                 ListMenu.instance.SelectButton(instance.readyListButton);
-            } else if ((PhotonNetwork.CurrentRoom == null || PhotonNetwork.CurrentRoom.PlayerCount < 2) && instance.versusDisplay.gameObject.activeSelf) {
+            }
+            else if ((PhotonNetwork.CurrentRoom == null || PhotonNetwork.CurrentRoom.PlayerCount < 2) && instance.versusDisplay.gameObject.activeSelf)
+            {
                 instance.versusDisplay.gameObject.SetActive(false);
                 instance.readyListButton.gameObject.SetActive(false);
                 instance.waiting.SetActive(true);
             }
 
-            if (instance.versusDisplay.gameObject.activeSelf) {
+            if (instance.versusDisplay.gameObject.activeSelf)
+            {
                 instance.versusDisplay.UpdatePlayers();
             }
         }
 
-        private void HandlePlayerReadyToggle(int playerId, bool ready) {
+        private void HandlePlayerReadyToggle(int playerId, bool ready)
+        {
             var player = PhotonNetwork.CurrentRoom.GetPlayer(playerId);
 
-            if (player == null) {
+            if (player == null)
+            {
                 return;
             }
 
             int numReady = PhotonNetwork.CurrentRoom.Players.Values.ToList().Where(p => p.GetProperty<bool>("ready")).Count();
 
-            if (ready) {
+            if (ready)
+            {
                 numReady++;
-            } else {
+            }
+            else
+            {
                 numReady--;
             }
 
             player.SetProperty("ready", ready);
             player.SetProperty("readyOrder", ready ? numReady - 1 : -1);
 
-            if (numReady == PhotonNetwork.CurrentRoom.PlayerCount) {
+            if (numReady == PhotonNetwork.CurrentRoom.PlayerCount)
+            {
                 this.lockReadyRequests = true;
 
                 // Tell all clients to create their players. The game begins once players have been created.
@@ -490,14 +550,16 @@ namespace RWF
             }
 
             // If the player unreadied, reassign ready orders so that they grow continuously from 0.
-            if (!ready) {
+            if (!ready)
+            {
                 int nextReadyOrder = 0;
 
                 var readyPlayers = PhotonNetwork.CurrentRoom.Players.Values.ToList()
                     .Where(p => p.GetProperty<bool>("ready"))
                     .OrderBy(p => p.GetProperty<int>("readyOrder"));
 
-                foreach (var readyPlayer in readyPlayers) {
+                foreach (var readyPlayer in readyPlayers)
+                {
                     readyPlayer.SetProperty("readyOrder", nextReadyOrder);
                     nextReadyOrder++;
                 }
@@ -506,10 +568,12 @@ namespace RWF
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdatePlayerDisplay));
         }
 
-        private IEnumerator StartGamePreparation() {
+        private IEnumerator StartGamePreparation()
+        {
             var players = PhotonNetwork.CurrentRoom.Players.Values.ToList();
 
-            foreach (var player in players.OrderBy(p => p.GetProperty<int>("readyOrder"))) {
+            foreach (var player in players.OrderBy(p => p.GetProperty<int>("readyOrder")))
+            {
                 yield return this.SyncMethod(nameof(PrivateRoomHandler.CreatePlayer), player.ActorNumber, player.ActorNumber);
             }
 
@@ -517,14 +581,17 @@ namespace RWF
         }
 
         [UnboundRPC]
-        public static void CreatePlayer(int playerId) {
-            if (PhotonNetwork.LocalPlayer.ActorNumber == playerId) {
+        public static void CreatePlayer(int playerId)
+        {
+            if (PhotonNetwork.LocalPlayer.ActorNumber == playerId)
+            {
                 var instance = PrivateRoomHandler.instance;
                 instance.StartCoroutine(instance.CreatePlayerCoroutine());
             }
         }
 
-        private IEnumerator CreatePlayerCoroutine() {
+        private IEnumerator CreatePlayerCoroutine()
+        {
             this.MainPage.Close();
             MainMenuHandler.instance.Close();
             UIHandler.instance.ShowJoinGameText("LETS GOO!", PlayerSkinBank.GetPlayerSkinColors(1).winText);
@@ -537,14 +604,17 @@ namespace RWF
         }
 
         [UnboundRPC]
-        public static void CreatePlayerResponse(int respondingPlayer) {
-            if (PhotonNetwork.IsMasterClient) {
+        public static void CreatePlayerResponse(int respondingPlayer)
+        {
+            if (PhotonNetwork.IsMasterClient)
+            {
                 PrivateRoomHandler.instance.RemovePendingRequest(respondingPlayer, nameof(PrivateRoomHandler.CreatePlayer));
             }
         }
 
         [UnboundRPC]
-        public static void StartGame() {
+        public static void StartGame()
+        {
             var instance = PrivateRoomHandler.instance;
             instance.StopAllCoroutines();
             GameModeManager.CurrentHandler.StartGame();
@@ -563,8 +633,10 @@ namespace RWF
             instance.UpdateReadyBox();
         }
 
-        public void Open() {
-            this.ExecuteAfterFrames(1, () => {
+        public void Open()
+        {
+            this.ExecuteAfterFrames(1, () =>
+            {
                 ListMenu.instance.OpenPage(this.MainPage);
                 this.MainPage.Open();
                 ArtHandler.instance.NextArt();

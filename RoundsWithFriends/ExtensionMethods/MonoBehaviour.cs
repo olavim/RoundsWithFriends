@@ -65,5 +65,20 @@ namespace RWF
             var requests = pendingRequests.GetOrCreateValue(instance);
             requests.Remove(new Tuple<int, string>(actor, methodName));
         }
+
+        public static void ExecuteAfterGameModeInitialized(this MonoBehaviour instance, string handler, Action action)
+        {
+            IEnumerator ExecuteAfter()
+            {
+                while (!RWFMod.instance.IsGameModeInitialized(handler))
+                {
+                    yield return null;
+                }
+
+                action();
+            }
+
+            instance.StartCoroutine(ExecuteAfter());
+        }
     }
 }

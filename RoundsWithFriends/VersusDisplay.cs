@@ -71,7 +71,8 @@ namespace RWF
         private void UpdatePlayersCoroutine() {
             this.teamPlayers.Clear();
 
-            while (this.transform.childCount > 0) {
+            while (this.transform.childCount > 0)
+            {
                 GameObject.DestroyImmediate(this.transform.GetChild(0).gameObject);
             }
 

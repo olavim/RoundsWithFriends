@@ -132,6 +132,7 @@ namespace RWF
 
         public Text infoText;
         private Dictionary<string, bool> soundEnabled;
+        private Dictionary<string, bool> gmInitialized;
 
         public DebugOptions debugOptions = new DebugOptions();
 
@@ -153,6 +154,8 @@ namespace RWF
         public void Start()
         {
             this.soundEnabled = new Dictionary<string, bool>();
+            this.gmInitialized = new Dictionary<string, bool>();
+
             SceneManager.sceneLoaded += this.OnSceneLoaded;
             this.ExecuteAfterFrames(1, ArtHandler.instance.NextArt);
 
@@ -168,7 +171,7 @@ namespace RWF
                 this.RedrawCharacterSelections();
                 this.RedrawCharacterCreators();
 
-                if (RWFMod.DEBUG)
+                if (RWFMod.DEBUG && this.gameObject.GetComponent<DebugWindow>().enabled)
                 {
                     RWFMod.SetDebugOptions(this.debugOptions);
                 }
@@ -176,6 +179,7 @@ namespace RWF
 
             GameModeManager.AddHook(GameModeHooks.HookPointStart, gm => this.ToggleCeaseFire(true));
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, gm => this.ToggleCeaseFire(false));
+            GameModeManager.AddHook(GameModeHooks.HookInitEnd, this.OnGameModeInitialized);
 
             if (RWFMod.DEBUG)
             {
@@ -215,6 +219,25 @@ namespace RWF
             GameModeManager.CurrentHandler?.ChangeSetting("pointsToWinRound", opts.points);
         }
 
+        private IEnumerator OnGameModeInitialized(IGameModeHandler gm)
+        {
+            if (!this.gmInitialized.ContainsKey(gm.Name))
+            {
+                this.gmInitialized.Add(gm.Name, true);
+            }
+            else
+            {
+                this.gmInitialized[gm.Name] = true;
+            }
+
+            yield break;
+        }
+
+        public bool IsGameModeInitialized(string handler)
+        {
+            return this.gmInitialized.ContainsKey(handler) && this.gmInitialized[handler];
+        }
+
         private IEnumerator ToggleCeaseFire(bool isCeaseFire)
         {
             this.IsCeaseFire = isCeaseFire;
@@ -225,6 +248,8 @@ namespace RWF
         {
             if (scene.name == "Main")
             {
+                this.gmInitialized.Clear();
+
                 this.ExecuteAfterFrames(1, () =>
                 {
                     ArtHandler.instance.NextArt();
