@@ -1,3 +1,7 @@
+## v1.3.3
+
+- Fixed issue where changes to game mode settings from mods such as [SetRounds](https://rounds.thunderstore.io/package/Ascyst/SetRounds/) were not respected.
+
 ## v1.3.2
 
 - Fixed inviting players after returning to lobby from a game.
