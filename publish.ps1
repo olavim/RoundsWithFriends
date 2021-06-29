@@ -37,7 +37,7 @@ Write-Host "Publishing for $Target from $TargetPath"
 $name = "$TargetAssembly" -Replace('.dll')
 
 # Debug copies the dll to ROUNDS
-if ($Target.Equals("Debug")) {
+if($name.Equals("RoundsWithFriends")) {
     Write-Host "Updating local installation in $RoundsPath"
     
     $plug = New-Item -Type Directory -Path "$RoundsPath\BepInEx\plugins\$name" -Force

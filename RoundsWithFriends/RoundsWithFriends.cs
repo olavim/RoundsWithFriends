@@ -54,7 +54,7 @@ namespace RWF
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "1.3.3";
+        public const string Version = "1.3.4";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
@@ -181,9 +181,10 @@ namespace RWF
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, gm => this.ToggleCeaseFire(false));
             GameModeManager.AddHook(GameModeHooks.HookInitEnd, this.OnGameModeInitialized);
 
+            this.gameObject.AddComponent<RoundEndHandler>();
+
             if (RWFMod.DEBUG)
             {
-                this.gameObject.AddComponent<RoundEndHandler>();
                 var debugWindow = this.gameObject.AddComponent<DebugWindow>();
                 debugWindow.enabled = false;
 

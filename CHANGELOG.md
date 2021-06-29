@@ -1,3 +1,7 @@
+## v1.3.4
+
+- Fixed continue/rematch option not being offered.
+
 ## v1.3.3
 
 - Fixed issue where changes to game mode settings from mods such as [SetRounds](https://rounds.thunderstore.io/package/Ascyst/SetRounds/) were not respected.
