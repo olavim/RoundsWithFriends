@@ -1,3 +1,7 @@
+## v1.3.5
+
+- Fixed uncommon issue where blocking would not work after rematching.
+
 ## v1.3.4
 
 - Fixed continue/rematch option not being offered.
