@@ -39,6 +39,7 @@ namespace RWF
 
                 this.waitingForHost = true;
 
+                PlayerManager.instance.RevivePlayers();
                 PlayerManager.instance.InvokeMethod("SetPlayersVisible", false);
 
                 if (PhotonNetwork.IsMasterClient || PhotonNetwork.OfflineMode)
