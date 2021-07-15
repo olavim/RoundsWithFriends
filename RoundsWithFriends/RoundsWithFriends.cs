@@ -274,8 +274,8 @@ namespace RWF
                 var textColor = PlayerSkinBank.GetPlayerSkinColors(i % this.MaxTeams).winText;
                 var faceColor = PlayerSkinBank.GetPlayerSkinColors(i % this.MaxTeams).color;
 
-                joinGo.GetComponentInChildren<GeneralParticleSystem>().particleSettings.color = textColor;
-                readyGo.GetComponentInChildren<GeneralParticleSystem>().particleSettings.color = textColor;
+                joinGo.GetComponentInChildren<GeneralParticleSystem>(true).particleSettings.color = textColor;
+                readyGo.GetComponentInChildren<GeneralParticleSystem>(true).particleSettings.color = textColor;
 
                 foreach (Transform faceSelector in faceGo.transform.GetChild(0))
                 {
