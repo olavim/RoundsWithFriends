@@ -145,10 +145,27 @@ namespace RWF
                 }
             }
 
+            // Reopen lobby after main scene is loaded
+            SceneManager.sceneLoaded += RoundEndHandler.OnSceneLoad;
+
             gm.GameMode.StopAllCoroutines();
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
 
             RoundEndHandler.instance.waitingForHost = false;
+        }
+
+        private static void OnSceneLoad(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name == "Main")
+            {
+                SceneManager.sceneLoaded -= RoundEndHandler.OnSceneLoad;
+                PrivateRoomHandler.instance.Open();
+
+                if (PhotonNetwork.IsMasterClient)
+                {
+                    PrivateRoomHandler.RestoreSettings();
+                }
+            }
         }
     }
 }

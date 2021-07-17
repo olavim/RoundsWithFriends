@@ -48,28 +48,13 @@ namespace RWF
             }
         }
 
-        private static void OnSceneLoad(Scene scene, LoadSceneMode mode)
-        {
-            // Map changes also cause scene loads. We don't want to open the lobby during those...
-            if (scene.name == "Main")
-            {
-                SceneManager.sceneLoaded -= PrivateRoomHandler.OnSceneLoad;
-                PrivateRoomHandler.instance.Open();
-
-                if (PhotonNetwork.IsMasterClient)
-                {
-                    PrivateRoomHandler.RestoreSettings();
-                }
-            }
-        }
-
         private static void SaveSettings()
         {
             PrivateRoomHandler.PrevHandlerID = GameModeManager.CurrentHandlerID;
             PrivateRoomHandler.PrevSettings = GameModeManager.CurrentHandler.Settings;
         }
 
-        private static void RestoreSettings()
+        public static void RestoreSettings()
         {
             PrivateRoomHandler.instance.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, PrivateRoomHandler.PrevHandlerID, PrivateRoomHandler.PrevSettings);
             PrivateRoomHandler.PrevHandlerID = null;
@@ -623,9 +608,6 @@ namespace RWF
             {
                 PrivateRoomHandler.SaveSettings();
             }
-
-            // The main scene is reloaded after the game. After the reload is done, we want to reopen the lobby.
-            SceneManager.sceneLoaded += PrivateRoomHandler.OnSceneLoad;
 
             PhotonNetwork.LocalPlayer.SetProperty("ready", false);
             PhotonNetwork.LocalPlayer.SetProperty("readyOrder", -1);
