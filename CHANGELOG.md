@@ -1,3 +1,15 @@
+## v1.3.8
+
+- Fixed Deathmatch game end hooks.
+
+## v1.3.7
+
+- Fixed invites after disconnecting from game.
+
+## v1.3.6
+
+- Fixed error when changing game mode.
+
 ## v1.3.5
 
 - Fixed uncommon issue where blocking would not work after rematching.
