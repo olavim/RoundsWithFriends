@@ -89,22 +89,7 @@ namespace RWF
         [UnboundRPC]
         public static void Rematch()
         {
-            var gm = GameModeManager.CurrentHandler;
-
-            if (RoundEndHandler.instance.gmOriginalMaxRounds != -1)
-            {
-                gm.ChangeSetting("roundsToWinGame", RoundEndHandler.instance.gmOriginalMaxRounds);
-                RoundEndHandler.instance.gmOriginalMaxRounds = -1;
-            }
-
-            UIHandler.instance.DisableTexts(1f);
-
-            GameManager.instance.isPlaying = false;
-            gm.GameMode.StopAllCoroutines();
-            gm.ResetGame();
-            gm.StartGame();
-
-            RoundEndHandler.instance.waitingForHost = false;
+            RoundEndHandler.instance.StartCoroutine(RoundEndHandler.RematchCoroutine());
         }
 
         [UnboundRPC]
@@ -129,6 +114,35 @@ namespace RWF
         [UnboundRPC]
         public static void Exit()
         {
+            RoundEndHandler.instance.StartCoroutine(RoundEndHandler.ExitCoroutine());
+        }
+
+        private static IEnumerator RematchCoroutine()
+        {
+            yield return GameModeManager.TriggerHook(GameModeHooks.HookGameEnd);
+
+            var gm = GameModeManager.CurrentHandler;
+
+            if (RoundEndHandler.instance.gmOriginalMaxRounds != -1)
+            {
+                gm.ChangeSetting("roundsToWinGame", RoundEndHandler.instance.gmOriginalMaxRounds);
+                RoundEndHandler.instance.gmOriginalMaxRounds = -1;
+            }
+
+            UIHandler.instance.DisableTexts(1f);
+
+            GameManager.instance.isPlaying = false;
+            gm.GameMode.StopAllCoroutines();
+            gm.ResetGame();
+            gm.StartGame();
+
+            RoundEndHandler.instance.waitingForHost = false;
+        }
+
+        private static IEnumerator ExitCoroutine()
+        {
+            yield return GameModeManager.TriggerHook(GameModeHooks.HookGameEnd);
+
             var gm = GameModeManager.CurrentHandler;
 
             if (RoundEndHandler.instance.gmOriginalMaxRounds != -1)
