@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Photon.Pun;
 using UnityEngine;
@@ -17,6 +18,8 @@ namespace RWF.GameModes
 
 		internal Dictionary<int, int> teamPoints = new Dictionary<int, int>();
 		internal Dictionary<int, int> teamRounds = new Dictionary<int, int>();
+        public ReadOnlyDictionary<int, int> TeamPoints { get { return teamPoints; } }
+        public ReadOnlyDictionary<int, int> TeamRounds { get { return teamRounds; } }
 
 		private bool isTransitioning;
 		private int playersNeededToStart = 2;
