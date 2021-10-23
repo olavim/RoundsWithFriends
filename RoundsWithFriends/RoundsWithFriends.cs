@@ -180,6 +180,7 @@ namespace RWF
             GameModeManager.AddHook(GameModeHooks.HookPointStart, gm => this.ToggleCeaseFire(true));
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, gm => this.ToggleCeaseFire(false));
             GameModeManager.AddHook(GameModeHooks.HookInitEnd, this.OnGameModeInitialized);
+            GameModeManager.AddHook(GameModeHooks.HookGameStart, this.SetPlayerFaces);
 
             this.gameObject.AddComponent<RoundEndHandler>();
 
@@ -218,6 +219,15 @@ namespace RWF
             RWFMod.instance.debugOptions = opts;
             GameModeManager.CurrentHandler?.ChangeSetting("roundsToWinGame", opts.rounds);
             GameModeManager.CurrentHandler?.ChangeSetting("pointsToWinRound", opts.points);
+        }
+
+        private IEnumerator SetPlayerFaces(IGameModeHandler gm)
+        {
+            foreach (Player player in PlayerManager.instance.players)
+            {
+                if (player.data.view.IsMine) { player.GetFaceOffline(); }
+            }
+            yield break;
         }
 
         private IEnumerator OnGameModeInitialized(IGameModeHandler gm)
