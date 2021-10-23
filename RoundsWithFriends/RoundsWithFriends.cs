@@ -54,7 +54,7 @@ namespace RWF
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "1.3.8";
+        public const string Version = "1.3.9";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
@@ -63,6 +63,8 @@ namespace RWF
 #endif
 
         public static RWFMod instance;
+
+        private static bool facesSet = false;
 
         public static string GetCustomPropertyKey(string prop)
         {
@@ -180,7 +182,8 @@ namespace RWF
             GameModeManager.AddHook(GameModeHooks.HookPointStart, gm => this.ToggleCeaseFire(true));
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, gm => this.ToggleCeaseFire(false));
             GameModeManager.AddHook(GameModeHooks.HookInitEnd, this.OnGameModeInitialized);
-            GameModeManager.AddHook(GameModeHooks.HookGameStart, this.SetPlayerFaces);
+            GameModeManager.AddHook(GameModeHooks.HookGameStart, this.UnsetFaces);
+            GameModeManager.AddHook(GameModeHooks.HookPickStart, this.SetPlayerFaces);
 
             this.gameObject.AddComponent<RoundEndHandler>();
 
@@ -221,12 +224,36 @@ namespace RWF
             GameModeManager.CurrentHandler?.ChangeSetting("pointsToWinRound", opts.points);
         }
 
+        private IEnumerator UnsetFaces(IGameModeHandler gm)
+        {
+            RWFMod.facesSet = false;
+            yield break;
+        }
         private IEnumerator SetPlayerFaces(IGameModeHandler gm)
         {
+            if (RWFMod.facesSet)
+            {
+                yield break;
+            }
             foreach (Player player in PlayerManager.instance.players)
             {
-                if (player.data.view.IsMine) { player.GetFaceOffline(); }
+                if (player.data.view.IsMine)
+                {
+                    PlayerFace playerFace = CharacterCreatorHandler.instance.selectedPlayerFaces[0];
+                    player.data.view.RPC("RPCA_SetFace", RpcTarget.All, new object[]
+                    {
+                        playerFace.eyeID,
+                        playerFace.eyeOffset,
+                        playerFace.mouthID,
+                        playerFace.mouthOffset,
+                        playerFace.detailID,
+                        playerFace.detailOffset,
+                        playerFace.detail2ID,
+                        playerFace.detail2Offset
+                    });
+                }
             }
+            RWFMod.facesSet = true;
             yield break;
         }
 
