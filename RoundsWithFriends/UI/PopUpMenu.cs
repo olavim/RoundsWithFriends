@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace RWF.UI
 {
-    class PopUpMenu : MonoBehaviour
+    public class PopUpMenu : MonoBehaviour
     {
         public static PopUpMenu instance;
 
