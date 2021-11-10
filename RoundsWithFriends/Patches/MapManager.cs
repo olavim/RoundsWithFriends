@@ -45,8 +45,13 @@ namespace RWF.Patches
         private const float maxProject = 1000f;
         private const float groundOffset = 1f;
         private const float maxDistanceAway = 5f;
-        private const int maxAttempts = 100;
+        private const int maxAttempts = 1000;
         private const float eps = 0.1f;
+        private const float lmargin = 0.1f;
+        private const float rmargin = 0.1f;
+        private const float tmargin = 0.2f;
+        private const float bmargin = 0f;
+        private static LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
         //private const float minDistance = 5f;
         internal static Dictionary<Player, Vector2> GetSpawnDictionary(List<Player> players, SpawnPoint[] spawnPoints)
         {
@@ -79,10 +84,6 @@ namespace RWF.Patches
                 }
 
                 spawnPositions.Add(bestPos);
-            }
-            foreach (Vector2 spawnpos in spawnPositions)
-            {
-                UnityEngine.Debug.Log(spawnpos);
             }
 
             Dictionary<Player, Vector2> spawnDictionary = new Dictionary<Player, Vector2>() { };
@@ -164,7 +165,7 @@ namespace RWF.Patches
         }
         private static Vector2 CastToGround(Vector2 position)
         {
-            RaycastHit2D raycastHit2D = Physics2D.Raycast(position, Vector2.down, maxProject);
+            RaycastHit2D raycastHit2D = Physics2D.Raycast(position, Vector2.down, maxProject, groundMask);
             if (!raycastHit2D.transform)
             {
                 return position;
@@ -173,7 +174,7 @@ namespace RWF.Patches
         }
         private static bool IsValidPosition(Vector2 position)
         {
-            RaycastHit2D raycastHit2D = Physics2D.Raycast(position, Vector2.down, range);
+            RaycastHit2D raycastHit2D = Physics2D.Raycast(position, Vector2.down, range, groundMask);
             return raycastHit2D.transform && raycastHit2D.distance > 0.1f;
         }
         private static Vector2 GetNearbyValidPosition(Vector2 position)
@@ -192,7 +193,7 @@ namespace RWF.Patches
         {
             for (int i = 0; i < maxAttempts; i++)
             {
-                Vector2 position = MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector2(UnityEngine.Random.Range(0f, 1f) * FixedScreen.fixedWidth, UnityEngine.Random.Range(0f, 1f) * Screen.height));
+                Vector2 position = MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector2(UnityEngine.Random.Range(lmargin, 1f-rmargin) * FixedScreen.fixedWidth, UnityEngine.Random.Range(bmargin, 1f-tmargin) * Screen.height));
                 if (IsValidPosition(position)) { return CastToGround(position); }
             }
             return Vector2.zero;

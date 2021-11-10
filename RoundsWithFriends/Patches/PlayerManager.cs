@@ -5,6 +5,8 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using Sonigon;
+using System.Linq;
+using UnboundLib;
 
 namespace RWF.Patches
 {
@@ -52,9 +54,46 @@ namespace RWF.Patches
             __instance.StartCoroutine(WaitForMapToLoad(__instance, spawnPoints));
             return false;
         }
+        private static LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
+        static bool MapHasValidGround(Map map)
+        {
+            if (!(bool)map.GetFieldValue("hasCalledReady")) { return false; }
+
+            foreach (Transform transform in map.gameObject.transform)
+            {
+                RaycastHit2D raycastHit2D = Physics2D.Raycast(transform.position + 100f*Vector3.up, Vector2.down, 101f, groundMask);
+                if (raycastHit2D.transform && raycastHit2D.distance > 0.1f)
+                {
+                    Vector2 screenPoint = MainCam.instance.transform.GetComponent<Camera>().FixedWorldToScreenPoint(raycastHit2D.point);
+                    screenPoint.x /= FixedScreen.fixedWidth;
+                    screenPoint.y /= Screen.height;
+                    if (screenPoint.x >= 0f && screenPoint.x <= 1f && screenPoint.y >= 0f && screenPoint.y <= 1f)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         static IEnumerator WaitForMapToLoad(PlayerManager __instance, SpawnPoint[] spawnPoints)
         {
-            yield return new WaitForSecondsRealtime(1f); // wait for map colliders to load
+            /*
+            yield return new WaitUntil(() => MapManager.instance.currentMap.Map.allRigs.Any());
+            foreach (Rigidbody2D rig in MapManager.instance.currentMap.Map.allRigs)
+            {
+                UnityEngine.Debug.Log(rig.gameObject.name);
+            }
+            yield return new WaitForEndOfFrame();
+            yield return new WaitUntil(() => MapManager.instance.currentMap.Map.allRigs.Where(r => r?.gameObject?.activeInHierarchy == true).All(r => r?.gameObject?.GetComponent<Collider2D>()?.isActiveAndEnabled == true)); // wait for map colliders to load
+            foreach (Rigidbody2D rig in MapManager.instance.currentMap.Map.allRigs)
+            {
+                UnityEngine.Debug.Log(rig.gameObject.name + " - ACTIVE: " + ((bool)rig?.gameObject?.activeInHierarchy).ToString() + " - ENABLED COLLIDER: "+ ((bool)rig?.gameObject?.GetComponent<Collider2D>()?.isActiveAndEnabled).ToString());
+            }*/
+            yield return new WaitUntil(() => MapHasValidGround(MapManager.instance.currentMap?.Map));
+            yield return new WaitForSecondsRealtime(0.5f);
+
+            //yield return new WaitForSecondsRealtime(3f);
 
             Dictionary<Player, Vector2> spawnDictionary = GeneralizedSpawnPositions.GetSpawnDictionary(__instance.players, spawnPoints);
 
