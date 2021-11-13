@@ -172,9 +172,9 @@ namespace RWF.Patches
             }
             return position + Vector2.down * (raycastHit2D.distance - groundOffset);
         }
-        private static bool IsValidPosition(Vector2 position)
+        private static bool IsValidPosition(Vector2 position, out RaycastHit2D raycastHit2D)
         {
-            RaycastHit2D raycastHit2D = Physics2D.Raycast(position, Vector2.down, range, groundMask);
+            raycastHit2D = Physics2D.Raycast(position, Vector2.down, range, groundMask);
 
             if (raycastHit2D.transform && raycastHit2D.distance > 0.1f)
             {
@@ -194,7 +194,15 @@ namespace RWF.Patches
         }
         private static bool IsValidSpawnPosition(Vector2 position)
         {
-            return IsValidPosition(position) && IsValidPosition(position + minDistanceFromLedge * Vector2.right) && IsValidPosition(position + minDistanceFromLedge * Vector2.left);
+            bool centerValid = IsValidPosition(position, out RaycastHit2D raycastHit2D);
+            if (!centerValid)
+            {
+                return false;
+            }
+
+            // check left and right
+            return IsValidPosition(position + minDistanceFromLedge * (Vector2) Vector3.Cross(raycastHit2D.normal, Vector3.forward).normalized, out RaycastHit2D _) && IsValidPosition(position - minDistanceFromLedge * (Vector2) Vector3.Cross(raycastHit2D.normal, Vector3.forward).normalized, out RaycastHit2D _);
+
         }
         private static Vector2 GetNearbyValidPosition(Vector2 position)
         {
