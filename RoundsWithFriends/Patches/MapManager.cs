@@ -45,6 +45,7 @@ namespace RWF.Patches
         private const float groundOffset = 1f;
         private const float maxDistanceAway = 5f;
         private const int maxAttempts = 1000;
+        private const int numSamples = 100;
         private const float eps = 0.1f;
         private const float lmargin = 0.1f;
         private const float rmargin = 0.1f;
@@ -73,7 +74,7 @@ namespace RWF.Patches
                 float bestDistance = -1f;
                 Vector2 bestPos = new Vector2(-float.MaxValue, -float.MaxValue);
                 // add more spawn points completely at random trying to get a good separation
-                for (int _ = 0; _ < maxAttempts; _++)
+                for (int _ = 0; _ < numSamples; _++)
                 {
                     Vector2 pos = RandomValidPosition();
                     if (spawnPositions.All(s => Vector2.Distance(pos, s) > bestDistance))
