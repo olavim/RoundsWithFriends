@@ -208,10 +208,10 @@ namespace RWF.Patches
         {
             for (int i = 0; i < maxAttempts; i++)
             {
-                Vector2 offset = maxDistanceAway * UnityEngine.Random.insideUnitCircle;
-                if (IsValidSpawnPosition(position + offset))
+                Vector2 newposition = CastToGround(position + maxDistanceAway * UnityEngine.Random.insideUnitCircle);
+                if (IsValidSpawnPosition(newposition))
                 {
-                    return CastToGround(position + offset);
+                    return newposition;
                 }
             }
             return RandomValidPosition();
@@ -220,8 +220,8 @@ namespace RWF.Patches
         {
             for (int i = 0; i < maxAttempts; i++)
             {
-                Vector2 position = MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector2(UnityEngine.Random.Range(lmargin, 1f-rmargin) * FixedScreen.fixedWidth, UnityEngine.Random.Range(bmargin, 1f-tmargin) * Screen.height));
-                if (IsValidSpawnPosition(CastToGround(position))) { return CastToGround(position); }
+                Vector2 position = CastToGround(MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector2(UnityEngine.Random.Range(lmargin, 1f-rmargin) * FixedScreen.fixedWidth, UnityEngine.Random.Range(bmargin, 1f-tmargin) * Screen.height)));
+                if (IsValidSpawnPosition(position)) { return position; }
             }
             return Vector2.zero;
         }
