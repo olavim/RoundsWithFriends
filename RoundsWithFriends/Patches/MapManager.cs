@@ -40,7 +40,6 @@ namespace RWF.Patches
         static int NumberOfTeams => TeamIDs.Count();
         static int[] TeamIDs => PlayerManager.instance.players.Select(p => p.teamID).Distinct().ToArray();
 
-        //private readonly static float baseOffset = 2f;
         private const float range = 2f;
         private const float maxProject = 1000f;
         private const float groundOffset = 1f;
@@ -51,6 +50,7 @@ namespace RWF.Patches
         private const float rmargin = 0.1f;
         private const float tmargin = 0.2f;
         private const float bmargin = 0f;
+        private const float minDistanceFromLedge = 1f;
         private static LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
         //private const float minDistance = 5f;
         internal static Dictionary<Player, Vector2> GetSpawnDictionary(List<Player> players, SpawnPoint[] spawnPoints)
@@ -175,14 +175,33 @@ namespace RWF.Patches
         private static bool IsValidPosition(Vector2 position)
         {
             RaycastHit2D raycastHit2D = Physics2D.Raycast(position, Vector2.down, range, groundMask);
-            return raycastHit2D.transform && raycastHit2D.distance > 0.1f;
+
+            if (raycastHit2D.transform && raycastHit2D.distance > 0.1f)
+            {
+                if (raycastHit2D.collider && raycastHit2D.collider.GetComponent<DamageBox>() != null)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+        private static bool IsValidSpawnPosition(Vector2 position)
+        {
+            return IsValidPosition(position) && IsValidPosition(position + minDistanceFromLedge * Vector2.right) && IsValidPosition(position + minDistanceFromLedge * Vector2.left);
         }
         private static Vector2 GetNearbyValidPosition(Vector2 position)
         {
             for (int i = 0; i < maxAttempts; i++)
             {
                 Vector2 offset = maxDistanceAway * UnityEngine.Random.insideUnitCircle;
-                if (IsValidPosition(position + offset))
+                if (IsValidSpawnPosition(position + offset))
                 {
                     return CastToGround(position + offset);
                 }
@@ -194,7 +213,7 @@ namespace RWF.Patches
             for (int i = 0; i < maxAttempts; i++)
             {
                 Vector2 position = MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector2(UnityEngine.Random.Range(lmargin, 1f-rmargin) * FixedScreen.fixedWidth, UnityEngine.Random.Range(bmargin, 1f-tmargin) * Screen.height));
-                if (IsValidPosition(position)) { return CastToGround(position); }
+                if (IsValidSpawnPosition(CastToGround(position))) { return CastToGround(position); }
             }
             return Vector2.zero;
         }
