@@ -47,7 +47,6 @@ namespace RWF.Patches
             return false;
         }
     }
-
     [HarmonyPatch]
     class PlayerManager_Patch_Move
     {
@@ -138,12 +137,11 @@ namespace RWF.Patches
         {
             if (!(bool)map.GetFieldValue("hasCalledReady")) { return false; }
 
-            foreach (Transform transform in map.gameObject.transform)
+            foreach (Collider2D collider in map.gameObject.GetComponentsInChildren<Collider2D>())
             {
-                RaycastHit2D raycastHit2D = Physics2D.Raycast(transform.position + 100f*Vector3.up, Vector2.down, 101f, groundMask);
-                if (raycastHit2D.transform && raycastHit2D.distance > 0.1f)
+                if (collider.enabled)
                 {
-                    Vector2 screenPoint = MainCam.instance.transform.GetComponent<Camera>().FixedWorldToScreenPoint(raycastHit2D.point);
+                    Vector2 screenPoint = MainCam.instance.transform.GetComponent<Camera>().FixedWorldToScreenPoint(collider.transform.position);
                     screenPoint.x /= FixedScreen.fixedWidth;
                     screenPoint.y /= Screen.height;
                     if (screenPoint.x >= 0f && screenPoint.x <= 1f && screenPoint.y >= 0f && screenPoint.y <= 1f)
@@ -174,11 +172,7 @@ namespace RWF.Patches
                     BindingFlags.Instance | BindingFlags.InvokeMethod |
                     BindingFlags.NonPublic, null, __instance, new object[] { __instance.players[i].data.playerVel, (Vector3) spawnDictionary[__instance.players[i]] }));
 
-                // I have no idea why this is in the original method like this but I'm afraid to change it
-                int j;
-                for (j = i; j >= __instance.soundCharacterSpawn.Length; j -= __instance.soundCharacterSpawn.Length)
-                {
-                }
+                int j = i % __instance.soundCharacterSpawn.Length;
 
                 SoundManager.Instance.Play(__instance.soundCharacterSpawn[j], __instance.players[i].transform);
             }
