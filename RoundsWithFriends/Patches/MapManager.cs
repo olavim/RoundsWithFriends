@@ -21,21 +21,12 @@ namespace RWF.Patches
             {
                 return;
             }
-            NetworkingManager.RPC(typeof(GeneralizedSpawnPositions), nameof(GeneralizedSpawnPositions.RPCA_SetSeed), new object[] { UnityEngine.Random.Range(0, 10000) });
+            NetworkingManager.RPC(typeof(GeneralizedSpawnPositions), nameof(GeneralizedSpawnPositions.RPCA_SetSeed), new object[] { UnityEngine.Random.Range(int.MinValue, int.MaxValue) });
         }
     }
     class GeneralizedSpawnPositions
     {
         private static int seed = 0;
-        internal static void SetSeed(int newSeed)
-        {
-            seed = newSeed;
-        }
-        [UnboundRPC]
-        internal static void RPCA_SetSeed(int seed)
-        {
-            GeneralizedSpawnPositions.SetSeed(seed);
-        }
 
         static int NumberOfTeams => TeamIDs.Count();
         static int[] TeamIDs => PlayerManager.instance.players.Select(p => p.teamID).Distinct().ToArray();
@@ -52,20 +43,47 @@ namespace RWF.Patches
         private const float tmargin = 0.2f;
         private const float bmargin = 0f;
         private const float minDistanceFromLedge = 1f;
-        private static LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
-        //private const float minDistance = 5f;
+        private static readonly LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
+        private static System.Random rng = new System.Random();
+
+        internal static void SetSeed(int newSeed)
+        {
+            GeneralizedSpawnPositions.seed = newSeed;
+        }
+        [UnboundRPC]
+        internal static void RPCA_SetSeed(int seed)
+        {
+            GeneralizedSpawnPositions.SetSeed(seed);
+        }
+
+        private static float RandomRange(float l=0f, float u=1f)
+        {
+            return (float) ((u - l) * GeneralizedSpawnPositions.rng.NextDouble() + l);
+        }
+        private static Vector2 RandomInUnitCircle()
+        {
+            // believe it or not, rejection sampling is actually the most efficient way to do this
+            float x = GeneralizedSpawnPositions.RandomRange(-1f, 1f);
+            float y = GeneralizedSpawnPositions.RandomRange(-1f, 1f);
+            while (x*x + y*y > 1f)
+            {
+                x = GeneralizedSpawnPositions.RandomRange(-1f, 1f);
+                y = GeneralizedSpawnPositions.RandomRange(-1f, 1f);
+            }
+            return new Vector2(x, y);
+        }
         internal static Dictionary<Player, Vector2> GetSpawnDictionary(List<Player> players, SpawnPoint[] spawnPoints)
         {
             // initialize the RNG to sync clients
-            UnityEngine.Random.InitState(seed);
+            GeneralizedSpawnPositions.rng = new System.Random(GeneralizedSpawnPositions.seed);
 
             // filter out "default" (0,0) spawn points as well as duplicates
-            List<Vector2> spawnPositions = spawnPoints.Select(s => (Vector2) s.localStartPos).Where(s => Vector2.Distance(s,Vector2.zero) > eps).Distinct().ToList();
+            List<Vector2> spawnPositions = spawnPoints.Select(s => (Vector2) s.localStartPos).Where(s => Vector2.Distance(s,Vector2.zero) > GeneralizedSpawnPositions.eps).Distinct().ToList();
 
             // if there are no spawn positions, make at least one at random first to get the ball rolling
             if (spawnPositions.Count() == 0)
             {
-                spawnPositions = new List<Vector2>() { RandomValidPosition() };
+                spawnPositions = new List<Vector2>() { GeneralizedSpawnPositions.RandomValidPosition() };
             }
 
             // make sure there enough spawn points for all teams
@@ -74,7 +92,7 @@ namespace RWF.Patches
                 float bestDistance = -1f;
                 Vector2 bestPos = new Vector2(-float.MaxValue, -float.MaxValue);
                 // add more spawn points completely at random trying to get a good separation
-                for (int _ = 0; _ < numSamples; _++)
+                for (int _ = 0; _ < GeneralizedSpawnPositions.numSamples; _++)
                 {
                     Vector2 pos = RandomValidPosition();
                     if (spawnPositions.All(s => Vector2.Distance(pos, s) > bestDistance))
@@ -101,15 +119,15 @@ namespace RWF.Patches
                 bool firstTeam = true;
 
                 // if so, then place teammates next to each other
-                foreach (int teamID in TeamIDs.OrderBy(_ => UnityEngine.Random.Range(0f, 1f)).ToArray()) // shuffle teams
+                foreach (int teamID in TeamIDs.OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).ToArray()) // shuffle teams
                 {
                     // shuffle players in teams
-                    Player[] playersInTeam = PlayerManager.instance.GetPlayersInTeam(teamID).OrderBy(_ => UnityEngine.Random.Range(0f, 1f)).ToArray();
+                    Player[] playersInTeam = PlayerManager.instance.GetPlayersInTeam(teamID).OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).ToArray();
                     Vector2 spawnPrev = Vector2.zero;
                     if (firstTeam)
                     {
                         // pick a spawn point at random for the very first player
-                        spawnPrev = spawnPositions.OrderBy(_ => UnityEngine.Random.Range(0f, 1f)).First();
+                        spawnPrev = spawnPositions.OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).First();
                         firstTeam = false;
                     }
                     else
@@ -135,15 +153,15 @@ namespace RWF.Patches
             else
             {
                 // if not, then place teammates around the same spawn point. the above code guarantees we will have enough spawn points for each team to have one
-                int[] shuffledTeamIDs = TeamIDs.OrderBy(_ => UnityEngine.Random.Range(0f, 1f)).ToArray(); // shuffle teams
+                int[] shuffledTeamIDs = TeamIDs.OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).ToArray(); // shuffle teams
                 List<Vector2> teamSpawns = new List<Vector2>() { };
                 
                 // pick a random spawn for the first team
-                Vector2 teamSpawn = spawnPositions.OrderBy(_ => UnityEngine.Random.Range(0f, 1f)).First();
+                Vector2 teamSpawn = spawnPositions.OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).First();
                 spawnPositions.Remove(teamSpawn);
                 teamSpawns.Add(teamSpawn);
                 // assign spawns in random order
-                foreach (Player player in PlayerManager.instance.GetPlayersInTeam(shuffledTeamIDs[0]).OrderBy(_ => UnityEngine.Random.Range(0f, 1f)).ToArray())
+                foreach (Player player in PlayerManager.instance.GetPlayersInTeam(shuffledTeamIDs[0]).OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).ToArray())
                 {
                     spawnDictionary[player] = GetNearbyValidPosition(teamSpawn);
                 }
@@ -155,7 +173,7 @@ namespace RWF.Patches
                     spawnPositions.Remove(teamSpawn);
                     teamSpawns.Add(teamSpawn);
                     // assign spawns in random order
-                    foreach (Player player in PlayerManager.instance.GetPlayersInTeam(shuffledTeamIDs[i]).OrderBy(_ => UnityEngine.Random.Range(0f, 1f)).ToArray())
+                    foreach (Player player in PlayerManager.instance.GetPlayersInTeam(shuffledTeamIDs[i]).OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).ToArray())
                     {
                         spawnDictionary[player] = GetNearbyValidPosition(teamSpawn);
                     }
@@ -166,16 +184,16 @@ namespace RWF.Patches
         }
         private static Vector2 CastToGround(Vector2 position)
         {
-            RaycastHit2D raycastHit2D = Physics2D.Raycast(position, Vector2.down, maxProject, groundMask);
+            RaycastHit2D raycastHit2D = Physics2D.Raycast(position, Vector2.down, GeneralizedSpawnPositions.maxProject, GeneralizedSpawnPositions.groundMask);
             if (!raycastHit2D.transform)
             {
                 return position;
             }
-            return position + Vector2.down * (raycastHit2D.distance - groundOffset);
+            return position + Vector2.down * (raycastHit2D.distance - GeneralizedSpawnPositions.groundOffset);
         }
         private static bool IsValidPosition(Vector2 position, out RaycastHit2D raycastHit2D)
         {
-            raycastHit2D = Physics2D.Raycast(position, Vector2.down, range, groundMask);
+            raycastHit2D = Physics2D.Raycast(position, Vector2.down, GeneralizedSpawnPositions.range, GeneralizedSpawnPositions.groundMask);
 
             if (raycastHit2D.transform && raycastHit2D.distance > 0.1f)
             {
@@ -202,14 +220,14 @@ namespace RWF.Patches
             }
 
             // check left and right
-            return IsValidPosition(position + minDistanceFromLedge * (Vector2) Vector3.Cross(raycastHit2D.normal, Vector3.forward).normalized, out RaycastHit2D _) && IsValidPosition(position - minDistanceFromLedge * (Vector2) Vector3.Cross(raycastHit2D.normal, Vector3.forward).normalized, out RaycastHit2D _);
+            return IsValidPosition(position + GeneralizedSpawnPositions.minDistanceFromLedge * (Vector2) Vector3.Cross(raycastHit2D.normal, Vector3.forward).normalized, out RaycastHit2D _) && IsValidPosition(position - GeneralizedSpawnPositions.minDistanceFromLedge * (Vector2) Vector3.Cross(raycastHit2D.normal, Vector3.forward).normalized, out RaycastHit2D _);
 
         }
         private static Vector2 GetNearbyValidPosition(Vector2 position)
         {
-            for (int i = 0; i < maxAttempts; i++)
+            for (int i = 0; i < GeneralizedSpawnPositions.maxAttempts; i++)
             {
-                Vector2 newposition = CastToGround(position + maxDistanceAway * UnityEngine.Random.insideUnitCircle);
+                Vector2 newposition = CastToGround(position + GeneralizedSpawnPositions.maxDistanceAway * GeneralizedSpawnPositions.RandomInUnitCircle());
                 if (IsValidSpawnPosition(newposition))
                 {
                     return newposition;
@@ -219,9 +237,9 @@ namespace RWF.Patches
         }
         private static Vector2 RandomValidPosition()
         {
-            for (int i = 0; i < maxAttempts; i++)
+            for (int i = 0; i < GeneralizedSpawnPositions.maxAttempts; i++)
             {
-                Vector2 position = CastToGround(MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector2(UnityEngine.Random.Range(lmargin, 1f-rmargin) * FixedScreen.fixedWidth, UnityEngine.Random.Range(bmargin, 1f-tmargin) * Screen.height)));
+                Vector2 position = CastToGround(MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector2(GeneralizedSpawnPositions.RandomRange(GeneralizedSpawnPositions.lmargin, 1f-GeneralizedSpawnPositions.rmargin) * FixedScreen.fixedWidth, GeneralizedSpawnPositions.RandomRange(GeneralizedSpawnPositions.bmargin, 1f-GeneralizedSpawnPositions.tmargin) * Screen.height)));
                 if (IsValidSpawnPosition(position)) { return position; }
             }
             return Vector2.zero;
@@ -252,18 +270,18 @@ namespace RWF.Patches
     // extension for dealing with ultrawide displays
     internal static class FixedScreen
     {
-        internal static bool isUltraWide => ((float) Screen.width / (float) Screen.height - ratio >= eps);
+        internal static bool isUltraWide => ((float) Screen.width / (float) Screen.height - FixedScreen.ratio >= FixedScreen.eps);
         private const float ratio = 16f / 9f;
         private const float eps = 1E-1f;
         internal static int fixedWidth
         {
             get
             {
-                if (isUltraWide)
+                if (FixedScreen.isUltraWide)
                 {
                     // widescreen (or at least nonstandard screen)
                     // we assume the height is correct (since the game seems to scale to force the height to match)
-                    return (int) UnityEngine.Mathf.RoundToInt(Screen.height * ratio);
+                    return (int) UnityEngine.Mathf.RoundToInt(Screen.height * FixedScreen.ratio);
                 }
                 else
                 {

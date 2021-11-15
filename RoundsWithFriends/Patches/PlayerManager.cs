@@ -129,10 +129,9 @@ namespace RWF.Patches
     {
         static bool Prefix(PlayerManager __instance, SpawnPoint[] spawnPoints)
         {
-            __instance.StartCoroutine(WaitForMapToLoad(__instance, spawnPoints));
+            __instance.StartCoroutine(PlayerManager_Patch_MovePlayers.WaitForMapToLoad(__instance, spawnPoints));
             return false;
         }
-        private static LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
         static bool MapHasValidGround(Map map)
         {
             if (!(bool)map.GetFieldValue("hasCalledReady")) { return false; }
@@ -156,7 +155,7 @@ namespace RWF.Patches
         static IEnumerator WaitForMapToLoad(PlayerManager __instance, SpawnPoint[] spawnPoints)
         {
             // wait until the map has solid ground
-            yield return new WaitUntil(() => MapHasValidGround(MapManager.instance.currentMap?.Map));
+            yield return new WaitUntil(() => PlayerManager_Patch_MovePlayers.MapHasValidGround(MapManager.instance.currentMap?.Map));
             // 10 extra frames to make the game happy
             for (int _ = 0; _ < 10; _++)
             {
