@@ -225,10 +225,17 @@ namespace RWF.Patches
         }
         private static Vector2 GetNearbyValidPosition(Vector2 position)
         {
+            // if the position is significantly far from the ground (and therefore not a valid position) then it must be a spawnpoint placed in the air
+            // in that case, just return a random nearby point - disregarding any floor requirements
+            if (Vector2.Distance(position, CastToGround(position)) > GeneralizedSpawnPositions.maxDistanceAway)
+            {
+                return position + GeneralizedSpawnPositions.maxDistanceAway * GeneralizedSpawnPositions.RandomInUnitCircle();
+            }
+
             for (int i = 0; i < GeneralizedSpawnPositions.maxAttempts; i++)
             {
                 Vector2 newposition = CastToGround(position + GeneralizedSpawnPositions.maxDistanceAway * GeneralizedSpawnPositions.RandomInUnitCircle());
-                if (IsValidSpawnPosition(newposition))
+                if (IsValidSpawnPosition(newposition) && Vector2.Distance(newposition, position) <= GeneralizedSpawnPositions.maxDistanceAway)
                 {
                     return newposition;
                 }

@@ -140,13 +140,7 @@ namespace RWF.Patches
             {
                 if (collider.enabled)
                 {
-                    Vector2 screenPoint = MainCam.instance.transform.GetComponent<Camera>().FixedWorldToScreenPoint(collider.transform.position);
-                    screenPoint.x /= FixedScreen.fixedWidth;
-                    screenPoint.y /= Screen.height;
-                    if (screenPoint.x >= 0f && screenPoint.x <= 1f && screenPoint.y >= 0f && screenPoint.y <= 1f)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
             return false;
