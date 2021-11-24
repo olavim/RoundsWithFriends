@@ -150,11 +150,6 @@ namespace RWF.Patches
         {
             // wait until the map has solid ground
             yield return new WaitUntil(() => PlayerManager_Patch_MovePlayers.MapHasValidGround(MapManager.instance.currentMap?.Map));
-            // 10 extra frames to make the game happy
-            for (int _ = 0; _ < 10; _++)
-            {
-                yield return null;
-            }
 
             Dictionary<Player, Vector2> spawnDictionary = GeneralizedSpawnPositions.GetSpawnDictionary(__instance.players, spawnPoints);
 
