@@ -110,7 +110,7 @@ namespace RWF
         {
             get
             {
-                return 4;
+                return 8;
             }
         }
 
@@ -397,32 +397,23 @@ namespace RWF
                 var charSelectInstanceGo1 = charSelectionGroupGo.transform.GetChild(0).gameObject;
                 var charSelectInstanceGo2 = charSelectionGroupGo.transform.GetChild(1).gameObject;
 
-                var charSelectInstanceGo3 = GameObject.Instantiate(charSelectInstanceGo1, charSelectionGroupGo.transform);
-                charSelectInstanceGo3.name = "CharacterSelect 3";
-                charSelectInstanceGo3.transform.localScale = Vector3.one;
-
-                charSelectInstanceGo3.transform.position = charSelectInstanceGo1.transform.position - new Vector3(0, 6, 0);
                 charSelectInstanceGo1.transform.position += new Vector3(0, 6, 0);
-
-                foreach (var portrait in charSelectInstanceGo3.transform.GetChild(0).GetChild(0).GetComponentsInChildren<CharacterCreatorPortrait>())
-                {
-                    portrait.playerId = 2;
-                }
-
-                var charSelectInstanceGo4 = GameObject.Instantiate(charSelectInstanceGo2, charSelectionGroupGo.transform);
-                charSelectInstanceGo4.name = "CharacterSelect 4";
-                charSelectInstanceGo4.transform.localScale = Vector3.one;
-
-                charSelectInstanceGo4.transform.position = charSelectInstanceGo2.transform.position - new Vector3(0, 6, 0);
                 charSelectInstanceGo2.transform.position += new Vector3(0, 6, 0);
 
-                foreach (var portrait in charSelectInstanceGo4.transform.GetChild(0).GetChild(0).GetComponentsInChildren<CharacterCreatorPortrait>())
+                for (int playerNum = 3; playerNum <= this.MaxPlayers; playerNum++)
                 {
-                    portrait.playerId = 3;
-                }
+                    var newCharSelectInstanceGo = GameObject.Instantiate(playerNum % 2 == 1 ? charSelectInstanceGo1 : charSelectInstanceGo2, charSelectionGroupGo.transform);
+                    newCharSelectInstanceGo.name = "CharacterSelect " + playerNum.ToString();
+                    newCharSelectInstanceGo.transform.localScale = Vector3.one;
 
-                charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(charSelectInstanceGo3.GetComponent<CharacterSelectionInstance>().ResetMenu);
-                charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(charSelectInstanceGo4.GetComponent<CharacterSelectionInstance>().ResetMenu);
+                    newCharSelectInstanceGo.transform.position = (playerNum % 2 == 1 ? charSelectInstanceGo1 : charSelectInstanceGo2).transform.position - new Vector3(0, 12 * (UnityEngine.Mathf.Ceil(((float)playerNum-2f)/2f)), 0);
+
+                    foreach (var portrait in newCharSelectInstanceGo.transform.GetChild(0).GetChild(0).GetComponentsInChildren<CharacterCreatorPortrait>())
+                    {
+                        portrait.playerId = playerNum-1;
+                    }
+                    charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(newCharSelectInstanceGo.GetComponent<CharacterSelectionInstance>().ResetMenu);
+                }
             }
 
             if (!gameGo.transform.Find("PrivateRoom"))
