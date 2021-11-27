@@ -72,11 +72,43 @@ namespace RWF.Patches
             return AccessTools.Method(GetNestedMoveType(), "MoveNext");
         }
 
-        static void SetObjectColliderActive(PlayerVelocity player, bool active)
+        static void TrySetEnabled<T>(GameObject gameObject, bool enabled) where T : MonoBehaviour
+        {
+            if (gameObject?.GetComponent<T>() != null)
+            {
+                gameObject.GetComponent<T>().enabled = enabled;
+            }
+        }
+
+        static void SetCollidersActive(PlayerVelocity player, bool active)
         {
             GameObject col = player.gameObject.transform.Find("ObjectCollider")?.gameObject;
 
             col?.SetActive(active);
+
+            if (player?.gameObject?.GetComponent<CircleCollider2D>() != null)
+            {
+                player.gameObject.GetComponent<CircleCollider2D>().enabled = active;
+            }
+
+            TrySetEnabled<CollisionChecker>(player?.gameObject, active);
+            TrySetEnabled<HealthHandler>(player?.gameObject, active);
+            TrySetEnabled<PlayerCollision>(player?.gameObject, active);
+            TrySetEnabled<LegRaycasters>(player?.gameObject?.transform?.Find("Limbs/LegStuff")?.gameObject, active);
+
+            // find the OutOfBoundsHandler for this player
+            if (player?.GetComponent<Player>() != null)
+            {
+                OutOfBoundsHandler[] ooBs = UnityEngine.GameObject.FindObjectsOfType<OutOfBoundsHandler>();
+                foreach (OutOfBoundsHandler ooB in ooBs)
+                {
+                    if (((CharacterData) ooB.GetFieldValue("data")).player.playerID == player.GetComponent<Player>().playerID)
+                    {
+                        ooB.enabled = active;
+                        break;
+                    }
+                }
+            }
         }
 
         // patch to disable player's ObjectCollider for the entirety of the move
@@ -88,7 +120,7 @@ namespace RWF.Patches
             var f_isKinematic = ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "isKinematic");
             var f_player = ExtensionMethods.GetFieldInfo(GetNestedMoveType(), "player");
 
-            var m_setObjectColliderActive = ExtensionMethods.GetMethodInfo(typeof(PlayerManager_Patch_Move), "SetObjectColliderActive");
+            var m_setCollidersActive = ExtensionMethods.GetMethodInfo(typeof(PlayerManager_Patch_Move), nameof(PlayerManager_Patch_Move.SetCollidersActive));
 
             int disable_index = -1;
             int enable_index = -1;
@@ -112,12 +144,12 @@ namespace RWF.Patches
                 codes.Insert(disable_index, new CodeInstruction(OpCodes.Ldarg_0)); // load the PlayerManager.<Move>d__40 instance onto the stack [PlayerManager.<Move>d__40, ...]
                 codes.Insert(disable_index + 1, new CodeInstruction(OpCodes.Ldfld, f_player)); // load PlayerManager.<Move>d__40::player onto the stack (pops PlayerManager.<Move>d__40 off the stack) [PlayerManager.<Move>d__40::player, ...]
                 codes.Insert(disable_index + 2, new CodeInstruction(OpCodes.Ldc_I4_0)); // load 0 onto the stack [0, PlayerManager.<Move>d__40::player, ...]
-                codes.Insert(disable_index + 3, new CodeInstruction(OpCodes.Call, m_setObjectColliderActive)); // calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
+                codes.Insert(disable_index + 3, new CodeInstruction(OpCodes.Call, m_setCollidersActive)); // calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
 
                 codes.Insert(enable_index, new CodeInstruction(OpCodes.Ldarg_0)); // load the PlayerManager.<Move>d__40 instance onto the stack [PlayerManager.<Move>d__40, ...]
                 codes.Insert(enable_index + 1, new CodeInstruction(OpCodes.Ldfld, f_player)); // load PlayerManager.<Move>d__40::player onto the stack (pops PlayerManager.<Move>d__40 off the stack) [PlayerManager.<Move>d__40::player, ...]
                 codes.Insert(enable_index + 2, new CodeInstruction(OpCodes.Ldc_I4_1)); // load 1 onto the stack [1, PlayerManager.<Move>d__40::player, ...]
-                codes.Insert(enable_index + 3, new CodeInstruction(OpCodes.Call, m_setObjectColliderActive)); // calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
+                codes.Insert(enable_index + 3, new CodeInstruction(OpCodes.Call, m_setCollidersActive)); // calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
             }
 
             return codes.AsEnumerable();
