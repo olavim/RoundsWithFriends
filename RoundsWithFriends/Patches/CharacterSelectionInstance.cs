@@ -3,9 +3,33 @@ using UnboundLib.GameModes;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using RWF.UI;
+using UnboundLib;
 
 namespace RWF.Patches
 {
+    static class Colors
+    {
+        public static Color Transparent(Color color, float a = 0.5f)
+        {
+            return new Color(color.r, color.g, color.b, a);
+        }
+        public static Color readycolor = new Color(0.2f, 0.8f, 0.1f, 1f);
+        public static Color editcolor = new Color(0.9f, 0f, 0.1f, 1f);
+        public static Color joinedcolor = Color.white;
+    }
+
+    [HarmonyPatch(typeof(CharacterSelectionInstance), "Start")]
+    class CharacterSelectionInstance_Patch_Start
+    {
+        static void Prefix(CharacterSelectionInstance __instance, ref float ___counter)
+        {
+
+            //__instance.currentPlayer.data.playerActions.Jump.ClearInputState();
+            ___counter = -0.1f;
+        }
+    }
+
     [HarmonyPatch(typeof(CharacterSelectionInstance), "ReadyUp")]
     class CharacterSelectionInstance_Patch_ReadyUp
     {
@@ -33,6 +57,26 @@ namespace RWF.Patches
             ___isReady = !___isReady;
             return true;
         }
+
+        static void Postfix(CharacterSelectionInstance __instance, HoverEvent[] ___buttons)
+        {
+            __instance.getReadyObj.GetComponent<TextMeshProUGUI>().text = "";
+            for (int i = 0; i< ___buttons.Length; i++)
+            {
+                ___buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(__instance.isReady);
+                ___buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(__instance.isReady);
+                foreach (Graphic graphic in ___buttons[i].transform.GetChild(4).GetChild(0).GetComponentsInChildren<Graphic>(true))
+                {
+                    graphic.color = __instance.isReady ? Colors.Transparent(Colors.readycolor) : Color.clear;
+                }
+                foreach (Graphic graphic in ___buttons[i].transform.GetChild(4).GetChild(1).GetComponentsInChildren<Graphic>(true))
+                {
+                    graphic.color = __instance.isReady ? Colors.Transparent(Colors.readycolor) : Color.clear;
+                }
+                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = __instance.isReady ? "READY" : "PRESS JUMP WHEN READY";
+                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = __instance.isReady ? Colors.readycolor : Colors.joinedcolor;
+            }
+        }
     }
 
     [HarmonyPatch(typeof(CharacterSelectionInstance), "StartPicking")]
@@ -48,40 +92,60 @@ namespace RWF.Patches
             __instance.getReadyObj.gameObject.SetActive(true);
             if (__instance.currentPlayer.data.input.inputType == GeneralInput.InputType.Keyboard)
             {
-                __instance.getReadyObj.GetComponent<TextMeshProUGUI>().text = "[SPACE]";
+                __instance.getReadyObj.GetComponent<TextMeshProUGUI>().text = "";
             }
             else
             {
-                __instance.getReadyObj.GetComponent<TextMeshProUGUI>().text = "[START]";
+                __instance.getReadyObj.GetComponent<TextMeshProUGUI>().text = "";
             }
-            ___buttons = __instance.transform.GetComponentsInChildren<HoverEvent>();
+            ___buttons = __instance.transform.GetComponentsInChildren<HoverEvent>(true);
             for (int i = 0; i < ___buttons.Length; i++)
             {
-                if (true)//pickingPlayer.data.input.inputType == GeneralInput.InputType.Controller)
-                {
-                    ___buttons[i].enabled = false;
-                    ___buttons[i].GetComponent<Button>().interactable = false;
-                    ___buttons[i].GetComponent<CharacterCreatorPortrait>().controlType = MenuControllerHandler.MenuControl.Controller;
-                }
-                else
-                {
-                    /*
-                    __instance.buttons[i].enabled = true;
-                    __instance.buttons[i].GetComponent<Button>().interactable = true;
-                    __instance.buttons[i].GetComponent<CharacterCreatorPortrait>().controlType = MenuControllerHandler.MenuControl.Mouse;
-                    Navigation navigation = __instance.buttons[i].GetComponent<Button>().navigation;
-                    navigation.mode = Navigation.Mode.None;
-                    __instance.buttons[i].GetComponent<Button>().navigation = navigation;
-                    */
-                }
+                ___buttons[i].enabled = false;
+                ___buttons[i].GetComponent<Button>().interactable = false;
+                ___buttons[i].GetComponent<CharacterCreatorPortrait>().controlType = MenuControllerHandler.MenuControl.Controller;
 
                 if (pickingPlayer.data.input.inputType != GeneralInput.InputType.Controller)
                 {
                     ___buttons[i].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().text = "[E] TO EDIT";
+                    ___buttons[i].transform.GetChild(3).GetChild(0).localPosition -= new Vector3(___buttons[i].transform.GetChild(3).GetChild(0).localPosition.x, 0f, 0f);
                     ___buttons[i].transform.GetChild(3).GetChild(1).gameObject.SetActive(false);
                 }
 
+                // enabled the "LOCKED" component to reuse as info text
+                ___buttons[i].transform.GetChild(4).gameObject.SetActive(true);
+                ___buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(false);
+                ___buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(false);
+                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = "PRESS JUMP WHEN READY";
+                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.joinedcolor;
             }
+
+            if (__instance.transform.GetChild(0).Find("CharacterSelectButtons") != null)
+            {
+                GameObject go1 = __instance.transform.GetChild(0).Find("CharacterSelectButtons")?.gameObject;
+
+                UnityEngine.GameObject.Destroy(go1);
+            }
+
+            GameObject characterSelectButtons = new GameObject("CharacterSelectButtons");
+            characterSelectButtons.transform.SetParent(__instance.transform.GetChild(0));
+            GameObject leftarrow = new GameObject("LeftArrow", typeof(CharacterSelectButton));
+            leftarrow.transform.SetParent(characterSelectButtons.transform);
+            GameObject rightarrow = new GameObject("RightArrow", typeof(CharacterSelectButton));
+            rightarrow.transform.SetParent(characterSelectButtons.transform);
+
+            characterSelectButtons.transform.localScale = Vector3.one;
+            characterSelectButtons.transform.localPosition = Vector3.zero;
+
+            leftarrow.transform.localScale = new Vector3(1f, 3f, 1f);
+            leftarrow.transform.localPosition = new Vector3(-60f, 0f, 0f);
+            leftarrow.GetComponent<CharacterSelectButton>().SetCharacterSelectionInstance(__instance);
+            leftarrow.GetComponent<CharacterSelectButton>().SetDirection(CharacterSelectButton.LeftRight.Left);
+            rightarrow.transform.localScale = new Vector3(1f, 3f, 1f);
+            rightarrow.transform.localPosition = new Vector3(60f, 0f, 0f);
+            rightarrow.GetComponent<CharacterSelectButton>().SetCharacterSelectionInstance(__instance);
+            rightarrow.GetComponent<CharacterSelectButton>().SetDirection(CharacterSelectButton.LeftRight.Right);
+
             return false;
         }
     }
@@ -101,9 +165,8 @@ namespace RWF.Patches
                 {
                     __instance.ReadyUp();
                 }
-                //return false;
             }
-            else if (__instance.currentPlayer.data.playerActions.Device.CommandWasPressed)
+            else if (__instance.currentPlayer.data.playerActions.Device.CommandWasPressed || (__instance.currentPlayer.data.playerActions.Jump.WasPressed && ___counter > 0f))
             {
                 __instance.ReadyUp();
             }
@@ -125,6 +188,7 @@ namespace RWF.Patches
                     }
                 }
                 ___currentButton = component;
+                ___currentButton.transform.GetChild(4).gameObject.SetActive(true);
                 ___currentButton.gameObject.SetActive(true);
                 ___currentButton.GetComponent<SimulatedSelection>().Select();
                 ___currentButton.GetComponent<Button>().onClick.Invoke();
@@ -142,13 +206,34 @@ namespace RWF.Patches
                 }
                 ___counter = 0f;
             }
-            //if (__instance.currentPlayer.data.playerActions.Jump.WasPressed)
-            //{
-            //    ___currentButton.GetComponent<Button>().onClick.Invoke();
-            //}
             if (((__instance.currentPlayer.data.input.inputType == GeneralInput.InputType.Controller) && __instance.currentPlayer.data.playerActions.Device.Action4.WasPressed) || ((__instance.currentPlayer.data.input.inputType != GeneralInput.InputType.Controller) && Input.GetKeyDown(KeyCode.E)))
             {
+                for (int i = 0; i < ___buttons.Length; i++)
+                {
+                    ___buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(true);
+                    ___buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(true);
+                    foreach (Graphic graphic in ___buttons[i].transform.GetChild(4).GetChild(0).GetComponentsInChildren<Graphic>(true))
+                    {
+                        graphic.color = Colors.Transparent(Colors.editcolor);
+                    }
+                    ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = "EDITING";
+                    ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.editcolor;
+                }
+
                 ___currentButton.GetComponent<CharacterCreatorPortrait>().EditCharacter();
+
+                for (int i = 0; i < ___buttons.Length; i++)
+                {
+                    ___buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(false);
+                    ___buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(false);
+                    foreach (Graphic graphic in ___buttons[i].transform.GetChild(4).GetChild(0).GetComponentsInChildren<Graphic>(true))
+                    {
+                        graphic.color = Color.clear;
+                    }
+                    ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = "PRESS JUMP WHEN READY";
+                    ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.joinedcolor;
+                }
+
             }
             __instance.currentlySelectedFace = Mathf.Clamp(__instance.currentlySelectedFace, 0, ___buttons.Length - 1);
 
