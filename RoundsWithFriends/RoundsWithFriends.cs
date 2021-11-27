@@ -231,7 +231,7 @@ namespace RWF
         }
         private IEnumerator SetPlayerFaces(IGameModeHandler gm)
         {
-            if (RWFMod.facesSet)
+            if (RWFMod.facesSet || PhotonNetwork.OfflineMode)
             {
                 yield break;
             }
