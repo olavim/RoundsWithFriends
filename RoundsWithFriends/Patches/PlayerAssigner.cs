@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using InControl;
 using UnboundLib;
+using UnityEngine;
 
 namespace RWF.Patches
 {
@@ -18,6 +19,31 @@ namespace RWF.Patches
             return PhotonNetwork.OfflineMode ||
                 NetworkConnectionHandler.instance.IsSearchingQuickMatch() ||
                 NetworkConnectionHandler.instance.IsSearchingTwitch();
+        }
+
+        static void Postfix(PlayerAssigner __instance, bool ___playersCanJoin)
+        {
+            if (RWFMod.DEBUG)
+            {
+                if (!___playersCanJoin)
+                {
+                    return;
+                }
+                if (__instance.players.Count >= __instance.maxPlayers)
+                {
+                    return;
+                }
+                if (DevConsole.isTyping)
+                {
+                    return;
+                }
+                if (Input.GetKey(KeyCode.LeftBracket))
+                {
+
+                    __instance.StartCoroutine(__instance.CreatePlayer(null, false));
+                    
+                }
+            }
         }
     }
 

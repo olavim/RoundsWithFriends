@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using RWF.UI;
 using UnboundLib;
+using System.Collections.Generic;
 
 namespace RWF.Patches
 {
@@ -16,7 +17,7 @@ namespace RWF.Patches
         }
         public static Color readycolor = new Color(0.2f, 0.8f, 0.1f, 1f);
         public static Color editcolor = new Color(0.9f, 0f, 0.1f, 1f);
-        public static Color joinedcolor = Color.white;
+        public static Color joinedcolor = new Color(0.566f, 0.566f, 0.566f, 1f);
     }
 
     [HarmonyPatch(typeof(CharacterSelectionInstance), "Start")]
@@ -82,6 +83,7 @@ namespace RWF.Patches
     [HarmonyPatch(typeof(CharacterSelectionInstance), "StartPicking")]
     class CharacterSelectionInstance_Patch_StartPicking
     {
+
         static bool Prefix(CharacterSelectionInstance __instance, Player pickingPlayer, ref HoverEvent[] ___buttons, ref HoverEvent ___currentButton, ref float ___counter)
         {
             __instance.currentPlayer = pickingPlayer;
@@ -90,14 +92,11 @@ namespace RWF.Patches
             __instance.GetComponentInChildren<GeneralParticleSystem>(true).Stop();
             __instance.transform.GetChild(0).gameObject.SetActive(true);
             __instance.getReadyObj.gameObject.SetActive(true);
-            if (__instance.currentPlayer.data.input.inputType == GeneralInput.InputType.Keyboard)
-            {
-                __instance.getReadyObj.GetComponent<TextMeshProUGUI>().text = "";
-            }
-            else
-            {
-                __instance.getReadyObj.GetComponent<TextMeshProUGUI>().text = "";
-            }
+            __instance.getReadyObj.GetComponent<TextMeshProUGUI>().text = "";
+
+            __instance.transform.GetChild(1).gameObject.SetActive(false);
+            __instance.transform.GetChild(2).gameObject.SetActive(false);
+            
             ___buttons = __instance.transform.GetComponentsInChildren<HoverEvent>(true);
             for (int i = 0; i < ___buttons.Length; i++)
             {
@@ -221,6 +220,13 @@ namespace RWF.Patches
                 }
 
                 ___currentButton.GetComponent<CharacterCreatorPortrait>().EditCharacter();
+
+                __instance.getReadyObj.GetComponent<TextMeshProUGUI>().text = "";
+                ___currentButton.GetComponent<SimulatedSelection>().Select();
+
+
+                __instance.transform.GetChild(1).gameObject.SetActive(false);
+                __instance.transform.GetChild(2).gameObject.SetActive(false);
 
                 for (int i = 0; i < ___buttons.Length; i++)
                 {

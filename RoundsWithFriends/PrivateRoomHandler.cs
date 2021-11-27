@@ -270,6 +270,7 @@ namespace RWF
 
         private void Update()
         {
+            /*
             if (RWFMod.DEBUG)
             {
                 if (Input.GetKeyDown(KeyCode.T))
@@ -281,7 +282,7 @@ namespace RWF
                 {
                     this.StartCoroutine(this.ToggleReady());
                 }
-            }
+            }*/
 
             /* Ready toggle requests are handled by master client in the order they arrive. If at any point all players are ready
              * (even if there would be more toggle requests remaining), the game starts immediately.
