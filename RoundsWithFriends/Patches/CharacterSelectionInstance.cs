@@ -29,6 +29,11 @@ namespace RWF.Patches
             //__instance.currentPlayer.data.playerActions.Jump.ClearInputState();
             ___counter = -0.1f;
         }
+
+        static void Postfix(CharacterSelectionInstance __instance, ref CharacterSelectionInstance[] ___selectors)
+        {
+            ___selectors = __instance.transform.parent.GetComponentsInChildren<CharacterSelectionInstance>(true);
+        }
     }
 
     [HarmonyPatch(typeof(CharacterSelectionInstance), "ReadyUp")]
