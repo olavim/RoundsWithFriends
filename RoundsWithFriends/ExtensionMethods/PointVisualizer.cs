@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI.ProceduralImage;
 using UnboundLib;
 using Sonigon;
+using UnityEngine.UI;
 
 namespace RWF
 {
@@ -24,8 +25,8 @@ namespace RWF
 
         // Overload for the existing ResetBalls method to support more than two teams
         public static void ResetBalls(this PointVisualizer instance, int numTeams) {
-			while (instance.transform.childCount > 4) {
-				GameObject.DestroyImmediate(instance.transform.GetChild(4).gameObject);
+			while (instance.transform.GetChild(1).childCount > 2) {
+				GameObject.DestroyImmediate(instance.transform.GetChild(1).GetChild(2).gameObject);
 			}
 
 			var data = instance.GetData();
@@ -36,8 +37,8 @@ namespace RWF
 				data.teamBallVelocity.Add(i, Vector3.zero);
 			}
 
-			var orangeBall = instance.transform.Find("Orange").gameObject;
-			var blueBall = instance.transform.Find("Blue").gameObject;
+			var orangeBall = instance.transform.GetChild(1).Find("Orange").gameObject;
+			var blueBall = instance.transform.GetChild(1).Find("Blue").gameObject;
 
 			data.teamBall.Add(0, orangeBall);
 			data.teamBall.Add(1, blueBall);
@@ -51,7 +52,7 @@ namespace RWF
             blueBall.GetComponent<RectTransform>().anchoredPosition = new Vector3(xPos + 300, 0, 0);
 
             for (int i = 2; i < numTeams; i++) {
-                var ball = GameObject.Instantiate(orangeBall, instance.transform);
+                var ball = GameObject.Instantiate(orangeBall, instance.transform.GetChild(1));
 				ball.transform.localScale = Vector3.one;
 				ball.GetComponent<RectTransform>().anchoredPosition = new Vector3(xPos + (300 * i), 0, 0);
 
@@ -61,12 +62,15 @@ namespace RWF
 
 				data.teamBall.Add(i, ball);
 			}
+
+            instance.transform.GetChild(1).gameObject.GetOrAddComponent<GridLayoutGroup>().constraintCount = numTeams;
+
         }
 
         // Overload for the existing DoWinSequence method to support more than two teams
         public static IEnumerator DoWinSequence(this PointVisualizer instance, Dictionary<int, int> teamPoints, Dictionary<int, int> teamRounds, int winnerTeamID) {
 			yield return new WaitForSecondsRealtime(0.35f);
-			SoundManager.Instance.Play(instance.soundWinRound, instance.transform);
+			SoundManager.Instance.Play(instance.soundWinRound, instance.transform.GetChild(1));
 
 			int teamCount = teamPoints.Count;
 			var pointPos = (Vector3) UIHandler.instance.roundCounterSmall.InvokeMethod("GetPointPos", winnerTeamID);
@@ -74,11 +78,11 @@ namespace RWF
 			instance.ResetBalls(teamCount);
 			instance.bg.SetActive(true);
 
-			instance.transform.Find("Orange").gameObject.SetActive(true);
-			instance.transform.Find("Blue").gameObject.SetActive(true);
+			instance.transform.GetChild(1).Find("Orange").gameObject.SetActive(true);
+			instance.transform.GetChild(1).Find("Blue").gameObject.SetActive(true);
 
-			for (int i = 2; i < teamCount; i++) {
-				instance.transform.GetChild(i + 2).gameObject.SetActive(true);
+			for (int i = 0; i < teamCount; i++) {
+				instance.transform.GetChild(1).GetChild(i).gameObject.SetActive(true);
 			}
 
 			yield return new WaitForSecondsRealtime(0.2f);
@@ -173,7 +177,7 @@ namespace RWF
 				fill.fillAmount = 0f;
 			}
 
-			instance.InvokeMethod("Close");
+            instance.InvokeMethod("Close");
 		}
 
 		// Overload for the existing DoSequence method to support more than two teams
@@ -185,12 +189,12 @@ namespace RWF
 			instance.ResetBalls(teamPoints.Count);
 			instance.bg.SetActive(true);
 
-			instance.transform.Find("Orange").gameObject.SetActive(true);
-			instance.transform.Find("Blue").gameObject.SetActive(true);
+			instance.transform.GetChild(1).Find("Orange").gameObject.SetActive(true);
+			instance.transform.GetChild(1).Find("Blue").gameObject.SetActive(true);
 
-			for (int i = 2; i < teamPoints.Count; i++)
+			for (int i = 0; i < teamPoints.Count; i++)
 			{
-				instance.transform.GetChild(i + 2).gameObject.SetActive(true);
+				instance.transform.GetChild(1).GetChild(i).gameObject.SetActive(true);
 			}
 
 			yield return new WaitForSecondsRealtime(0.2f);
