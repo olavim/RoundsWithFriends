@@ -182,7 +182,7 @@ namespace RWF.Patches
         {
             // wait until the map has solid ground
             yield return new WaitUntil(() => PlayerManager_Patch_MovePlayers.MapHasValidGround(MapManager.instance.currentMap?.Map));
-            // 10 extra frames to make the game happy, this is necessary for maps whose only valid ground consists of dynamic objects
+            // 10 extra frames to make the game happy, this is necessary dynamic objects to be registered as valid ground
             for (int _ = 0; _ < 10; _++)
             {
                 yield return null;
