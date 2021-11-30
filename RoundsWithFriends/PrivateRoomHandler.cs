@@ -208,7 +208,7 @@ namespace RWF
             {
                 if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
                 {
-                    string nextGameMode = GameModeManager.CurrentHandlerID == "ArmsRace" ? "Deathmatch" : "ArmsRace";
+                    string nextGameMode = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "Deathmatch" : "Team Deathmatch";
                     GameModeManager.SetGameMode(nextGameMode);
                     this.ExecuteAfterGameModeInitialized(nextGameMode, () =>
                     {
@@ -313,10 +313,10 @@ namespace RWF
             {
                 if (GameModeManager.CurrentHandler == null)
                 {
-                    GameModeManager.SetGameMode("ArmsRace");
+                    GameModeManager.SetGameMode("Team Deathmatch");
                 }
 
-                PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "ArmsRace" ? "TEAM DEATHMATCH" : "DEATHMATCH";
+                PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "TEAM DEATHMATCH" : "DEATHMATCH";
                 PrivateRoomHandler.UpdatePlayerDisplay();
             }
 
@@ -450,7 +450,7 @@ namespace RWF
             GameModeManager.SetGameMode(gameMode);
             GameModeManager.CurrentHandler.SetSettings(settings);
 
-            PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "ArmsRace" ? "TEAM DEATHMATCH" : "DEATHMATCH";
+            PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "TEAM DEATHMATCH" : "DEATHMATCH";
             PrivateRoomHandler.UpdatePlayerDisplay();
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettingsResponse), PhotonNetwork.LocalPlayer.ActorNumber);
