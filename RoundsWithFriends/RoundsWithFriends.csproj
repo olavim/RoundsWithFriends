@@ -90,6 +90,8 @@
     </Reference>
     <Reference Include="UnityEngine.SpriteMaskModule">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.SpriteMaskModule.dll</HintPath>
+    <Reference Include="UnityEngine.Physics2DModule">
+      <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.Physics2DModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
