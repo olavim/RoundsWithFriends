@@ -12,6 +12,7 @@ using UnityEngine.SceneManagement;
 
 namespace RWF.Patches
 {
+    /*
     [HarmonyPatch(typeof(GM_ArmsRace), "Start")]
     class GM_ArmsRace_Patch_Start
     {
@@ -37,8 +38,8 @@ namespace RWF.Patches
 
             return newInstructions;
         }
-    }
-
+    }*/
+    /*
     [HarmonyPatch(typeof(GM_ArmsRace), "DoStartGame")]
     class GM_ArmsRace_Patch_DoStartGame
     {
@@ -47,8 +48,8 @@ namespace RWF.Patches
             CardBarHandler.instance.Rebuild();
             UIHandler.instance.InvokeMethod("SetNumberOfRounds", __instance.roundsToWinGame);
         }
-    }
-
+    }*/
+    /*
     [HarmonyPatch(typeof(GM_ArmsRace), "PlayerJoined")]
     class GM_ArmsRace_Patch_PlayerJoined
     {
@@ -56,8 +57,8 @@ namespace RWF.Patches
             // When playing in a private match, we want to pretty much ignore this function since we handle player joins in PrivateRoomHandler
             return NetworkConnectionHandler.instance.IsSearchingQuickMatch() || NetworkConnectionHandler.instance.IsSearchingTwitch();
         }
-    }
-
+    }*/
+    /*
     [HarmonyPatch(typeof(GM_ArmsRace), "GameOverRematch")]
     class GM_ArmsRace_Patch_GameOverRematch
     {
@@ -71,12 +72,12 @@ namespace RWF.Patches
             var allModded = PhotonNetwork.CurrentRoom.Players.Values.ToList().All(p => p.IsModded());
             if (!allModded && PlayerManager.instance.players.Count == 2) {
                 return true;
-            }
+            }*/
 
             /* The master client destroys all networked player objects after each game. Otherwise, if someone
              * joins a lobby after a game has been played, all the previously created player objects will be
              * created for the new client as well, which causes a host of problems.
-             */
+             *//*
             if (PhotonNetwork.IsMasterClient) {
                 foreach (var player in PhotonNetwork.CurrentRoom.Players.Values.ToList()) {
                     PhotonNetwork.DestroyPlayerObjects(player);
@@ -86,8 +87,9 @@ namespace RWF.Patches
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
             return false;
         }
-    }
+    }*/
 
+    /*
     [HarmonyPatch]
     class GM_ArmsRace_Patch_RoundTransition
     {
@@ -165,8 +167,8 @@ namespace RWF.Patches
 
             return newInstructions;
         }
-    }
-
+    }*/
+    /*
     [HarmonyPatch(typeof(GM_ArmsRace), "RoundOver")]
     class GM_ArmsRace_Patch_RoundOver
     {
@@ -192,5 +194,5 @@ namespace RWF.Patches
 
             return newInstructions;
         }
-    }
+    }*/
 }

@@ -35,7 +35,7 @@ namespace RWF
         private bool waitingForToggle;
         private bool lockReadyRequests;
         private Queue<Tuple<int, bool>> readyRequests;
-        private bool spamReady;
+        //private bool spamReady;
         private InputDevice deviceToUse;
 
         public ListMenuPage MainPage { get; private set; }
@@ -74,7 +74,7 @@ namespace RWF
 
         private void Init()
         {
-            this.spamReady = false;
+            //this.spamReady = false;
             this.waitingForToggle = false;
             this.readyRequests = new Queue<Tuple<int, bool>>();
             this.deviceToUse = null;
