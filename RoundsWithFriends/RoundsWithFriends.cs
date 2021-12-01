@@ -106,11 +106,14 @@ namespace RWF
             }
         }
 
+        public const int MaxPlayersHardLimit = 32;
+        public const int MaxTeamsHardLimit = 32;
+
         public int MaxPlayers
         {
             get
             {
-                return 8;
+                return 16;
             }
         }
 
