@@ -24,7 +24,8 @@ namespace RWF.Patches
         }
         private static readonly PlayerSkin[] extraSkinBases = new PlayerSkin[]
         {
-            // PLAYER 1            new PlayerSkin()
+            // PLAYER 1
+            new PlayerSkin()
             {
                 color = new Color(0.6392157f, 0.2862745f, 0.1686275f, 1f),
                 backgroundColor = new Color(0.3490196f, 0.2392157f, 0.2117647f, 1f),
