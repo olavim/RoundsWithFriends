@@ -54,7 +54,7 @@ namespace RWF
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "1.3.9";
+        public const string Version = "1.3.10";
 
 #if DEBUG
         public static readonly bool DEBUG = true;

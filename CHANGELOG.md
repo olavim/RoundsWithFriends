@@ -1,3 +1,12 @@
+## v1.3.10
+
+- Fixed offline face assignment
+- Made `PopUpMenu` class public
+
+## v1.3.9
+
+- Fixed online face assignment
+
 ## v1.3.8
 
 - Fixed Deathmatch game end hooks.
