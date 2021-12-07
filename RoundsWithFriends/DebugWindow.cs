@@ -87,7 +87,7 @@ namespace RWF
 
     public class DebugWindow : MonoBehaviour
     {
-        private Rect windowRect = new Rect(10, 10, 260, 130);
+        private Rect windowRect = new Rect(10, 10, 260, 160);
 
         public void OnGUI()
         {
@@ -113,6 +113,14 @@ namespace RWF
 
             builder.NextRow(60, 20, 10);
             bool testerBtn = builder.NextElement(260, 10).Button("Lag Tester");
+
+            builder.NextRow(60, 20, 10);
+            bool spawnBtn = builder.NextElement(260, 10).Button("Show Spawn Mesh");
+
+            if (spawnBtn)
+            {
+                RWFMod.instance.debugOptions.showSpawns = !RWFMod.instance.debugOptions.showSpawns;
+            }
 
             if (testerBtn)
             {
