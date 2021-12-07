@@ -47,6 +47,8 @@ namespace RWF
 
         public int rounds = 5;
         public int points = 2;
+
+        public bool showSpawns = false;
     }
 
     [BepInDependency("com.willis.rounds.unbound", "2.1.3")]
