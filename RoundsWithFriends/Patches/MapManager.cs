@@ -28,6 +28,35 @@ namespace RWF.Patches
         }
     }
 
+    class Profile
+    {
+        internal Profile(string name)
+        {
+            this.name = name;
+            this.Start();
+        }
+        private float start = -1f;
+        private float duration = -1f;
+        private string name;
+        internal void Start()
+        {
+            this.start = Time.realtimeSinceStartup;
+        }
+        internal void Stop()
+        {
+            this.duration = Time.realtimeSinceStartup - this.start;
+        }
+        internal void Report()
+        {
+            UnityEngine.Debug.Log(name + " DURATION: " + this.duration.ToString() + " s");
+        }
+        internal void StopAndReport()
+        {
+            this.Stop();
+            this.Report();
+        }
+    }
+
     class Graph
     {
         // class representing an undirected graph using an adjacency matrix
@@ -156,6 +185,8 @@ namespace RWF.Patches
         }
         public int[] NodesConnectedToNode(int i, bool excludeSelf = true)
         {
+            // Profile p = new Profile("DEPTH-FIRST SEARCH");
+
             // depth-first exhaustive search starting from i
             int pos = i;
             int posIDX = 0;
@@ -176,6 +207,8 @@ namespace RWF.Patches
             }
 
             if (excludeSelf) { visited.Remove(i); }
+
+            // p.StopAndReport();
 
             return visited.ToArray();
 
@@ -203,6 +236,8 @@ namespace RWF.Patches
 
         internal static List<Vector2> SortByDistance(List<Vector2> lst)
         {
+            // Profile p = new Profile("SORT BY DISTANCE");
+
             List<Vector2> output = new List<Vector2>();
             output.Add(lst[0]);
             lst.Remove(output[0]);
@@ -214,6 +249,7 @@ namespace RWF.Patches
                 x++;
             }
             output.AddRange(lst);
+            // p.StopAndReport();
             return output;
         }
 
@@ -242,73 +278,106 @@ namespace RWF.Patches
     class MapGraph : Graph
     {
         // class representing a graph for the navmesh of a map
+        
         private static readonly LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
         private const float voidMargin = 0.01f;
-        public static List<Vector2> GetVertices(Map map, List<Vector2> spawnPositions, List<Vector2> defaultPoints, float colliderOffset = 1f, float eps = 0.1f)
+
+        public static List<Vector2> GetVertices(Map map, List<Vector2> spawnPositions, List<Vector2> defaultPoints, out List<Vector2> spawnPoints, float colliderOffset = 1f, float eps = 0.1f)
         {
+            // Profile p = new Profile("GET MAP VERTICES");
             List<Vector2> vertices = new List<Vector2>(defaultPoints);
+
+            // add default points to spawn points
+            spawnPoints = new List<Vector2>(defaultPoints);
 
             Vector2 min = MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector2(MapGraph.voidMargin * FixedScreen.fixedWidth, MapGraph.voidMargin * Screen.height));
             Vector2 max = MainCam.instance.transform.GetComponent<Camera>().FixedScreenToWorldPoint(new Vector2((1f - MapGraph.voidMargin) * FixedScreen.fixedWidth, (1f - MapGraph.voidMargin) * Screen.height));
 
-            Vector2 offsetVert;
-
             foreach (Collider2D collider in map.gameObject.GetComponentsInChildren<Collider2D>(false))
             {
-                Vector2[] colliderVertices = collider.GetVertices().ToArray();
+                List<Vector2> colliderVertices = collider.GetVertices(colliderOffset).OrderByDescending(v => v.y).ToList();
+
+                // additionally, add the midpoint of the top two vertices to both the spawn points (if its not a duplicate) and the vertices
+                Vector2 topMid = (colliderVertices[0] + colliderVertices[1]) / 2f;
+                colliderVertices.Add(topMid);
+                if (!spawnPoints.Where(v => Vector2.Distance(topMid, v) <= eps).Any())
+                {
+                    spawnPoints.Add(topMid);
+                }
 
                 foreach (Vector2 vert in colliderVertices)
                 {
-                    offsetVert = vert + colliderOffset * (vert - (Vector2) collider.bounds.center).normalized;
-
                     // only add the new vertex if it is in the area defined by the margins and not a duplicate (within eps) of another
-                    if (offsetVert.x <= max.x && offsetVert.x >= min.x && offsetVert.y <= max.y && offsetVert.y >= min.y && !vertices.Where(v => Vector2.Distance(v, offsetVert) <= eps).Any())
+                    if (vert.x <= max.x && vert.x >= min.x && vert.y <= max.y && vert.y >= min.y && !vertices.Where(v => Vector2.Distance(v, vert) <= eps).Any())
                     {
-                        vertices.Add(offsetVert);
+                        vertices.Add(vert);
                     }
                 }
             }
-
-            // purge points that are inside of colliders
+            // purge points that are too near colliders
             List<Vector2> newVertices = new List<Vector2>() { };
             foreach (Vector2 vertex in vertices)
             {
-                // cast a ray upwards - if it hits something within a distance epsilon (eps) then discard the vertex
-                RaycastHit2D raycastHit2D = Physics2D.Raycast(vertex, Vector2.up, eps, MapGraph.groundMask);
-                if (!raycastHit2D.transform)
+                // check if any colliders are within a distance epsilon/2 (eps/2) - if so, then discard the vertex
+                if (!Physics2D.OverlapCircle(vertex, colliderOffset * 0.9f, MapGraph.groundMask))
                 {
                     newVertices.Add(vertex);
                 }
             }
             vertices = newVertices;
 
-            // add back the original spawnPositons and remove EXACT duplicates
-            vertices.AddRange(spawnPositions);
+            spawnPoints = spawnPoints.Intersect(vertices).ToList();
 
+            // add back the original spawnPositons to both the vertices and the spawnPoints and remove EXACT duplicates
+            vertices.AddRange(spawnPositions);
+            spawnPoints.AddRange(spawnPositions);
+            // p.StopAndReport();
             return vertices.Distinct().ToList();
         }
-        public MapGraph(List<Vector2> vertices) : base(vertices, true, false)
+        public MapGraph(List<Vector2> vertices, float rayWidth = 0f) : base(vertices, true, false)
         {
             // start with a completely connected graph
             // then cut the connections immediately
-            this.CutConnections();
+            // Profile p = new Profile("CUT CONNECTIONS");
+            this.CutConnections(rayWidth);
+            // p.StopAndReport();
         }
 
-        public void CutConnections()
+        public void CutConnections(float rayWidth = 0f)
         {
             // remove connections that intersect with colliders
 
-            for (int i = 0; i < this.width; i++)
+            if (rayWidth == 0f)
             {
-                for (int j = 0; j < i; j++)
+                for (int i = 0; i < this.width; i++)
                 {
-                    RaycastHit2D raycastHit2D = Physics2D.Raycast(this.vertices[i], (this.vertices[j] - this.vertices[i]).normalized, Vector2.Distance(this.vertices[i], this.vertices[j]), MapGraph.groundMask);
-                    if (raycastHit2D.transform)
+                    for (int j = 0; j < i; j++)
                     {
-                        this[i, j] = false;
+                        RaycastHit2D raycastHit2D = Physics2D.Raycast(this.vertices[i], this.vertices[j] - this.vertices[i], Vector2.Distance(this.vertices[i], this.vertices[j]), MapGraph.groundMask);
+                        if (raycastHit2D.transform)
+                        {
+                            this[i, j] = false;
+                        }
                     }
                 }
             }
+            else
+            {
+                Vector2 direction;
+                for (int i = 0; i < this.width; i++)
+                {
+                    for (int j = 0; j < i; j++)
+                    {
+                        direction = (this.vertices[j] - this.vertices[i]).normalized;
+                        // start rayWidth/2 + 0.01f towards the target and end rayWidth/2 + 0.01f before the target, since we don't care about intersections "behind" the points
+                        if (Physics2D.CircleCast(this.vertices[i] + direction * (rayWidth/2f + 0.01f), rayWidth/2f, direction, Vector2.Distance(this.vertices[i], this.vertices[j]) - rayWidth/2f - 0.01f, MapGraph.groundMask))
+                        {
+                            this[i, j] = false;
+                        }
+                    }
+                }
+            }
+
         }
 
 
@@ -321,6 +390,7 @@ namespace RWF.Patches
         static int NumberOfTeams => TeamIDs.Count();
         static int[] TeamIDs => PlayerManager.instance.players.Select(p => p.teamID).Distinct().ToArray();
 
+        private const float characterWidth = 0.9f;
         private const float range = 2f;
         private const float maxProject = 1000f;
         private const float groundOffset = 1f;
@@ -330,9 +400,9 @@ namespace RWF.Patches
         private const int numSamples = 50;
         private const int numRows = 20;
         private const int numCols = 32;
-        private static readonly float eps = GeneralizedSpawnPositions.groundOffset - 0.01f;
-        private const float lmargin = 0.05f;
-        private const float rmargin = 0.05f;
+        private static readonly float eps = 1.5f;
+        private const float lmargin = 0.025f;
+        private const float rmargin = 0.025f;
         private const float tmargin = 0.15f;
         private const float bmargin = 0f;
         private const float minDistanceFromLedge = 1f;
@@ -378,6 +448,8 @@ namespace RWF.Patches
         }
         internal static Dictionary<Player, Vector2> GetSpawnDictionary(List<Player> players, SpawnPoint[] spawnPoints)
         {
+            // Profile p = new Profile("GET SPAWN DICTIONARY TOTAL");
+
             if (RWFMod.DEBUG)
             {
                 // remove debug objects
@@ -412,25 +484,24 @@ namespace RWF.Patches
             if (NumberOfTeams > spawnPositions.Count())
             {
                 // not enough, generate and use mesh to find valid points
-                MapGraph mapGraph = new MapGraph(MapGraph.GetVertices(MapManager.instance.currentMap.Map, spawnPositions, GeneralizedSpawnPositions.GetDefaultPoints(GeneralizedSpawnPositions.eps), colliderOffset: GeneralizedSpawnPositions.groundOffset, eps: GeneralizedSpawnPositions.eps));
+                MapGraph mapGraph = new MapGraph(MapGraph.GetVertices(MapManager.instance.currentMap.Map, spawnPositions, GeneralizedSpawnPositions.GetDefaultPoints(GeneralizedSpawnPositions.eps), out List<Vector2> spawnVertices, colliderOffset: GeneralizedSpawnPositions.groundOffset, eps: GeneralizedSpawnPositions.eps), GeneralizedSpawnPositions.characterWidth);
 
                 // if in debug mode, check to see if the draw option is enabled
                 if (RWFMod.DEBUG)
                 {
+                    // Profile p1 = new Profile("DRAW SPAWN MESH");
                     DrawSpawnMesh(mapGraph, spawnPositions, players);
+                    // p1.StopAndReport();
                 }
 
                 // list of valid positions to sample
                 List<Vector2> sampleSpace = new List<Vector2>() { };
 
+                // only add positions which are both spawnVertices and that are connected to the spawn points in the graph
                 foreach (Vector2 spawnPosition in spawnPositions)
                 {
-                    sampleSpace.AddRange(mapGraph.NodesConnectedToNode(spawnPosition, false).Select(i => mapGraph.vertices[i]));
+                    sampleSpace.AddRange(mapGraph.NodesConnectedToNode(spawnPosition, false).Select(i => mapGraph.vertices[i]).Intersect(spawnVertices));
                 }
-
-                // remove exact duplicates
-                sampleSpace = sampleSpace.Distinct().ToList();
-
                 // add positions from this sample space to the list of spawn positions
                 while (NumberOfTeams > spawnPositions.Count())
                 {
@@ -448,9 +519,10 @@ namespace RWF.Patches
                                 break;
                             }
                         }
-                        if (spawnPositions.All(s => Vector2.Distance(pos, s) > bestDistance))
+                        float worstDistance = spawnPositions.Select(s => Vector2.Distance(pos, s)).Min();
+                        if (worstDistance > bestDistance)
                         {
-                            bestDistance = spawnPositions.Select(s => Vector2.Distance(pos, s)).Min();
+                            bestDistance = worstDistance;
                             bestPos = pos;
                         }
                     }
@@ -532,7 +604,7 @@ namespace RWF.Patches
                     }
                 }
             }
-
+            // p.StopAndReport();
             return spawnDictionary;
         }
         private static void DrawSpawnMesh(MapGraph mapGraph, List<Vector2> spawnPositions, List<Player> players)
@@ -548,7 +620,7 @@ namespace RWF.Patches
                     GameObject go = new GameObject(GeneralizedSpawnPositions.debugObjName, typeof(TextMeshPro));
                     go.GetComponent<TextMeshPro>().text = ".";
                     go.GetComponent<TextMeshPro>().alignment = TextAlignmentOptions.MidlineGeoAligned;
-                    go.GetComponent<TextMeshPro>().color = new Color(0f, 1f, 0f, 0.25f);
+                    go.GetComponent<TextMeshPro>().color = new Color(0f, 1f, 0f, 0.05f);
                     go.transform.position = v;
                 }
 
@@ -620,7 +692,7 @@ namespace RWF.Patches
                 return position;
             }
             success = true;
-            return position + Vector2.down * (raycastHit2D.distance - GeneralizedSpawnPositions.groundOffset);
+            return position + Vector2.down * raycastHit2D.distance + raycastHit2D.normal * GeneralizedSpawnPositions.groundOffset;
         }
         private static bool IsValidPosition(Vector2 position, out RaycastHit2D raycastHit2D)
         {
@@ -683,12 +755,24 @@ namespace RWF.Patches
                     // check for line-of-sight if required
                     if (requireLOS)
                     {
-                        RaycastHit2D raycastHit2D = Physics2D.Raycast(position, (newposition - position).normalized, Vector2.Distance(newposition, position), GeneralizedSpawnPositions.groundMask);
-                        if (raycastHit2D.transform)
+                        if (GeneralizedSpawnPositions.characterWidth == 0f)
                         {
-                            // the ray hit something, and therefore there is no line-of-sight, so try again
-                            continue;
+                            RaycastHit2D raycastHit2D = Physics2D.Raycast(position, newposition - position, Vector2.Distance(newposition, position), GeneralizedSpawnPositions.groundMask);
+                            if (raycastHit2D.transform)
+                            {
+                                // the ray hit something, and therefore there is no line-of-sight, so try again
+                                continue;
+                            }
                         }
+                        else
+                        {
+                            if (Physics2D.CircleCast(position, GeneralizedSpawnPositions.characterWidth/2f, newposition - position, Vector2.Distance(newposition, position), GeneralizedSpawnPositions.groundMask))
+                            {
+                                // the ray hit something, and therefore there is no line-of-sight, so try again
+                                continue;
+                            }
+                        }
+
                     }
 
                     return newposition;
@@ -717,7 +801,7 @@ namespace RWF.Patches
 
     internal static class Collider2DExtension
     {
-        internal static List<Vector2> GetVertices(this Collider2D collider)
+        internal static List<Vector2> GetVertices(this Collider2D collider, float offset = 0f)
         {
             List<Vector2> vertices = new List<Vector2>() { };
 
@@ -725,7 +809,7 @@ namespace RWF.Patches
             if (collider.GetComponent<PolygonCollider2D>() != null)
             {
 
-                vertices = collider.GetComponent<PolygonCollider2D>().points.Select(p => (Vector2) collider.transform.TransformPoint(p)).ToList();
+                vertices = collider.GetComponent<PolygonCollider2D>().points.Select(p => (Vector2) collider.transform.TransformPoint(p)).Select(p => p + (p-(Vector2)collider.bounds.center).normalized * offset).ToList();
 
             }
             // if there is a box collider, calculate vertices in world space
@@ -733,19 +817,19 @@ namespace RWF.Patches
             {
                 Vector2 size = collider.GetComponent<BoxCollider2D>().size * 0.5f;
 
-                vertices.Add(collider.transform.TransformPoint(new Vector2(size.x, size.y)));
-                vertices.Add(collider.transform.TransformPoint(new Vector2(size.x, -size.y)));
-                vertices.Add(collider.transform.TransformPoint(new Vector2(-size.x, size.y)));
-                vertices.Add(collider.transform.TransformPoint(new Vector2(-size.x, -size.y)));
+                vertices.Add((Vector2)collider.transform.TransformPoint(new Vector2(size.x, size.y)) + new Vector2(offset, offset));
+                vertices.Add((Vector2) collider.transform.TransformPoint(new Vector2(size.x, -size.y)) + new Vector2(offset, -offset));
+                vertices.Add((Vector2) collider.transform.TransformPoint(new Vector2(-size.x, size.y)) + new Vector2(-offset, offset));
+                vertices.Add((Vector2) collider.transform.TransformPoint(new Vector2(-size.x, -size.y)) + new Vector2(-offset, -offset));
             }
 
             // otherwise use the Axis-Aligned Bounding Box as a rough approximation
             else
             {
-                vertices.Add(collider.bounds.min);
-                vertices.Add(collider.bounds.max);
-                vertices.Add(new Vector2(collider.bounds.min.x, collider.bounds.max.y));
-                vertices.Add(new Vector2(collider.bounds.max.x, collider.bounds.min.y));
+                vertices.Add((Vector2)collider.bounds.min - offset * Vector2.one);
+                vertices.Add((Vector2)collider.bounds.max + offset * Vector2.one);
+                vertices.Add(new Vector2(collider.bounds.min.x - offset, collider.bounds.max.y + offset));
+                vertices.Add(new Vector2(collider.bounds.max.x + offset, collider.bounds.min.y - offset));
             }
 
             return vertices;
