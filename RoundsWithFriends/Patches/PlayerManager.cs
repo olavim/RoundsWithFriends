@@ -9,14 +9,17 @@ using System.Linq;
 using UnboundLib;
 using System;
 using System.Reflection.Emit;
+using RWF.Algorithms;
 
 namespace RWF.Patches
 {
     [HarmonyPatch(typeof(PlayerManager), "PlayerJoined")]
     class PlayerManager_Patch_PlayerJoined
     {
-        static void Postfix(Player player) {
-            if (!PhotonNetwork.OfflineMode) {
+        static void Postfix(Player player)
+        {
+            if (!PhotonNetwork.OfflineMode)
+            {
                 PrivateRoomHandler.instance.PlayerJoined(player);
             }
         }
@@ -25,12 +28,16 @@ namespace RWF.Patches
     [HarmonyPatch(typeof(PlayerManager), "RemovePlayers")]
     class PlayerManager_Patch_RemovePlayers
     {
-        static void Prefix(PlayerManager __instance) {
-            if (!PhotonNetwork.OfflineMode) {
+        static void Prefix(PlayerManager __instance)
+        {
+            if (!PhotonNetwork.OfflineMode)
+            {
                 var players = __instance.players;
 
-                for (int i = players.Count - 1; i >= 0; i--) {
-                    if (players[i].data.view.AmOwner) {
+                for (int i = players.Count - 1; i >= 0; i--)
+                {
+                    if (players[i].data.view.AmOwner)
+                    {
                         PhotonNetwork.Destroy(players[i].data.view);
                     }
                 }
@@ -47,6 +54,7 @@ namespace RWF.Patches
             return false;
         }
     }
+
     [HarmonyPatch]
     class PlayerManager_Patch_Move
     {
@@ -96,7 +104,7 @@ namespace RWF.Patches
             TrySetEnabled<PlayerCollision>(player?.gameObject, active);
             TrySetEnabled<LegRaycasters>(player?.gameObject?.transform?.Find("Limbs/LegStuff")?.gameObject, active);
 
-            // find the OutOfBoundsHandler for this player
+            // Find the OutOfBoundsHandler for this player
             if (player?.GetComponent<Player>() != null)
             {
                 OutOfBoundsHandler[] ooBs = UnityEngine.GameObject.FindObjectsOfType<OutOfBoundsHandler>();
@@ -111,7 +119,7 @@ namespace RWF.Patches
             }
         }
 
-        // patch to disable player's ObjectCollider for the entirety of the move
+        // Patch to disable player's ObjectCollider for the entirety of the move
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             List<CodeInstruction> codes = instructions.ToList();
@@ -124,9 +132,9 @@ namespace RWF.Patches
 
             int disable_index = -1;
             int enable_index = -1;
-            for (int i = 1; i< codes.Count; i++)
+            for (int i = 1; i < codes.Count; i++)
             {
-                if (codes[i].opcode == OpCodes.Ldarg_0 && codes[i+1].opcode == OpCodes.Ldfld && codes[i+1].LoadsField(f_player) && codes[i+2].opcode==OpCodes.Ldc_I4_0 && codes[i+3].opcode==OpCodes.Stfld && codes[i+3].StoresField(f_simulated) && codes[i+4].opcode == OpCodes.Ldarg_0 && codes[i+5].opcode == OpCodes.Ldfld && codes[i+6].opcode == OpCodes.Ldc_I4_1 && codes[i+7].opcode == OpCodes.Stfld && codes[i + 7].StoresField(f_isKinematic))
+                if (codes[i].opcode == OpCodes.Ldarg_0 && codes[i + 1].opcode == OpCodes.Ldfld && codes[i + 1].LoadsField(f_player) && codes[i + 2].opcode == OpCodes.Ldc_I4_0 && codes[i + 3].opcode == OpCodes.Stfld && codes[i + 3].StoresField(f_simulated) && codes[i + 4].opcode == OpCodes.Ldarg_0 && codes[i + 5].opcode == OpCodes.Ldfld && codes[i + 6].opcode == OpCodes.Ldc_I4_1 && codes[i + 7].opcode == OpCodes.Stfld && codes[i + 7].StoresField(f_isKinematic))
                 {
                     disable_index = i - 1;
                 }
@@ -141,15 +149,15 @@ namespace RWF.Patches
             }
             else
             {
-                codes.Insert(disable_index, new CodeInstruction(OpCodes.Ldarg_0)); // load the PlayerManager.<Move>d__40 instance onto the stack [PlayerManager.<Move>d__40, ...]
-                codes.Insert(disable_index + 1, new CodeInstruction(OpCodes.Ldfld, f_player)); // load PlayerManager.<Move>d__40::player onto the stack (pops PlayerManager.<Move>d__40 off the stack) [PlayerManager.<Move>d__40::player, ...]
-                codes.Insert(disable_index + 2, new CodeInstruction(OpCodes.Ldc_I4_0)); // load 0 onto the stack [0, PlayerManager.<Move>d__40::player, ...]
-                codes.Insert(disable_index + 3, new CodeInstruction(OpCodes.Call, m_setCollidersActive)); // calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
+                codes.Insert(disable_index, new CodeInstruction(OpCodes.Ldarg_0)); // Load the PlayerManager.<Move>d__40 instance onto the stack [PlayerManager.<Move>d__40, ...]
+                codes.Insert(disable_index + 1, new CodeInstruction(OpCodes.Ldfld, f_player)); // Load PlayerManager.<Move>d__40::player onto the stack (pops PlayerManager.<Move>d__40 off the stack) [PlayerManager.<Move>d__40::player, ...]
+                codes.Insert(disable_index + 2, new CodeInstruction(OpCodes.Ldc_I4_0)); // Load 0 onto the stack [0, PlayerManager.<Move>d__40::player, ...]
+                codes.Insert(disable_index + 3, new CodeInstruction(OpCodes.Call, m_setCollidersActive)); // Calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
 
-                codes.Insert(enable_index, new CodeInstruction(OpCodes.Ldarg_0)); // load the PlayerManager.<Move>d__40 instance onto the stack [PlayerManager.<Move>d__40, ...]
-                codes.Insert(enable_index + 1, new CodeInstruction(OpCodes.Ldfld, f_player)); // load PlayerManager.<Move>d__40::player onto the stack (pops PlayerManager.<Move>d__40 off the stack) [PlayerManager.<Move>d__40::player, ...]
-                codes.Insert(enable_index + 2, new CodeInstruction(OpCodes.Ldc_I4_1)); // load 1 onto the stack [1, PlayerManager.<Move>d__40::player, ...]
-                codes.Insert(enable_index + 3, new CodeInstruction(OpCodes.Call, m_setCollidersActive)); // calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
+                codes.Insert(enable_index, new CodeInstruction(OpCodes.Ldarg_0)); // Load the PlayerManager.<Move>d__40 instance onto the stack [PlayerManager.<Move>d__40, ...]
+                codes.Insert(enable_index + 1, new CodeInstruction(OpCodes.Ldfld, f_player)); // Load PlayerManager.<Move>d__40::player onto the stack (pops PlayerManager.<Move>d__40 off the stack) [PlayerManager.<Move>d__40::player, ...]
+                codes.Insert(enable_index + 2, new CodeInstruction(OpCodes.Ldc_I4_1)); // Load 1 onto the stack [1, PlayerManager.<Move>d__40::player, ...]
+                codes.Insert(enable_index + 3, new CodeInstruction(OpCodes.Call, m_setCollidersActive)); // Calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
             }
 
             return codes.AsEnumerable();
@@ -166,7 +174,7 @@ namespace RWF.Patches
         }
         static bool MapHasValidGround(Map map)
         {
-            if (!(bool)map.GetFieldValue("hasCalledReady")) { return false; }
+            if (!(bool) map.GetFieldValue("hasCalledReady")) { return false; }
 
             foreach (Collider2D collider in map.gameObject.GetComponentsInChildren<Collider2D>())
             {
@@ -180,14 +188,16 @@ namespace RWF.Patches
 
         static IEnumerator WaitForMapToLoad(PlayerManager __instance, SpawnPoint[] spawnPoints)
         {
-            // wait until the map has solid ground
+            // Wait until the map has solid ground
             yield return new WaitUntil(() => PlayerManager_Patch_MovePlayers.MapHasValidGround(MapManager.instance.currentMap?.Map));
-            // 10 extra frames to make the game happy, this is necessary dynamic objects to be registered as valid ground
+
+            // 10 extra frames to make the game happy, this is necessary for dynamic objects to be registered as valid ground
             for (int _ = 0; _ < 10; _++)
             {
                 yield return null;
             }
-            Dictionary<Player, Vector2> spawnDictionary = GeneralizedSpawnPositions.GetSpawnDictionary(__instance.players, spawnPoints);
+
+            var spawnDictionary = GeneralizedSpawnPositions.GetSpawnDictionary(__instance.players, spawnPoints);
 
             for (int i = 0; i < __instance.players.Count; i++)
             {
@@ -201,7 +211,5 @@ namespace RWF.Patches
                 SoundManager.Instance.Play(__instance.soundCharacterSpawn[j], __instance.players[i].transform);
             }
         }
-
-
     }
 }
