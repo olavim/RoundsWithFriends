@@ -4,10 +4,9 @@ using System.Linq;
 
 namespace RWF.Algorithms
 {
+    // Represents a graph for the navmesh of a map
     public class MapGraph : Graph
     {
-        // Class representing a graph for the navmesh of a map
-
         private static readonly LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
         private const float voidMargin = 0.01f;
 
@@ -73,15 +72,14 @@ namespace RWF.Algorithms
         // Remove connections that intersect with colliders
         public void CutConnections(float rayWidth = 0f)
         {
-            // Remove connections that intersect with colliders
             if (rayWidth == 0f)
             {
                 for (int i = 0; i < this.width; i++)
                 {
                     for (int j = 0; j < i; j++)
                     {
-                        var hit = Physics2D.Raycast(this.vertices[i], this.vertices[j] - this.vertices[i], Vector2.Distance(this.vertices[i], this.vertices[j]), MapGraph.groundMask);
-                        if (hit.transform)
+                        RaycastHit2D raycastHit2D = Physics2D.Raycast(this.vertices[i], this.vertices[j] - this.vertices[i], Vector2.Distance(this.vertices[i], this.vertices[j]), MapGraph.groundMask);
+                        if (raycastHit2D.transform)
                         {
                             this[i, j] = false;
                         }
@@ -90,17 +88,17 @@ namespace RWF.Algorithms
             }
             else
             {
-                Vector2 direction;
                 for (int i = 0; i < this.width; i++)
                 {
                     for (int j = 0; j < i; j++)
                     {
-                        direction = (this.vertices[j] - this.vertices[i]).normalized;
-                        // Start rayWidth/2 + 0.01f towards the target and end rayWidth/2 + 0.01f before the target, since we don't care about intersections "behind" the points
-                        if (Physics2D.CircleCast(this.vertices[i] + direction * (rayWidth / 2f + 0.01f), rayWidth / 2f, direction, Vector2.Distance(this.vertices[i], this.vertices[j]) - rayWidth / 2f - 0.01f, MapGraph.groundMask))
-                        {
-                            this[i, j] = false;
-                        }
+                        var dir = (this.vertices[j] - this.vertices[i]).normalized;
+                        float dist = Vector2.Distance(this.vertices[i], this.vertices[j]);
+
+                        // Check node adjacency by Raycasting between them. CircleCast is done as a fallback to not consider small gaps as traversable.
+                        this[i, j] =
+                            Physics2D.Raycast(this.vertices[i], this.vertices[j] - this.vertices[i], Vector2.Distance(this.vertices[i], this.vertices[j]), MapGraph.groundMask).transform != null ||
+                            Physics2D.CircleCast(this.vertices[i] + dir * (rayWidth / 2f + 0.01f), rayWidth / 2f, dir, dist - rayWidth / 2f - 0.01f, MapGraph.groundMask);
                     }
                 }
             }
