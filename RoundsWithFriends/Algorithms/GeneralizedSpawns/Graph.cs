@@ -19,7 +19,10 @@ namespace RWF.Algorithms
 
             for (int i = 0; i < vertices.Length; i++)
             {
-                this.adjacencyMatrix[i, i] = true;
+                for (int j = 0; j < vertices.Length; j++)
+                {
+                    this.adjacencyMatrix[i, j] = true;
+                }
             }
         }
 
@@ -33,7 +36,10 @@ namespace RWF.Algorithms
 
             for (int i = 0; i < list.Count(); i++)
             {
-                this[i, i] = fullyConnected;
+                for (int j = 0; j < list.Count(); j++)
+                {
+                    this[i, j] = fullyConnected;
+                }
             }
         }
 
@@ -61,7 +67,7 @@ namespace RWF.Algorithms
         }
 
         // Get a row/column from the adjacency matrix
-        public bool[] this[int i] => Enumerable.Range(0, this.height).Select(j => this.adjacencyMatrix[i, j]).ToArray();
+        public bool[] this[int i] => Enumerable.Range(0, this.height - 1).Select(j => this.adjacencyMatrix[i, j]).ToArray();
 
         public int GetNodeIndex(Vector2 vertex)
         {
@@ -70,12 +76,16 @@ namespace RWF.Algorithms
 
         public int[] NodesDirectlyConnectedToNode(int i, bool excludeSelf = true)
         {
+            if (i < 0 || i >= this.height) { return new int[] { }; }
+
             var connections = this[i];
-            return Enumerable.Range(0, this.height).Where(j => connections[j] && (i != j || !excludeSelf)).ToArray();
+            return Enumerable.Range(0, this.height - 1).Where(j => connections[j] && (i != j || !excludeSelf)).ToArray();
         }
 
         public int[] NodesConnectedToNode(int i, bool excludeSelf = true)
         {
+            if (i < 0 || i >= this.height) { return new int[] { }; }
+
             // Depth-first exhaustive search starting from i
             int pos = i;
             int posIDX = 0;
@@ -114,6 +124,9 @@ namespace RWF.Algorithms
 
         public bool NodesAreDirectlyConnected(int i, int j)
         {
+            if (i < 0 || i >= this.height) { return false; }
+            if (j < 0 || j >= this.height) { return false; }
+
             return this[i, j];
         }
 
@@ -148,6 +161,31 @@ namespace RWF.Algorithms
 
             output.AddRange(lst);
             return output;
+        }
+
+        internal int[] LargestSubgraph()
+        {
+            // start from node 0, traverse depth-first until the largest subgraph has been found
+            int node = 0;
+            List<int> unvisited = Enumerable.Range(0, this.width - 1).ToList();
+            List<int> bestSubgraph = new List<int>() { };
+            int[] subGraph;
+            while (bestSubgraph.Count() < unvisited.Count())
+            {
+                subGraph = this.NodesConnectedToNode(node, false);
+                if (subGraph.Count() > bestSubgraph.Count())
+                {
+                    bestSubgraph = subGraph.ToList();
+                }
+                unvisited = unvisited.Except(subGraph).ToList();
+                if (unvisited.Count() == 0)
+                {
+                    break;
+                }
+                node = unvisited.First();
+            }
+
+            return bestSubgraph.ToArray();
         }
 
         private static int NearestVector2(Vector2 srcPt, List<Vector2> lookIn)

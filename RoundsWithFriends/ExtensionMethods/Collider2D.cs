@@ -8,6 +8,7 @@ namespace RWF
     {
         internal static List<Vector2> GetVertices(this Collider2D collider, float offset = 0f)
         {
+
             // if there is a polygon collider, use .points
             if (collider is PolygonCollider2D)
             {

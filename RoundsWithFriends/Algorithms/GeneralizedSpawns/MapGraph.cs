@@ -7,7 +7,7 @@ namespace RWF.Algorithms
     // Represents a graph for the navmesh of a map
     public class MapGraph : Graph
     {
-        private static readonly LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
+        private static readonly LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer", "IgnoreMap" });
         private const float voidMargin = 0.01f;
 
         public static List<Vector2> GetVertices(Map map, List<Vector2> spawnPositions, List<Vector2> defaultPoints, out List<Vector2> spawnPoints, float colliderOffset = 1f, float eps = 0.1f)
@@ -45,7 +45,7 @@ namespace RWF.Algorithms
             var newVertices = new List<Vector2>() { };
             foreach (var vertex in vertices)
             {
-                // Check if any colliders are within a distance epsilon/2 (eps/2) - if so, then discard the vertex
+                // Check if any colliders are too close - if so, then discard the vertex
                 if (!Physics2D.OverlapCircle(vertex, colliderOffset * 0.9f, MapGraph.groundMask))
                 {
                     newVertices.Add(vertex);
@@ -92,13 +92,21 @@ namespace RWF.Algorithms
                 {
                     for (int j = 0; j < i; j++)
                     {
-                        var dir = (this.vertices[j] - this.vertices[i]).normalized;
+                        Vector2 dir = this.vertices[j] - this.vertices[i];
                         float dist = Vector2.Distance(this.vertices[i], this.vertices[j]);
 
-                        // Check node adjacency by Raycasting between them. CircleCast is done as a fallback to not consider small gaps as traversable.
-                        this[i, j] =
-                            Physics2D.Raycast(this.vertices[i], this.vertices[j] - this.vertices[i], Vector2.Distance(this.vertices[i], this.vertices[j]), MapGraph.groundMask).transform != null ||
-                            Physics2D.CircleCast(this.vertices[i] + dir * (rayWidth / 2f + 0.01f), rayWidth / 2f, dir, dist - rayWidth / 2f - 0.01f, MapGraph.groundMask);
+                        // Check node adjacency by Raycasting between them. if successful, two more raycasts tangent to the circle of radius raywidth are done and must pass in order to consider small gaps as traversable.
+                        
+                        if (Physics2D.Raycast(this.vertices[i], dir, dist, MapGraph.groundMask).transform != null)
+                        {
+                            Vector2 radius = (rayWidth/2f) * Vector3.Cross(dir, Vector3.forward).normalized;
+
+                            if (Physics2D.Raycast(this.vertices[i] + radius, dir, dist, MapGraph.groundMask).transform != null || Physics2D.Raycast(this.vertices[i] - radius, dir, dist, MapGraph.groundMask).transform != null)
+                            {
+                                this[i, j] = false;
+                            }
+                        }
+
                     }
                 }
             }

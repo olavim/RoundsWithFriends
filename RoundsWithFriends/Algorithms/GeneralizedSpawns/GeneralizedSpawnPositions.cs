@@ -8,7 +8,7 @@ namespace RWF.Algorithms
 {
     public class GeneralizedSpawnPositions
     {
-        private const string debugObjName = "__RWF_DEBUG_POINT___";
+        private const string debugObjName = "__RWF_DEBUG_POINT__";
         private const float characterWidth = 0.9f;
         private const float range = 2f;
         private const float maxProject = 1000f;
@@ -26,7 +26,7 @@ namespace RWF.Algorithms
         private const float minDistanceFromLedge = 1f;
 
         private static readonly float eps = 1.5f;
-        private static readonly LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer" });
+        private static readonly LayerMask groundMask = (LayerMask) LayerMask.GetMask(new string[] { "Default", "IgnorePlayer", "IgnoreMap" });
 
         private static int NumberOfTeams => TeamIDs.Count();
         private static int[] TeamIDs => PlayerManager.instance.players.Select(p => p.teamID).Distinct().ToArray();
@@ -76,6 +76,7 @@ namespace RWF.Algorithms
 
         internal static Dictionary<Player, Vector2> GetSpawnDictionary(List<Player> players, SpawnPoint[] spawnPoints)
         {
+
             if (RWFMod.DEBUG)
             {
                 // Remove debug objects
@@ -94,12 +95,6 @@ namespace RWF.Algorithms
             // Filter out "default" (0,0) spawn points as well as duplicates
             var spawnPositions = spawnPoints.Select(s => (Vector2) s.localStartPos).Where(s => Vector2.Distance(s, Vector2.zero) > GeneralizedSpawnPositions.eps).Distinct().ToList();
 
-            // If there are no spawn positions, make at least one at random first to get the ball rolling
-            if (spawnPositions.Count() == 0)
-            {
-                spawnPositions = new List<Vector2>() { GeneralizedSpawnPositions.RandomValidPosition() };
-            }
-
             /* The mesh algorithm is relatively expensive, and so its a good idea to only use it when necessary.
              * Thus, we only use it if there are not enough spawn points for all teams at this point.
              */
@@ -112,6 +107,40 @@ namespace RWF.Algorithms
                 var defaultPoints = GeneralizedSpawnPositions.GetDefaultPoints(GeneralizedSpawnPositions.eps);
                 var vertices = MapGraph.GetVertices(map, spawnPositions, defaultPoints, out List<Vector2> spawnVertices, colliderOffset: GeneralizedSpawnPositions.groundOffset, eps: GeneralizedSpawnPositions.eps);
                 var mapGraph = new MapGraph(vertices, GeneralizedSpawnPositions.characterWidth);
+
+                // If there are no spawn positions, grab one from the largest connected sub-graph
+                if (spawnPositions.Count() == 0)
+                {
+                    List<Vector2> largestSubgraph = mapGraph.LargestSubgraph().Select(i => mapGraph.vertices[i]).ToList();
+
+                    // choose random valid point from largest subgraph
+                    Vector2 firstSpawn = Vector2.zero;
+                    bool valid = false;
+                    for (int _ = 0; _ < GeneralizedSpawnPositions.maxAttempts; _++)
+                    {
+                        firstSpawn = largestSubgraph[GeneralizedSpawnPositions.RandomRange(0, largestSubgraph.Count())];
+                        if (GeneralizedSpawnPositions.IsValidSpawnPosition(firstSpawn))
+                        {
+                            valid = true;
+                            break;
+                        }
+                    }
+                    if (!valid)
+                    {
+                        // fallback - cannot be RandomValidPosition since it must be a member of the graph
+                        for (int _ = 0; _ < GeneralizedSpawnPositions.maxAttempts; _++)
+                        {
+                            firstSpawn = mapGraph.vertices[GeneralizedSpawnPositions.RandomRange(0, mapGraph.width)];
+                            if (GeneralizedSpawnPositions.IsValidSpawnPosition(firstSpawn))
+                            {
+                                valid = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    spawnPositions = new List<Vector2>() { firstSpawn };
+                }
 
                 // If in debug mode, check to see if the draw option is enabled
                 if (RWFMod.DEBUG)
