@@ -125,11 +125,11 @@ namespace RWF.Patches
             var newInstructions = new List<CodeInstruction>();
 
             var f_playerManagerInstance = AccessTools.Field(typeof(PlayerManager), "instance");
-            var f_playerIDToSet = ExtensionMethods.GetFieldInfo(typeof(PlayerAssigner), "playerIDToSet");
-            var f_teamIDToSet = ExtensionMethods.GetFieldInfo(typeof(PlayerAssigner), "teamIDToSet");
+            var f_playerIDToSet = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(PlayerAssigner), "playerIDToSet");
+            var f_teamIDToSet = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(PlayerAssigner), "teamIDToSet");
 
-            var m_NextPlayerID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextPlayerID");
-            var m_NextTeamID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextTeamID");
+            var m_NextPlayerID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextPlayerID");
+            var m_NextTeamID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextTeamID");
 
             for (int i = 0; i < list.Count; i++) {
                 if (list[i].LoadsField(f_playerManagerInstance) && list[i + 3].StoresField(f_playerIDToSet)) {
@@ -165,8 +165,8 @@ namespace RWF.Patches
             var list = instructions.ToList();
             var newInstructions = new List<CodeInstruction>();
 
-            var m_NextPlayerID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextPlayerID");
-            var m_NextTeamID = ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextTeamID");
+            var m_NextPlayerID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextPlayerID");
+            var m_NextTeamID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PatchUtils), "NextTeamID");
 
             int rangeStart;
             for (rangeStart = 0; rangeStart < list.Count; rangeStart++) {

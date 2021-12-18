@@ -1,11 +1,13 @@
-﻿using HarmonyLib;
+﻿using System;
 using System.Collections.Generic;
+using HarmonyLib;
 
 namespace RWF.Patches
 {
-    [HarmonyPatch(typeof(Holding), "Start")]
-    class Holding_Patch_Start
+    [HarmonyPatch(typeof(DeathEffect), "PlayDeath")]
+    class DeathEffect_Patch_PlayDeath
     {
+
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             // for some reason the game uses the playerID to set the team color instead of the teamID

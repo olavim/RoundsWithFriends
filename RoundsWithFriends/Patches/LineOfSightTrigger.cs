@@ -13,9 +13,9 @@ namespace RWF.Patches.Cards
         {
             var list = instructions.ToList();
             var f_pmInstance = AccessTools.Field(typeof(PlayerManager), "instance");
-            var m_closestPlayer = ExtensionMethods.GetMethodInfo(typeof(PlayerManager), "GetClosestPlayerInTeam");
-            var m_closestOtherPlayer = ExtensionMethods.GetMethodInfo(typeof(PlayerManagerExtensions), "GetClosestPlayerInOtherTeam");
-            var m_otherTeam = ExtensionMethods.GetMethodInfo(typeof(PlayerManager), "GetOtherTeam");
+            var m_closestPlayer = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerManager), "GetClosestPlayerInTeam");
+            var m_closestOtherPlayer = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerManagerExtensions), "GetClosestPlayerInOtherTeam");
+            var m_otherTeam = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerManager), "GetOtherTeam");
 
             for (int i = 0; i < list.Count; i++)
             {

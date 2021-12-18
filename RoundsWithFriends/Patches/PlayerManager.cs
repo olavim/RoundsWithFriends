@@ -124,11 +124,11 @@ namespace RWF.Patches
         {
             List<CodeInstruction> codes = instructions.ToList();
 
-            var f_simulated = ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "simulated");
-            var f_isKinematic = ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "isKinematic");
-            var f_player = ExtensionMethods.GetFieldInfo(GetNestedMoveType(), "player");
+            var f_simulated = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "simulated");
+            var f_isKinematic = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "isKinematic");
+            var f_player = UnboundLib.ExtensionMethods.GetFieldInfo(GetNestedMoveType(), "player");
 
-            var m_setCollidersActive = ExtensionMethods.GetMethodInfo(typeof(PlayerManager_Patch_Move), nameof(PlayerManager_Patch_Move.SetCollidersActive));
+            var m_setCollidersActive = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerManager_Patch_Move), nameof(PlayerManager_Patch_Move.SetCollidersActive));
 
             int disable_index = -1;
             int enable_index = -1;
@@ -145,7 +145,7 @@ namespace RWF.Patches
             }
             if (disable_index == -1 || enable_index == -1)
             {
-                throw new Exception("[OBJECTCOLLIDER PATCH] INSTRUCTION NOT FOUND");
+                throw new Exception("[PlayerManager.Move PATCH] INSTRUCTION NOT FOUND");
             }
             else
             {

@@ -27,7 +27,9 @@ namespace RWF.Patches
             // TEAM 1
             new PlayerSkin()
             {
+                //color = new Color(0.7264f, 0.3429f, 0.2364f, 1f),
                 color = new Color(0.6392157f, 0.2862745f, 0.1686275f, 1f),
+                //backgroundColor = new Color(0.4717f, 0.1967f, 0.1224f, 1f),
                 backgroundColor = new Color(0.3490196f, 0.2392157f, 0.2117647f, 1f),
                 winText = new Color(0.9137255f, 0.4980392f, 0.3568628f, 1f),
                 particleEffect = new Color(0.6f, 0.2588235f, 0.09803922f, 1f)
@@ -35,7 +37,9 @@ namespace RWF.Patches
             // TEAM 2
             new PlayerSkin()
             {
+                //color = new Color(0.2811f, 0.4211f, 0.7358f, 1f),//
                 color = new Color(0.1647059f, 0.3098039f, 0.5843138f, 1f),
+                //backgroundColor = new Color(0.1874f, 0.2577f, 0.4906f, 1f),//
                 backgroundColor = new Color(0.2196078f, 0.254902f, 0.3098039f, 1f),
                 winText = new Color(0.3568628f, 0.6f, 0.9137255f, 1f),
                 particleEffect = new Color(0.09803922f, 0.3215686f, 0.6039216f, 1f)
@@ -43,7 +47,9 @@ namespace RWF.Patches
             // TEAM 3
             new PlayerSkin()
             {
+                //color = new Color(0.6314f, 0.2706f, 0.2771f, 1f),//
                 color = new Color(0.6313726f, 0.2705882f, 0.2705882f, 1f),
+                //backgroundColor = new Color(0.5569f, 0.1991f, 0.1882f, 1f),//
                 backgroundColor = new Color(0.3490196f, 0.2117647f, 0.2117647f, 1f),
                 winText = new Color(0.9137255f, 0.3568628f, 0.3568628f, 1f),
                 particleEffect = new Color(0.6039216f, 0.09803922f, 0.09803922f, 1f)
@@ -51,7 +57,9 @@ namespace RWF.Patches
             // TEAM 4
             new PlayerSkin()
             {
+                //color = new Color(0.3222f, 0.5283f, 0.2716f, 1f),
                 color = new Color(0.2627451f, 0.5372549f, 0.3254902f, 1f),
+                //backgroundColor = new Color(0.2223f, 0.3679f, 0.1649f, 1f),//
                 backgroundColor = new Color(0.2196078f, 0.3098039f, 0.2784314f, 1f),
                 winText = new Color(0f, 0.6862745f, 0.2666667f, 1f),
                 particleEffect = new Color(0.07843138f, 0.5529412f, 0.2784314f, 1f)

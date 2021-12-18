@@ -12,7 +12,7 @@ namespace RWF.UI
         public int maxCols = UnityEngine.Mathf.CeilToInt(RWFMod.instance.MaxPlayers / 4);
         public float maxSize = 3.5f;
         public float minSize = 1f;
-        public float maxHSpacing = 50f;
+        public float maxHSpacing = 50f * 4f / UnityEngine.Mathf.CeilToInt(RWFMod.instance.MaxPlayers / 4);
         public float minHSpacing = 15f * 4f / UnityEngine.Mathf.CeilToInt(RWFMod.instance.MaxPlayers / 4);
         public float maxVSpacing = 20f;
         public float minVSpacing = 2.5f;

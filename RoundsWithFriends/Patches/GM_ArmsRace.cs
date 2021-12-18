@@ -127,13 +127,13 @@ namespace RWF.Patches
 
             var f_cardChoiceInstance = AccessTools.Field(typeof(CardChoice), "instance");
             var f_cardChoiceVisualsInstance = AccessTools.Field(typeof(CardChoiceVisuals), "instance");
-            var m_cardChoiceVisualsShow = ExtensionMethods.GetMethodInfo(typeof(CardChoiceVisuals), "Show");
-            var m_getPlayerIndex = ExtensionMethods.GetMethodInfo(typeof(GM_ArmsRace_Patch_RoundTransition), "GetPlayerIndex");
-            var m_winSequence = ExtensionMethods.GetMethodInfo(typeof(PointVisualizer), "DoWinSequence");
-            var m_startCoroutine = ExtensionMethods.GetMethodInfo(typeof(MonoBehaviour), "StartCoroutine", new Type[] { typeof(IEnumerator) });
+            var m_cardChoiceVisualsShow = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(CardChoiceVisuals), "Show");
+            var m_getPlayerIndex = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(GM_ArmsRace_Patch_RoundTransition), "GetPlayerIndex");
+            var m_winSequence = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PointVisualizer), "DoWinSequence");
+            var m_startCoroutine = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(MonoBehaviour), "StartCoroutine", new Type[] { typeof(IEnumerator) });
 
-            var f_iteratorIndex = ExtensionMethods.GetFieldInfo(GetNestedRoundTransitionType(), "<i>5__3");
-            var f_players = ExtensionMethods.GetFieldInfo(GetNestedRoundTransitionType(), "<players>5__2");
+            var f_iteratorIndex = UnboundLib.ExtensionMethods.GetFieldInfo(GetNestedRoundTransitionType(), "<i>5__3");
+            var f_players = UnboundLib.ExtensionMethods.GetFieldInfo(GetNestedRoundTransitionType(), "<players>5__2");
 
             for (int i = 0; i < list.Count; i++) {
                 if (
@@ -178,8 +178,8 @@ namespace RWF.Patches
             var list = instructions.ToList();
             var newInstructions = new List<CodeInstruction>();
 
-            var f_p1Points = ExtensionMethods.GetFieldInfo(typeof(GM_ArmsRace), "p1Points");
-            var f_p2Points = ExtensionMethods.GetFieldInfo(typeof(GM_ArmsRace), "p2Points");
+            var f_p1Points = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(GM_ArmsRace), "p1Points");
+            var f_p2Points = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(GM_ArmsRace), "p2Points");
 
             for (int i = 0; i < list.Count; i++)
             {
