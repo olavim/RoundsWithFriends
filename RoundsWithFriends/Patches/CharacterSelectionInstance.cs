@@ -25,7 +25,10 @@ namespace RWF.Patches
     {
         static void Prefix(CharacterSelectionInstance __instance, ref float ___counter)
         {
-
+            foreach (Transform child in __instance.transform)
+            {
+                child.localPosition = Vector2.zero;
+            }
             //__instance.currentPlayer.data.playerActions.Jump.ClearInputState();
             ___counter = -0.1f;
         }
@@ -114,6 +117,12 @@ namespace RWF.Patches
                     ___buttons[i].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().text = "[E] TO EDIT";
                     ___buttons[i].transform.GetChild(3).GetChild(0).localPosition -= new Vector3(___buttons[i].transform.GetChild(3).GetChild(0).localPosition.x, 0f, 0f);
                     ___buttons[i].transform.GetChild(3).GetChild(1).gameObject.SetActive(false);
+                }
+                else
+                {
+                    ___buttons[i].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().text = "TO EDIT";
+                    ___buttons[i].transform.GetChild(3).GetChild(0).localPosition = new Vector3(3.1559f, 7.2338f, 0f);
+                    ___buttons[i].transform.GetChild(3).GetChild(1).gameObject.SetActive(true);
                 }
 
                 // enabled the "LOCKED" component to reuse as info text

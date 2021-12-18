@@ -24,7 +24,7 @@ namespace RWF.Patches
         }
         private static readonly PlayerSkin[] extraSkinBases = new PlayerSkin[]
         {
-            // PLAYER 1
+            // TEAM 1
             new PlayerSkin()
             {
                 color = new Color(0.6392157f, 0.2862745f, 0.1686275f, 1f),
@@ -32,7 +32,7 @@ namespace RWF.Patches
                 winText = new Color(0.9137255f, 0.4980392f, 0.3568628f, 1f),
                 particleEffect = new Color(0.6f, 0.2588235f, 0.09803922f, 1f)
             },
-            // PLAYER 2
+            // TEAM 2
             new PlayerSkin()
             {
                 color = new Color(0.1647059f, 0.3098039f, 0.5843138f, 1f),
@@ -40,7 +40,7 @@ namespace RWF.Patches
                 winText = new Color(0.3568628f, 0.6f, 0.9137255f, 1f),
                 particleEffect = new Color(0.09803922f, 0.3215686f, 0.6039216f, 1f)
             },
-            // PLAYER 3
+            // TEAM 3
             new PlayerSkin()
             {
                 color = new Color(0.6313726f, 0.2705882f, 0.2705882f, 1f),
@@ -48,7 +48,7 @@ namespace RWF.Patches
                 winText = new Color(0.9137255f, 0.3568628f, 0.3568628f, 1f),
                 particleEffect = new Color(0.6039216f, 0.09803922f, 0.09803922f, 1f)
             },
-            // PLAYER 4
+            // TEAM 4
             new PlayerSkin()
             {
                 color = new Color(0.2627451f, 0.5372549f, 0.3254902f, 1f),
@@ -56,7 +56,7 @@ namespace RWF.Patches
                 winText = new Color(0f, 0.6862745f, 0.2666667f, 1f),
                 particleEffect = new Color(0.07843138f, 0.5529412f, 0.2784314f, 1f)
             },
-            // PLAYER 5
+            // TEAM 5
             new PlayerSkin()
             {
                 color = new Color(0.6235294f, 0.6392157f, 0.172549f, 1f),
@@ -64,7 +64,7 @@ namespace RWF.Patches
                 winText = new Color(0.8941177f, 0.9137255f, 0.3568628f, 1f),
                 particleEffect = new Color(0.5882353f, 0.6039216f, 0.09803922f, 1f)
             },
-            // PLAYER 6
+            // TEAM 6
             new PlayerSkin()
             {
                 color = new Color(0.3607843f, 0.172549f, 0.6392157f, 1f),
@@ -72,7 +72,7 @@ namespace RWF.Patches
                 winText = new Color(0.5803922f, 0.3568628f, 0.9137255f, 1f),
                 particleEffect = new Color(0.3019608f, 0.09803922f, 0.6039216f, 1f)
             },
-            // PLAYER 7
+            // TEAM 7
             new PlayerSkin()
             {
                 color = new Color(0.6392157f, 0.172549f, 0.3960784f, 1f),
@@ -80,7 +80,7 @@ namespace RWF.Patches
                 winText = new Color(0.9137255f, 0.3568628f, 0.5960785f, 1f),
                 particleEffect = new Color(0.6039216f, 0.09803922f, 0.282353f, 1f)
             },
-            // PLAYER 8
+            // TEAM 8
             new PlayerSkin()
             {
                 color = new Color(0.172549f, 0.6392157f, 0.6117647f, 1f),
@@ -88,7 +88,7 @@ namespace RWF.Patches
                 winText = new Color(0.3568628f, 0.9137255f, 0.8705882f, 1f),
                 particleEffect = new Color(0.09803922f, 0.6039216f, 0.6156863f, 1f)
             },
-            // PLAYER 9
+            // TEAM 9
             new PlayerSkin()
             {
                 color = new Color(0.6392157f, 0.3607843f, 0.2705882f, 1f),
@@ -96,7 +96,7 @@ namespace RWF.Patches
                 winText = new Color(0.9137255f, 0.6039216f, 0.5019608f, 1f),
                 particleEffect = new Color(0.6f, 0.3215686f, 0.1921569f, 1f)
             },
-            // PLAYER 10
+            // TEAM 10
             new PlayerSkin()
             {
                 color = new Color(0.254902f, 0.3686275f, 0.5843138f, 1f),
@@ -104,7 +104,7 @@ namespace RWF.Patches
                 winText = new Color(0.5019608f, 0.682353f, 0.9137255f, 1f),
                 particleEffect = new Color(0.1921569f, 0.372549f, 0.6039216f, 1f)
             },
-            // PLAYER 11
+            // TEAM 11
             new PlayerSkin()
             {
                 color = new Color(0.6313726f, 0.3686275f, 0.3686275f, 1f),
@@ -112,7 +112,7 @@ namespace RWF.Patches
                 winText = new Color(0.9137255f, 0.5019608f, 0.5019608f, 1f),
                 particleEffect = new Color(0.6039216f, 0.1921569f, 0.1921569f, 1f)
             },
-            // PLAYER 12
+            // TEAM 12
             new PlayerSkin()
             {
                 color = new Color(0.345098f, 0.5372549f, 0.3882353f, 1f),
@@ -120,7 +120,7 @@ namespace RWF.Patches
                 winText = new Color(0.1058824f, 0.6862745f, 0.3333333f, 1f),
                 particleEffect = new Color(0.1647059f, 0.5529412f, 0.3294118f, 1f)
             },
-            // PLAYER 13
+            // TEAM 13
             new PlayerSkin()
             {
                 color = new Color(0.627451f, 0.6392157f, 0.3764706f, 1f),
@@ -128,7 +128,7 @@ namespace RWF.Patches
                 winText = new Color(0.9019608f, 0.9137255f, 0.6470588f, 1f),
                 particleEffect = new Color(0.5921569f, 0.6039216f, 0.2901961f, 1f)
             },
-            // PLAYER 14
+            // TEAM 14
             new PlayerSkin()
             {
                 color = new Color(0.4196078f, 0.2745098f, 0.6392157f, 1f),
@@ -136,7 +136,7 @@ namespace RWF.Patches
                 winText = new Color(0.6666667f, 0.5019608f, 0.9137255f, 1f),
                 particleEffect = new Color(0.3568628f, 0.1921569f, 0.6039216f, 1f)
             },
-            // PLAYER 15
+            // TEAM 15
             new PlayerSkin()
             {
                 color = new Color(0.6392157f, 0.2745098f, 0.4470588f, 1f),
@@ -144,7 +144,7 @@ namespace RWF.Patches
                 winText = new Color(0.9137255f, 0.5019608f, 0.6784314f, 1f),
                 particleEffect = new Color(0.6039216f, 0.1921569f, 0.3411765f, 1f)
             },
-            // PLAYER 16
+            // TEAM 16
             new PlayerSkin()
             {
                 color = new Color(0.2745098f, 0.6392157f, 0.6156863f, 1f),
@@ -152,7 +152,7 @@ namespace RWF.Patches
                 winText = new Color(0.5019608f, 0.9137255f, 0.8784314f, 1f),
                 particleEffect = new Color(0.1960784f, 0.6039216f, 0.6156863f, 1f)
             },
-            // PLAYER 17
+            // TEAM 17
             new PlayerSkin()
             {
                 color = new Color(0.4392157f, 0.1960784f, 0.1137255f, 1f),
@@ -160,7 +160,7 @@ namespace RWF.Patches
                 winText = new Color(0.7137255f, 0.3882353f, 0.2784314f, 1f),
                 particleEffect = new Color(0.4f, 0.172549f, 0.0627451f, 1f)
             },
-            // PLAYER 18
+            // TEAM 18
             new PlayerSkin()
             {
                 color = new Color(0.1058824f, 0.2f, 0.3843137f, 1f),
@@ -168,7 +168,7 @@ namespace RWF.Patches
                 winText = new Color(0.2784314f, 0.4666667f, 0.7137255f, 1f),
                 particleEffect = new Color(0.0627451f, 0.2117647f, 0.4039216f, 1f)
             },
-            // PLAYER 19
+            // TEAM 19
             new PlayerSkin()
             {
                 color = new Color(0.4313726f, 0.1843137f, 0.1843137f, 1f),
@@ -176,7 +176,7 @@ namespace RWF.Patches
                 winText = new Color(0.7137255f, 0.2784314f, 0.2784314f, 1f),
                 particleEffect = new Color(0.4039216f, 0.0627451f, 0.0627451f, 1f)
             },
-            // PLAYER 20
+            // TEAM 20
             new PlayerSkin()
             {
                 color = new Color(0.1647059f, 0.3372549f, 0.2039216f, 1f),
@@ -184,7 +184,7 @@ namespace RWF.Patches
                 winText = new Color(0f, 0.4862745f, 0.1882353f, 1f),
                 particleEffect = new Color(0.04705882f, 0.3529412f, 0.1764706f, 1f)
             },
-            // PLAYER 21
+            // TEAM 21
             new PlayerSkin()
             {
                 color = new Color(0.427451f, 0.4392157f, 0.1176471f, 1f),
@@ -192,7 +192,7 @@ namespace RWF.Patches
                 winText = new Color(0.6980392f, 0.7137255f, 0.2784314f, 1f),
                 particleEffect = new Color(0.3921569f, 0.4039216f, 0.0627451f, 1f)
             },
-            // PLAYER 22
+            // TEAM 22
             new PlayerSkin()
             {
                 color = new Color(0.2470588f, 0.1176471f, 0.4392157f, 1f),
@@ -200,7 +200,7 @@ namespace RWF.Patches
                 winText = new Color(0.4509804f, 0.2784314f, 0.7137255f, 1f),
                 particleEffect = new Color(0.2f, 0.0627451f, 0.4039216f, 1f)
             },
-            // PLAYER 23
+            // TEAM 23
             new PlayerSkin()
             {
                 color = new Color(0.4392157f, 0.1176471f, 0.2705882f, 1f),
@@ -208,7 +208,7 @@ namespace RWF.Patches
                 winText = new Color(0.7137255f, 0.2784314f, 0.4627451f, 1f),
                 particleEffect = new Color(0.4039216f, 0.0627451f, 0.1882353f, 1f)
             },
-            // PLAYER 24
+            // TEAM 24
             new PlayerSkin()
             {
                 color = new Color(0.1176471f, 0.4392157f, 0.4196078f, 1f),
@@ -216,7 +216,7 @@ namespace RWF.Patches
                 winText = new Color(0.2784314f, 0.7137255f, 0.6784314f, 1f),
                 particleEffect = new Color(0.0627451f, 0.4039216f, 0.4156863f, 1f)
             },
-            // PLAYER 25
+            // TEAM 25
             new PlayerSkin()
             {
                 color = new Color(0.4392157f, 0.2470588f, 0.1843137f, 1f),
@@ -224,7 +224,7 @@ namespace RWF.Patches
                 winText = new Color(0.7137255f, 0.4705882f, 0.3882353f, 1f),
                 particleEffect = new Color(0.4f, 0.2117647f, 0.1254902f, 1f)
             },
-            // PLAYER 26
+            // TEAM 26
             new PlayerSkin()
             {
                 color = new Color(0.1647059f, 0.2392157f, 0.3843137f, 1f),
@@ -232,7 +232,7 @@ namespace RWF.Patches
                 winText = new Color(0.3882353f, 0.5294118f, 0.7137255f, 1f),
                 particleEffect = new Color(0.1254902f, 0.2470588f, 0.4039216f, 1f)
             },
-            // PLAYER 27
+            // TEAM 27
             new PlayerSkin()
             {
                 color = new Color(0.4313726f, 0.2509804f, 0.2509804f, 1f),
@@ -240,7 +240,7 @@ namespace RWF.Patches
                 winText = new Color(0.7137255f, 0.3882353f, 0.3882353f, 1f),
                 particleEffect = new Color(0.4039216f, 0.1254902f, 0.1254902f, 1f)
             },
-            // PLAYER 28
+            // TEAM 28
             new PlayerSkin()
             {
                 color = new Color(0.2156863f, 0.3372549f, 0.2431373f, 1f),
@@ -248,7 +248,7 @@ namespace RWF.Patches
                 winText = new Color(0.07450981f, 0.4862745f, 0.2352941f, 1f),
                 particleEffect = new Color(0.1019608f, 0.3529412f, 0.2078431f, 1f)
             },
-            // PLAYER 29
+            // TEAM 29
             new PlayerSkin()
             {
                 color = new Color(0.427451f, 0.4392157f, 0.254902f, 1f),
@@ -256,7 +256,7 @@ namespace RWF.Patches
                 winText = new Color(0.7019608f, 0.7137255f, 0.5019608f, 1f),
                 particleEffect = new Color(0.3921569f, 0.4039216f, 0.1921569f, 1f)
             },
-            // PLAYER 30
+            // TEAM 30
             new PlayerSkin()
             {
                 color = new Color(0.2862745f, 0.1882353f, 0.4392157f, 1f),
@@ -264,7 +264,7 @@ namespace RWF.Patches
                 winText = new Color(0.5176471f, 0.3882353f, 0.7137255f, 1f),
                 particleEffect = new Color(0.2352941f, 0.1254902f, 0.4039216f, 1f)
             },
-            // PLAYER 31
+            // TEAM 31
             new PlayerSkin()
             {
                 color = new Color(0.4392157f, 0.1882353f, 0.3058824f, 1f),
@@ -272,7 +272,7 @@ namespace RWF.Patches
                 winText = new Color(0.7137255f, 0.3882353f, 0.5294118f, 1f),
                 particleEffect = new Color(0.4039216f, 0.1254902f, 0.227451f, 1f)
             },
-            // PLAYER 32
+            // TEAM 32
             new PlayerSkin()
             {
                 color = new Color(0.1882353f, 0.4392157f, 0.4196078f, 1f),
