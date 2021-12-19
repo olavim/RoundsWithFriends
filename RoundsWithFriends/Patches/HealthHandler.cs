@@ -5,6 +5,7 @@ using UnboundLib;
 using System.Reflection.Emit;
 using System.Linq;
 using System;
+using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {
@@ -13,9 +14,8 @@ namespace RWF.Patches
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // for some reason the game uses the playerID to set the team color instead of the teamID
             var f_playerID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "playerID");
-            var f_teamID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "teamID");
+            var m_colorID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerExtensions), nameof(PlayerExtensions.colorID));
 
             List<CodeInstruction> ins = instructions.ToList();
 
@@ -34,8 +34,8 @@ namespace RWF.Patches
             {
                 throw new Exception("[RPCA_Die PATCH] INSTRUCTION NOT FOUND");
             }
-            // Instead of `this.teamID = playerID`, we obviously want `this.teamID = teamID`
-            ins[idx].operand = f_teamID;
+            // get colorID instead of playerID
+            ins[idx] = new CodeInstruction(OpCodes.Call, m_colorID);
 
             return ins.AsEnumerable();
         }
@@ -45,9 +45,8 @@ namespace RWF.Patches
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // for some reason the game uses the playerID to set the team color instead of the teamID
             var f_playerID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "playerID");
-            var f_teamID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "teamID");
+            var m_colorID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerExtensions), nameof(PlayerExtensions.colorID));
 
             List<CodeInstruction> ins = instructions.ToList();
 
@@ -66,8 +65,8 @@ namespace RWF.Patches
             {
                 throw new Exception("[RPCA_Die_Phoenix PATCH] INSTRUCTION NOT FOUND");
             }
-            // Instead of `this.teamID = playerID`, we obviously want `this.teamID = teamID`
-            ins[idx].operand = f_teamID;
+            // get colorID instead of playerID
+            ins[idx] = new CodeInstruction(OpCodes.Call, m_colorID);
 
             return ins.AsEnumerable();
         }
@@ -78,19 +77,20 @@ namespace RWF.Patches
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // for some reason the game uses the playerID to set the team color instead of the teamID
             var f_playerID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "playerID");
-            var f_teamID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "teamID");
+            var m_colorID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerExtensions), nameof(PlayerExtensions.colorID));
 
             foreach (var ins in instructions)
             {
                 if (ins.LoadsField(f_playerID))
                 {
-                    // Instead of `this.teamID = playerID`, we obviously want `this.teamID = teamID`
-                    ins.operand = f_teamID;
+                    // we want colorID instead of teamID
+                    yield return new CodeInstruction(OpCodes.Call, m_colorID); // call the colorID method, which pops the player instance off the stack and leaves the result [colorID, ...]
                 }
-
-                yield return ins;
+                else
+                {
+                    yield return ins;
+                }
             }
         }
     }

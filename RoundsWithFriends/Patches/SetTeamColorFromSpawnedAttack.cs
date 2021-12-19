@@ -5,8 +5,8 @@ using System.Reflection.Emit;
 
 namespace RWF.Patches
 {
-    [HarmonyPatch(typeof(PlayerSkinHandler), "Init")]
-    class PlayerSkinHandler_Patch_Init
+    [HarmonyPatch(typeof(SetTeamColorFromSpawnedAttack), "Start")]
+    class SetTeamColorFromSpawnedAttack_Patch_Start
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {

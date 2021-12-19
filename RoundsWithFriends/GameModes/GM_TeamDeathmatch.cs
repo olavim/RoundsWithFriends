@@ -97,7 +97,15 @@ namespace RWF.GameModes
 				return;
 			}
 
-			GameManager.instance.isPlaying = true;
+            // clear teams and redo them
+            this.teamPoints.Clear();
+            this.teamRounds.Clear();
+            foreach (Player player in PlayerManager.instance.players)
+            {
+                this.PlayerJoined(player);
+            }
+
+            GameManager.instance.isPlaying = true;
 			this.StartCoroutine(this.DoStartGame());
 		}
 

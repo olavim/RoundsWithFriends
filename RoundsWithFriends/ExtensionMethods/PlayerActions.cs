@@ -7,14 +7,14 @@ namespace RWF.ExtensionMethods
     [Serializable]
     public class PlayerActionsAdditionalData
     {
-        public PlayerAction increaseTeamID;
-        public PlayerAction decreaseTeamID;
+        public PlayerAction increaseColorID;
+        public PlayerAction decreaseColorID;
 
 
         public PlayerActionsAdditionalData()
         {
-            this.increaseTeamID = null;
-            this.decreaseTeamID = null;
+            this.increaseColorID = null;
+            this.decreaseColorID = null;
         }
     }
     public static class PlayerActionsExtension

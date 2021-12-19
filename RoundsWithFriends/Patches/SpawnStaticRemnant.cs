@@ -1,43 +1,12 @@
-﻿using System.Collections.Generic;
-using HarmonyLib;
-using UnboundLib;
-using UnityEngine;
+﻿using HarmonyLib;
+using System.Collections.Generic;
 using RWF.ExtensionMethods;
 using System.Reflection.Emit;
 
 namespace RWF.Patches
 {
-    [HarmonyPatch(typeof(Player), "Start")]
-    class Player_Patch_Start
-    {
-        static void Postfix(Player __instance) {
-            if (__instance.data.view.IsMine) {
-
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(Player), "AssignTeamID")]
-    class Player_Patch_AssignTeamID
-    {
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-            // Somewhy the AssignTeamID method assigns playerID to teamID when player joins a room the second time
-            var f_playerID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "playerID");
-            var f_teamID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "teamID");
-
-            foreach (var ins in instructions) {
-                if (ins.LoadsField(f_playerID)) {
-                    // Instead of `this.teamID = playerID`, we obviously want `this.teamID = teamID`
-                    ins.operand = f_teamID;
-                }
-
-                yield return ins;
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(Player), "SetColors")]
-    class Player_Patch_SetColors
+    [HarmonyPatch(typeof(SpawnStaticRemnant), "Start")]
+    class SpawnStaticRemnant_Patch_Start
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
@@ -58,8 +27,8 @@ namespace RWF.Patches
             }
         }
     }
-    [HarmonyPatch(typeof(Player), "GetTeamColors")]
-    class Player_Patch_GetTeamColors
+    [HarmonyPatch(typeof(SpawnStaticRemnant), "Go")]
+    class SpawnStaticRemnant_Patch_Go
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {

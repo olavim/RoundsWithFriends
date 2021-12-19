@@ -7,6 +7,7 @@ using RWF.UI;
 using UnboundLib;
 using System.Collections.Generic;
 using RWF.ExtensionMethods;
+using System.Linq;
 
 namespace RWF.Patches
 {
@@ -60,6 +61,24 @@ namespace RWF.Patches
 
             if (numReady == numPlayers && numReady >= RWFMod.instance.MinPlayers) {
                 MainMenuHandler.instance.Close();
+
+                // assign teamIDs according to colorIDs
+                int nextTeamID = 0;
+                Dictionary<int, int> colorToTeam = new Dictionary<int, int>() { };
+                foreach (Player player in PlayerManager.instance.players)
+                {
+                    if (colorToTeam.TryGetValue(player.colorID(), out int teamID))
+                    {
+                        player.AssignTeamID(teamID);
+                    }
+                    else
+                    {
+                        player.AssignTeamID(nextTeamID);
+                        colorToTeam[player.colorID()] = nextTeamID;
+                        nextTeamID++;
+                    }
+                }
+
                 GameModeManager.CurrentHandler.StartGame();
                 return false;
             }
@@ -83,7 +102,7 @@ namespace RWF.Patches
                 {
                     graphic.color = __instance.isReady ? Colors.Transparent(Colors.readycolor) : Color.clear;
                 }
-                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = __instance.isReady ? "READY" : __instance.currentPlayer.data.input.inputType != GeneralInput.InputType.Controller ? "[W/S] TO CHANGE TEAM" : "D-PAD TO CHANGE TEAM";
+                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = __instance.isReady ? "READY" : $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.teamID).ToUpper()}";
                 ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = __instance.isReady ? Colors.readycolor : Colors.joinedcolor;
             }
         }
@@ -135,9 +154,16 @@ namespace RWF.Patches
                 ___buttons[i].transform.GetChild(4).gameObject.SetActive(true);
                 ___buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(false);
                 ___buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(false);
-                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = pickingPlayer.data.input.inputType != GeneralInput.InputType.Controller ? "[W/S] TO CHANGE TEAM" : "D-PAD TO CHANGE TEAM";
+                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.teamID).ToUpper()}";
                 ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<RectTransform>().sizeDelta = new Vector2(150f, ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<RectTransform>().sizeDelta.y);
                 ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.joinedcolor;
+
+                // update colors and team names
+
+                ___buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = __instance.currentPlayer.GetTeamColors().color;
+                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj2) && !(bool) allowTeamsObj2) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.colorID()).ToUpper()}";
+                
+
             }
 
             if (__instance.transform.GetChild(0).Find("CharacterSelectButtons") != null)
@@ -216,7 +242,7 @@ namespace RWF.Patches
                 ___currentButton.GetComponent<Button>().onClick.Invoke();
             }
             ___counter += Time.deltaTime;
-            if ((((__instance.currentPlayer.data.input.inputType == GeneralInput.InputType.Controller) && Mathf.Abs(__instance.currentPlayer.data.playerActions.Move.X) > 0.5f) || ((__instance.currentPlayer.data.input.inputType != GeneralInput.InputType.Controller) && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow))) || __instance.currentPlayer.data.playerActions.GetAdditionalData().increaseTeamID.WasPressed || __instance.currentPlayer.data.playerActions.GetAdditionalData().decreaseTeamID.WasPressed) && ___counter > 0.2f)
+            if ((((__instance.currentPlayer.data.input.inputType == GeneralInput.InputType.Controller) && Mathf.Abs(__instance.currentPlayer.data.playerActions.Move.X) > 0.5f) || ((__instance.currentPlayer.data.input.inputType != GeneralInput.InputType.Controller) && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow))) || __instance.currentPlayer.data.playerActions.GetAdditionalData().increaseColorID.WasPressed || __instance.currentPlayer.data.playerActions.GetAdditionalData().decreaseColorID.WasPressed) && ___counter > 0.2f)
             {
                 // change face
                 if (((__instance.currentPlayer.data.input.inputType == GeneralInput.InputType.Controller) && __instance.currentPlayer.data.playerActions.Move.X > 0.5f) || ((__instance.currentPlayer.data.input.inputType != GeneralInput.InputType.Controller) && (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))))
@@ -227,28 +253,48 @@ namespace RWF.Patches
                 {
                     __instance.currentlySelectedFace--;
                 }
-                bool teamChanged = false;
+                bool colorChanged = false;
+                int colorIDDelta = 0;
                 // change team
-                if (__instance.currentPlayer.data.playerActions.GetAdditionalData().increaseTeamID.WasPressed)
+                if (__instance.currentPlayer.data.playerActions.GetAdditionalData().increaseColorID.WasPressed)
                 {
-                    int newTeamID = UnityEngine.Mathf.Clamp(__instance.currentPlayer.teamID + 1, 0, RWFMod.MaxTeamsHardLimit - 1);
-                    __instance.currentPlayer.AssignTeamID(newTeamID);
-                    __instance.currentPlayer.SetColors();
-                    teamChanged = true;
+                    //newTeamID = UnityEngine.Mathf.Clamp(__instance.currentPlayer.teamID + 1, 0, RWFMod.MaxTeamsHardLimit - 1);
+                    colorIDDelta = +1;
+                    colorChanged = true;
                 }
-                else if (__instance.currentPlayer.data.playerActions.GetAdditionalData().decreaseTeamID.WasPressed)
+                else if (__instance.currentPlayer.data.playerActions.GetAdditionalData().decreaseColorID.WasPressed)
                 {
-                    int newTeamID = UnityEngine.Mathf.Clamp(__instance.currentPlayer.teamID - 1, 0, RWFMod.MaxTeamsHardLimit - 1);
-                    __instance.currentPlayer.AssignTeamID(newTeamID);
-                    __instance.currentPlayer.SetColors();
-                    teamChanged = true;
+                    //newTeamID = UnityEngine.Mathf.Clamp(__instance.currentPlayer.teamID - 1, 0, RWFMod.MaxTeamsHardLimit - 1);
+                    colorIDDelta = -1;
+                    colorChanged = true;
                 }
 
-                if (teamChanged)
+                if (colorChanged)
                 {
-                    for (int i = 0; i < ___buttons.Length; i++)
+                    int newColorID = __instance.currentPlayer.colorID() + colorIDDelta;
+                    bool fail = false;
+
+                    // wow this syntax is concerning
+                    if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
                     {
-                        ___buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = __instance.currentPlayer.GetTeamColors().color;
+                        // teams not allowed, continue to next colorID() - if the last (or first) colorID() is passed, then just fail to change team
+                        while (PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID) && newColorID < RWFMod.instance.MaxTeams && newColorID >= 0)
+                        {
+                            newColorID += colorIDDelta;
+                        }
+
+                        fail = newColorID >= RWFMod.instance.MaxTeams || newColorID < 0 || PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID);
+                    }
+
+                    if (!fail)
+                    {
+                        __instance.currentPlayer.AssignColorID(newColorID);
+                        __instance.currentPlayer.SetColors();
+                        for (int i = 0; i < ___buttons.Length; i++)
+                        {
+                            ___buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = __instance.currentPlayer.GetTeamColors().color;
+                            ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj3) && !(bool) allowTeamsObj3) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.colorID()).ToUpper()}";
+                        }
                     }
                 }
 
@@ -285,7 +331,7 @@ namespace RWF.Patches
                     {
                         graphic.color = Color.clear;
                     }
-                    ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = __instance.currentPlayer.data.input.inputType != GeneralInput.InputType.Controller ? "[W/S] TO CHANGE TEAM" : "D-PAD TO CHANGE TEAM";
+                    ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.teamID).ToUpper()}";
                     ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.joinedcolor;
                 }
 

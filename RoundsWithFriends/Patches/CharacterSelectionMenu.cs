@@ -10,6 +10,8 @@ using UnboundLib;
 using System.Collections;
 using TMPro;
 using RWF.UI;
+using UnboundLib.GameModes;
+using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {
@@ -36,6 +38,12 @@ namespace RWF.Patches
     {
         static bool Prefix(CharacterSelectionMenu __instance, Player joinedPlayer)
         {
+            // if the current gamemode doesn't allow duplicate colors, assign this player the first available colorID
+            if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
+            {
+                joinedPlayer.AssignColorID(Enumerable.Range(0, RWFMod.MaxTeamsHardLimit).Except(PlayerManager.instance.players.Where(p => p.playerID != joinedPlayer.playerID).Select(p => p.colorID())).Distinct().First());
+            }
+
             __instance.transform.GetChild(0).GetComponent<CharacterSelectionMenuLayoutGroup>().PlayerJoined(joinedPlayer);
             __instance.transform.GetChild(0).GetChild(joinedPlayer.playerID).GetComponent<CharacterSelectionInstance>().StartPicking(joinedPlayer);
             return false;

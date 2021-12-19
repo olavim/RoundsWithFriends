@@ -10,8 +10,7 @@ using UnityEngine;
 
 namespace RWF.Patches
 {
-
-    internal static class ExtraPlayerSkins
+    public static class ExtraPlayerSkins
     {
         public static PlayerSkin[] skins = ((PlayerSkinBank) typeof(PlayerSkinBank).GetProperty("Instance", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null, null)).skins.Select(s => s.currentPlayerSkin).Concat(new PlayerSkin[RWFMod.MaxPlayersHardLimit - ((PlayerSkinBank) typeof(PlayerSkinBank).GetProperty("Instance", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null, null)).skins.Length]).ToArray();
         public static int numberOfSkins
@@ -27,9 +26,7 @@ namespace RWF.Patches
             // TEAM 1
             new PlayerSkin()
             {
-                //color = new Color(0.7264f, 0.3429f, 0.2364f, 1f),
                 color = new Color(0.6392157f, 0.2862745f, 0.1686275f, 1f),
-                //backgroundColor = new Color(0.4717f, 0.1967f, 0.1224f, 1f),
                 backgroundColor = new Color(0.3490196f, 0.2392157f, 0.2117647f, 1f),
                 winText = new Color(0.9137255f, 0.4980392f, 0.3568628f, 1f),
                 particleEffect = new Color(0.6f, 0.2588235f, 0.09803922f, 1f)
@@ -37,9 +34,7 @@ namespace RWF.Patches
             // TEAM 2
             new PlayerSkin()
             {
-                //color = new Color(0.2811f, 0.4211f, 0.7358f, 1f),//
                 color = new Color(0.1647059f, 0.3098039f, 0.5843138f, 1f),
-                //backgroundColor = new Color(0.1874f, 0.2577f, 0.4906f, 1f),//
                 backgroundColor = new Color(0.2196078f, 0.254902f, 0.3098039f, 1f),
                 winText = new Color(0.3568628f, 0.6f, 0.9137255f, 1f),
                 particleEffect = new Color(0.09803922f, 0.3215686f, 0.6039216f, 1f)
@@ -47,9 +42,7 @@ namespace RWF.Patches
             // TEAM 3
             new PlayerSkin()
             {
-                //color = new Color(0.6314f, 0.2706f, 0.2771f, 1f),//
                 color = new Color(0.6313726f, 0.2705882f, 0.2705882f, 1f),
-                //backgroundColor = new Color(0.5569f, 0.1991f, 0.1882f, 1f),//
                 backgroundColor = new Color(0.3490196f, 0.2117647f, 0.2117647f, 1f),
                 winText = new Color(0.9137255f, 0.3568628f, 0.3568628f, 1f),
                 particleEffect = new Color(0.6039216f, 0.09803922f, 0.09803922f, 1f)
@@ -57,9 +50,7 @@ namespace RWF.Patches
             // TEAM 4
             new PlayerSkin()
             {
-                //color = new Color(0.3222f, 0.5283f, 0.2716f, 1f),
                 color = new Color(0.2627451f, 0.5372549f, 0.3254902f, 1f),
-                //backgroundColor = new Color(0.2223f, 0.3679f, 0.1649f, 1f),//
                 backgroundColor = new Color(0.2196078f, 0.3098039f, 0.2784314f, 1f),
                 winText = new Color(0f, 0.6862745f, 0.2666667f, 1f),
                 particleEffect = new Color(0.07843138f, 0.5529412f, 0.2784314f, 1f)
@@ -290,20 +281,94 @@ namespace RWF.Patches
             }
 
         };
-        public static PlayerSkin GetPlayerSkinColors(int team)
+        public static string GetTeamColorName(int teamID)
+        {
+            // team names as colors
+
+            switch (teamID)
+            {
+                case 0:
+                    return "Orange";
+                case 1:
+                    return "Blue";
+                case 2:
+                    return "Red";
+                case 3:
+                    return "Green";
+                case 4:
+                    return "Yellow";
+                case 5:
+                    return "Purple";
+                case 6:
+                    return "Magenta";
+                case 7:
+                    return "Cyan";
+                case 8:
+                    return "Tangerine";
+                case 9:
+                    return "Light Blue";
+                case 10:
+                    return "Peach";
+                case 11:
+                    return "Lime";
+                case 12:
+                    return "Light Yellow";
+                case 13:
+                    return "Orchid";
+                case 14:
+                    return "Pink";
+                case 15:
+                    return "Aquamarine";
+                case 16:
+                    return "Dark Orange";
+                case 17:
+                    return "Dark Blue";
+                case 18:
+                    return "Dark Red";
+                case 19:
+                    return "Dark Green";
+                case 20:
+                    return "Dark Yellow";
+                case 21:
+                    return "Indigo";
+                case 22:
+                    return "Telemagenta";
+                case 23:
+                    return "Teal";
+                case 24:
+                    return "Burnt Orange";
+                case 25:
+                    return "Midnight Blue";
+                case 26:
+                    return "Maroon";
+                case 27:
+                    return "Evergreen";
+                case 28:
+                    return "Gold";
+                case 29:
+                    return "Violet";
+                case 30:
+                    return "Ruby";
+                case 31:
+                    return "Dark Cyan";
+                default:
+                    return (teamID + 1).ToString();
+            }
+        }
+        public static PlayerSkin GetPlayerSkinColors(int colorID)
         {
             // if somehow the requested id is greater than the total number of extra skins, just loop it
-            team = team % ExtraPlayerSkins.numberOfSkins;
+            colorID = colorID % ExtraPlayerSkins.numberOfSkins;
 
             // if the skin gameobject hasn't been made yet, make it
-            if (ExtraPlayerSkins.skins[team] == null)
+            if (ExtraPlayerSkins.skins[colorID] == null)
             {
 
-                PlayerSkin skin = ((PlayerSkinBank) typeof(PlayerSkinBank).GetProperty("Instance", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null, null)).skins[team % 4].currentPlayerSkin;
+                PlayerSkin skin = ((PlayerSkinBank) typeof(PlayerSkinBank).GetProperty("Instance", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null, null)).skins[colorID % 4].currentPlayerSkin;
 
                 PlayerSkin newSkin = GameObject.Instantiate(skin).gameObject.GetComponent<PlayerSkin>();
                 UnityEngine.GameObject.DontDestroyOnLoad(newSkin);
-                PlayerSkin skinToSet = ExtraPlayerSkins.extraSkinBases[team];
+                PlayerSkin skinToSet = ExtraPlayerSkins.extraSkinBases[colorID];
                 newSkin.color = skinToSet.color;
                 newSkin.backgroundColor = skinToSet.backgroundColor;
                 newSkin.winText = skinToSet.winText;
@@ -319,10 +384,10 @@ namespace RWF.Patches
                 newSkinPart.SetFieldValue("startColor1", skinToSet.backgroundColor);
                 newSkinPart.SetFieldValue("startColor2", skinToSet.color);
 
-                ExtraPlayerSkins.skins[team] = newSkin;
+                ExtraPlayerSkins.skins[colorID] = newSkin;
             }
 
-            return ExtraPlayerSkins.skins[team];
+            return ExtraPlayerSkins.skins[colorID];
         }
 
     }

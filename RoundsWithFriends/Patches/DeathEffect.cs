@@ -1,28 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using HarmonyLib;
+using RWF.ExtensionMethods;
+using System.Reflection.Emit;
 
 namespace RWF.Patches
 {
     [HarmonyPatch(typeof(DeathEffect), "PlayDeath")]
     class DeathEffect_Patch_PlayDeath
     {
-
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // for some reason the game uses the playerID to set the team color instead of the teamID
             var f_playerID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "playerID");
-            var f_teamID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "teamID");
+            var m_colorID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerExtensions), nameof(PlayerExtensions.colorID));
 
             foreach (var ins in instructions)
             {
                 if (ins.LoadsField(f_playerID))
                 {
-                    // Instead of `this.teamID = playerID`, we obviously want `this.teamID = teamID`
-                    ins.operand = f_teamID;
+                    // we want colorID instead of teamID
+                    yield return new CodeInstruction(OpCodes.Call, m_colorID); // call the colorID method, which pops the player instance off the stack and leaves the result [colorID, ...]
                 }
-
-                yield return ins;
+                else
+                {
+                    yield return ins;
+                }
             }
         }
     }

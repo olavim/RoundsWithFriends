@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using UnityEngine;
+using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {
@@ -14,7 +15,7 @@ namespace RWF.Patches
             // Show team color instead of individual player color
             var child = __instance.transform.GetChild(0);
             var player = PlayerManager.instance.players[pickerID];
-            ___currentSkin = Object.Instantiate(PlayerSkinBank.GetPlayerSkinColors(player.teamID).gameObject, child.position, Quaternion.identity, child);
+            ___currentSkin = Object.Instantiate(PlayerSkinBank.GetPlayerSkinColors(player.colorID()).gameObject, child.position, Quaternion.identity, child);
             ___currentSkin.GetComponentInChildren<ParticleSystem>().Play();
         }
     }

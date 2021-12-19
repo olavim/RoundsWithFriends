@@ -16,7 +16,8 @@ namespace RWF.GameModes
         {
             this.Settings = new GameSettings() {
                 { "pointsToWinRound", 2 },
-                { "roundsToWinGame", 3 }
+                { "roundsToWinGame", 3 },
+                { "allowTeams", false }
             };
         }
 

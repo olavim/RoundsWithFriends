@@ -8,6 +8,7 @@ using System.Reflection.Emit;
 using InControl;
 using UnboundLib;
 using UnityEngine;
+using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {
@@ -44,6 +45,15 @@ namespace RWF.Patches
                     
                 }
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerAssigner), "RegisterPlayer")]
+    class PlayerAssigner_Patch_RegisterPlayer
+    {
+        static void Postfix(CharacterData player, int teamID, int playerID)
+        {
+            player.player.AssignColorID(teamID);
         }
     }
 

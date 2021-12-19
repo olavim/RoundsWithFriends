@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnboundLib;
+using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {
@@ -99,7 +100,7 @@ namespace RWF.Patches
                     var child = roundCountGo.transform.GetChild(j);
 
                     if (teamRounds[i] + teamPoints[i] > j) {
-                        child.GetComponentInChildren<Image>().color = PlayerSkinBank.GetPlayerSkinColors(i).color;
+                        child.GetComponentInChildren<Image>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
 
                         if (teamRounds[i] > j) {
                             child.localScale = Vector3.one;

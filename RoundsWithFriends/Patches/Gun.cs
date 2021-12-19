@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using RWF.ExtensionMethods;
+using System.Reflection.Emit;
 
 namespace RWF.Patches
 {
@@ -10,9 +12,8 @@ namespace RWF.Patches
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // for some reason the game uses the playerID to set the team color instead of the teamID
             var f_playerID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "playerID");
-            var f_teamID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "teamID");
+            var m_colorID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerExtensions), nameof(PlayerExtensions.colorID));
 
             List<CodeInstruction> ins = instructions.ToList();
 
@@ -29,10 +30,10 @@ namespace RWF.Patches
             }
             if (idx == -1)
             {
-                throw new Exception("[RPCA_Die_Phoenix PATCH] INSTRUCTION NOT FOUND");
+                throw new Exception("[ApplyProjectileStats PATCH] INSTRUCTION NOT FOUND");
             }
-            // Instead of `this.teamID = playerID`, we obviously want `this.teamID = teamID`
-            ins[idx].operand = f_teamID;
+            // get colorID instead of playerID
+            ins[idx] = new CodeInstruction(OpCodes.Call, m_colorID);
 
             return ins.AsEnumerable();
         }

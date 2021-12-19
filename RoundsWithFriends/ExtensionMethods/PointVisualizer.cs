@@ -6,6 +6,8 @@ using UnityEngine.UI.ProceduralImage;
 using UnboundLib;
 using Sonigon;
 using UnityEngine.UI;
+using RWF.Patches;
+using RWF.ExtensionMethods;
 
 namespace RWF
 {
@@ -56,9 +58,9 @@ namespace RWF
 				ball.transform.localScale = Vector3.one;
 				ball.GetComponent<RectTransform>().anchoredPosition = new Vector3(xPos + (300 * i), 0, 0);
 
-                ball.transform.Find("Fill").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(i).color;
-                ball.transform.Find("Border").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(i).color;
-                ball.transform.Find("Mid").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(i).color;
+                ball.transform.Find("Fill").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
+                ball.transform.Find("Border").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
+                ball.transform.Find("Mid").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
 
 				data.teamBall.Add(i, ball);
 			}
@@ -227,8 +229,8 @@ namespace RWF
 				}
 			}
 
-			instance.text.color = PlayerSkinBank.GetPlayerSkinColors(winnerTeamID).winText;
-			instance.text.text = $"POINT TO TEAM {winnerTeamID + 1}";
+			instance.text.color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(winnerTeamID)[0].colorID()).winText;
+			instance.text.text = $"POINT TO TEAM {ExtraPlayerSkins.GetTeamColorName(PlayerManager.instance.GetPlayersInTeam(winnerTeamID)[0].colorID()).ToUpper()}";
 		}
 	}
 }

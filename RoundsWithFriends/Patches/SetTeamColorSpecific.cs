@@ -1,6 +1,8 @@
 ﻿using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
+using RWF.ExtensionMethods;
+using System.Reflection.Emit;
 
 namespace RWF.Patches
 {
@@ -12,7 +14,7 @@ namespace RWF.Patches
             float alpha = __instance.colors[0].a;
 
             __instance.colors = PlayerManager.instance.players
-                .Select(p => p.teamID)
+                .Select(p => p.colorID())
                 .Distinct()
                 .Select(id => PlayerSkinBank.GetPlayerSkinColors(id).color)
                 .ToArray();
@@ -23,17 +25,23 @@ namespace RWF.Patches
             }
         }
 
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-            var f_playerID = AccessTools.Field(typeof(Player), "playerID");
-            var f_teamID = AccessTools.Field(typeof(Player), "teamID");
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var f_playerID = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(Player), "playerID");
+            var m_colorID = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerExtensions), nameof(PlayerExtensions.colorID));
 
-            foreach (var ins in instructions) {
-                if (ins.LoadsField(f_playerID)) {
-                    ins.operand = f_teamID;
+            foreach (var ins in instructions)
+            {
+                if (ins.LoadsField(f_playerID))
+                {
+                    // we want colorID instead of teamID
+                    yield return new CodeInstruction(OpCodes.Call, m_colorID); // call the colorID method, which pops the player instance off the stack and leaves the result [colorID, ...]
+                }
+                else
+                {
+                    yield return ins;
                 }
             }
-
-            return instructions;
         }
     }
 }
