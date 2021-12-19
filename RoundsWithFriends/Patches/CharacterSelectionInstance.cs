@@ -102,7 +102,7 @@ namespace RWF.Patches
                 {
                     graphic.color = __instance.isReady ? Colors.Transparent(Colors.readycolor) : Color.clear;
                 }
-                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = __instance.isReady ? "READY" : $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.teamID).ToUpper()}";
+                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = __instance.isReady ? "READY" : $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.colorID()).ToUpper()}";
                 ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = __instance.isReady ? Colors.readycolor : Colors.joinedcolor;
             }
         }
@@ -154,7 +154,7 @@ namespace RWF.Patches
                 ___buttons[i].transform.GetChild(4).gameObject.SetActive(true);
                 ___buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(false);
                 ___buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(false);
-                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.teamID).ToUpper()}";
+                ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.colorID()).ToUpper()}";
                 ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<RectTransform>().sizeDelta = new Vector2(150f, ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<RectTransform>().sizeDelta.y);
                 ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.joinedcolor;
 
@@ -331,7 +331,7 @@ namespace RWF.Patches
                     {
                         graphic.color = Color.clear;
                     }
-                    ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.teamID).ToUpper()}";
+                    ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(__instance.currentPlayer.colorID()).ToUpper()}";
                     ___buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.joinedcolor;
                 }
 

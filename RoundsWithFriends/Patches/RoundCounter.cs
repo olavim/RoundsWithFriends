@@ -90,11 +90,21 @@ namespace RWF.Patches
             var localDeltaY = roundCountBlue.transform.localPosition.y - roundCountOrange.transform.localPosition.y;
 
             // This postfix just adds handling for more than two teams, so we skip the first two
-            for (int i = 2; i < numTeams; i++) {
-                var newPos = roundCountOrange.transform.position + new Vector3(0, deltaY * i, 0);
-                var roundCountGo = GameObject.Instantiate(roundCountOrange, newPos, Quaternion.identity, parent);
-                roundCountGo.transform.localPosition = roundCountOrange.transform.localPosition + new Vector3(0, localDeltaY * i, 0);
-                roundCountGo.transform.localScale = Vector3.one;
+            for (int i = 0; i < numTeams; i++) {
+                GameObject roundCountGo = null;
+
+                if (i <= 1)
+                {
+                    roundCountGo = i == 0 ? roundCountOrange : roundCountBlue;
+                }
+                else if (i > 1)
+                {
+                    var newPos = roundCountOrange.transform.position + new Vector3(0, deltaY * i, 0);
+                    roundCountGo = GameObject.Instantiate(roundCountOrange, newPos, Quaternion.identity, parent);
+                    roundCountGo.transform.localPosition = roundCountOrange.transform.localPosition + new Vector3(0, localDeltaY * i, 0);
+                    roundCountGo.transform.localScale = Vector3.one;
+                }
+
 
                 for (int j = 0; j < roundCountGo.transform.childCount; j++) {
                     var child = roundCountGo.transform.GetChild(j);

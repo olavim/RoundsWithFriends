@@ -18,14 +18,15 @@ namespace RWF.Patches
             }
             GameObject group = new GameObject("Group", typeof(GridLayoutGroup));
             group.transform.SetParent(__instance.transform);
+            group.transform.localPosition += 100f * Vector3.down;
             group.transform.SetSiblingIndex(1);
 
             GridLayoutGroup grid = group.GetComponent<GridLayoutGroup>();
             grid.childAlignment = TextAnchor.MiddleCenter;
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = RWFMod.instance.MaxTeams;
+            grid.constraintCount = 8;
             grid.transform.localScale = Vector3.one;
-
+            grid.spacing = new Vector2(20f, 20f);
 
             ___orangeBall.SetParent(group.transform);
             ___blueBall.SetParent(group.transform);

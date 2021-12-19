@@ -8,6 +8,7 @@ using Sonigon;
 using UnityEngine.UI;
 using RWF.Patches;
 using RWF.ExtensionMethods;
+using UnboundLib.GameModes;
 
 namespace RWF
 {
@@ -53,19 +54,34 @@ namespace RWF
 			orangeBall.GetComponent<RectTransform>().anchoredPosition = new Vector3(xPos, 0, 0);
             blueBall.GetComponent<RectTransform>().anchoredPosition = new Vector3(xPos + 300, 0, 0);
 
-            for (int i = 2; i < numTeams; i++) {
-                var ball = GameObject.Instantiate(orangeBall, instance.transform.GetChild(1));
-				ball.transform.localScale = Vector3.one;
-				ball.GetComponent<RectTransform>().anchoredPosition = new Vector3(xPos + (300 * i), 0, 0);
+            for (int i = 0; i < numTeams; i++) {
+                GameObject ball = null;
+                
+                if (i <= 1)
+                {
+                    ball = i == 0 ? orangeBall : blueBall;
+                }
 
+                else if (i > 1)
+                {
+                    ball = GameObject.Instantiate(orangeBall, instance.transform.GetChild(1));
+                    ball.transform.localScale = Vector3.one;
+                    ball.GetComponent<RectTransform>().anchoredPosition = new Vector3(xPos + (300 * i), 0, 0);
+                }
+
+                ball.transform.Find("Fill").localRotation = Quaternion.Euler(new Vector3(0f, 0f, 180f));
                 ball.transform.Find("Fill").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
                 ball.transform.Find("Border").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
-                ball.transform.Find("Mid").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
+                //ball.transform.Find("Mid").GetComponent<ProceduralImage>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
+                ball.transform.Find("Mid").GetComponent<ProceduralImage>().enabled = false;
 
-				data.teamBall.Add(i, ball);
-			}
+                if (i > 1)
+                {
+                    data.teamBall.Add(i, ball);
+                }
+            }
 
-            instance.transform.GetChild(1).gameObject.GetOrAddComponent<GridLayoutGroup>().constraintCount = numTeams;
+            instance.transform.GetChild(1).gameObject.GetOrAddComponent<GridLayoutGroup>().constraintCount = UnityEngine.Mathf.Clamp(numTeams, 1, 8);
 
         }
 
@@ -221,16 +237,17 @@ namespace RWF
 			for (int i = 0; i < teamPoints.Count; i++) {
 				var ball = instance.GetData().teamBall[i];
 				var fill = ball.transform.Find("Fill").GetComponent<ProceduralImage>();
+                fill.fillMethod = Image.FillMethod.Radial360;
 
 				if (i == winnerTeamID) {
-					fill.fillAmount = teamPoints[i] == 0 ? 1f : 0.5f;
+					fill.fillAmount = teamPoints[i] == 0 ? 1f : (float)teamPoints[i] / (int)GameModeManager.CurrentHandler.Settings["pointsToWinRound"];
 				} else {
-					fill.fillAmount = teamPoints[i] * 0.5f;
+					fill.fillAmount = (float)teamPoints[i]  / (int)GameModeManager.CurrentHandler.Settings["pointsToWinRound"];
 				}
 			}
 
 			instance.text.color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(winnerTeamID)[0].colorID()).winText;
-			instance.text.text = $"POINT TO TEAM {ExtraPlayerSkins.GetTeamColorName(PlayerManager.instance.GetPlayersInTeam(winnerTeamID)[0].colorID()).ToUpper()}";
+			instance.text.text = $"POINT TO {((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(PlayerManager.instance.GetPlayersInTeam(winnerTeamID)[0].colorID()).ToUpper()}";
 		}
 	}
 }
