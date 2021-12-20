@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using InControl;
 
-namespace RWF.ExtensionMethods
+namespace RWF
 {
     [Serializable]
     public class PlayerActionsAdditionalData

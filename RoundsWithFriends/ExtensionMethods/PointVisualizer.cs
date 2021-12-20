@@ -7,7 +7,6 @@ using UnboundLib;
 using Sonigon;
 using UnityEngine.UI;
 using RWF.Patches;
-using RWF.ExtensionMethods;
 using UnboundLib.GameModes;
 
 namespace RWF

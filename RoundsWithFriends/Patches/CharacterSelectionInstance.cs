@@ -6,7 +6,6 @@ using TMPro;
 using RWF.UI;
 using UnboundLib;
 using System.Collections.Generic;
-using RWF.ExtensionMethods;
 using System.Linq;
 
 namespace RWF.Patches
@@ -286,7 +285,7 @@ namespace RWF.Patches
                         fail = newColorID >= RWFMod.instance.MaxTeams || newColorID < 0 || PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID);
                     }
 
-                    if (!fail)
+                    if (!fail && newColorID >= 0)
                     {
                         __instance.currentPlayer.AssignColorID(newColorID);
                         __instance.currentPlayer.SetColors();

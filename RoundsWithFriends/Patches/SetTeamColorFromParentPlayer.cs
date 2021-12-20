@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using System.Collections.Generic;
-using RWF.ExtensionMethods;
 using System.Reflection.Emit;
 
 namespace RWF.Patches

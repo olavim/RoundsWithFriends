@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using UnityEngine;
-using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {

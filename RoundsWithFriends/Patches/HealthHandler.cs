@@ -5,7 +5,6 @@ using UnboundLib;
 using System.Reflection.Emit;
 using System.Linq;
 using System;
-using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {

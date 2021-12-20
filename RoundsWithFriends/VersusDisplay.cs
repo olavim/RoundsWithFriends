@@ -5,12 +5,19 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
+using RWF.Patches;
+using UnboundLib.GameModes;
+using InControl;
+using RWF.UI;
+using UnboundLib;
 
 namespace RWF
 {
     class VersusDisplay : MonoBehaviour
     {
         private Dictionary<int, int> teamPlayers = new Dictionary<int, int>();
+        private Dictionary<int, int> colorToTeam = new Dictionary<int, int>() { };
+        private Dictionary<int, int> teamToColor = new Dictionary<int, int>() { };
 
         private void Start() {
             this.gameObject.AddComponent<CanvasRenderer>();
@@ -19,6 +26,7 @@ namespace RWF
 
             var horizLayout = this.gameObject.AddComponent<HorizontalLayoutGroup>();
             horizLayout.childAlignment = TextAnchor.MiddleCenter;
+            horizLayout.spacing = 20;
 
             this.UpdatePlayers();
         }
@@ -34,92 +42,78 @@ namespace RWF
             sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             layoutGroup.childAlignment = TextAnchor.MiddleCenter;
-
-            return go;
-        }
-
-        public GameObject AddVSText() {
-            var teamCount = Mathf.Min(PhotonNetwork.CurrentRoom.PlayerCount, RWFMod.instance.MaxTeams);
-
-            var go = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.transform);
-            go.name = "VS";
-            go.transform.localScale = Vector3.one;
-
-            var layout = go.AddComponent<LayoutElement>();
-            layout.preferredWidth = 200;
-
-            var vsParticleSystem = go.GetComponentInChildren<GeneralParticleSystem>();
-            vsParticleSystem.particleSettings.size = 4;
-            vsParticleSystem.particleSettings.color = Color.white;
-            vsParticleSystem.particleSettings.randomColor = new Color32(255, 0, 255, 255);
-            vsParticleSystem.particleSettings.randomAddedColor = new Color32(72, 60, 43, 255);
-
-            var vsText = go.GetComponent<TextMeshProUGUI>();
-            vsText.fontSize = teamCount > 2 ? 60 : 100;
-            vsText.font = RoundsResources.MenuFont;
-            vsText.alignment = TextAlignmentOptions.Center;
-            vsText.text = "VS";
+            layoutGroup.spacing = 35;
 
             return go;
         }
 
         public void UpdatePlayers() {
+            UnityEngine.Debug.Log("STOP ALL COROUTINES");
             this.StopAllCoroutines();
             this.UpdatePlayersCoroutine();
         }
 
         private void UpdatePlayersCoroutine() {
             this.teamPlayers.Clear();
-
+            this.colorToTeam.Clear();
+            this.teamToColor.Clear();
+            UnityEngine.Debug.Log("UPDATE PLAYERS");
             while (this.transform.childCount > 0)
             {
                 GameObject.DestroyImmediate(this.transform.GetChild(0).gameObject);
             }
 
             this.transform.localPosition = new Vector3(0, this.transform.localPosition.y, 0);
-            var groups = new List<GameObject>();
-            var teamCount = Mathf.Min(PhotonNetwork.CurrentRoom.PlayerCount, RWFMod.instance.MaxTeams);
+            List<GameObject> groups = new List<GameObject>();
+            int teamCount = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p=>p!=null).Select(p => p.colorID).Distinct().Count();
 
             for (int i = 0; i < teamCount; i++) {
                 this.teamPlayers.Add(i, 0);
-
-                if (i != 0) {
-                    this.AddVSText();
-                }
 
                 groups.Add(this.AddPlayerGroup());
             }
 
             if (PhotonNetwork.CurrentRoom != null) {
-                var networkPlayers = PhotonNetwork.CurrentRoom.Players.Values.ToList();
+                UnityEngine.Debug.Log("current room is not null");
+                List<LobbyCharacter> players = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null).ToList();
 
-                networkPlayers.Sort((np1, np2) => {
-                    bool ready1 = np1.GetProperty<bool>("ready");
-                    bool ready2 = np2.GetProperty<bool>("ready");
-                    int order1 = np1.GetProperty<int>("readyOrder");
-                    int order2 = np2.GetProperty<int>("readyOrder");
+                players.OrderBy(p => p.colorID);
 
-                    if (ready1 && ready2) {
-                        return order1 - order2;
+                // assign teamIDs according to colorIDs
+                int nextTeamID = 0;
+                foreach (LobbyCharacter player in players) {
+                    UnityEngine.Debug.Log("ASSIGN TEAM TO " + player.NickName);
+                    if (colorToTeam.TryGetValue(player.colorID, out int teamID))
+                    {
+                        player.teamID = teamID;
+                    }
+                    else
+                    {
+                        player.teamID = nextTeamID;
+                        colorToTeam[player.colorID] = nextTeamID;
+                        teamToColor[player.teamID] = player.colorID;
+                        nextTeamID++;
                     }
 
-                    if (ready1 || ready2) {
-                        return ready1 ? -1 : 1;
-                    }
-
-                    return np1.ActorNumber - np2.ActorNumber;
-                });
-
-                foreach (var networkPlayer in networkPlayers) {
-                    var team = this.GetNetworkPlayerTeam(networkPlayer);
-
-                    var playerGo = new GameObject("NetworkPlayer");
-                    playerGo.transform.SetParent(groups[team].transform);
+                    UnityEngine.Debug.Log("MAKE LOBBY PLAYER GO");
+                    var playerGo = new GameObject("LobbyPlayer");
+                    playerGo.transform.SetParent(groups[player.teamID].transform);
                     playerGo.transform.localScale = Vector3.one;
 
-                    var playerNameGo = CreatePlayerName(networkPlayer.NickName, team, networkPlayer.GetProperty<bool>("ready"));
+                    /*
+                    UnityEngine.Debug.Log("MAKE PLAYER NAME GO");
+                    var playerNameGo = this.CreatePlayerName(player.NickName, player.colorID, player.ready);
                     playerNameGo.transform.SetParent(playerGo.transform);
                     playerNameGo.transform.localScale = Vector3.one;
+                    */
+                    UnityEngine.Debug.Log("MAKE CHARACTER SELECTOR");
+                    this.ExecuteAfterFrames(1, () =>
+                    {
+                        GameObject charSelect = this.CreatePlayerSelector(player.NickName, player, player.IsMine ? PrivateRoomHandler.instance.devicesToUse[player.localID] : null, player.IsMine);
+                        charSelect.transform.SetParent(playerGo.transform);
+                        charSelect.transform.localScale = Vector3.one;
+                        UnityEngine.Debug.Log("PLAYER SELECTOR CREATED. TEAMID: " + player.teamID.ToString());
+                    });
 
                     playerGo.AddComponent<RectTransform>();
                     playerGo.AddComponent<VerticalLayoutGroup>();
@@ -127,17 +121,59 @@ namespace RWF
                     sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                     sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-                    this.teamPlayers[team] = this.teamPlayers[team] + 1;
+                    this.teamPlayers[player.teamID] = this.teamPlayers[player.teamID] + 1;
+                }
+
+                // add team names to the top of each group
+                foreach (int teamID in this.teamPlayers.Keys.OrderBy(i => i))
+                {
+                    var teamGo = new GameObject("TeamName");
+                    teamGo.transform.SetParent(groups[teamID].transform);
+                    teamGo.transform.localScale = Vector3.one;
+                    teamGo.transform.SetAsFirstSibling();
+
+                    teamGo.AddComponent<RectTransform>();
+                    teamGo.AddComponent<VerticalLayoutGroup>();
+                    var sizer = teamGo.AddComponent<ContentSizeFitter>();
+                    sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                    sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                    var teamNameGo = this.CreateTeamName(ExtraPlayerSkins.GetTeamColorName(this.teamToColor[teamID]).ToUpper(), this.teamToColor[teamID]);
+                    teamNameGo.transform.SetParent(teamGo.transform);
+                    teamNameGo.transform.localScale = Vector3.one;
                 }
             }
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(this.gameObject.GetComponent<RectTransform>());
 
-            var middleChild = this.transform.GetChild(Mathf.FloorToInt(this.transform.childCount / 2f));
-            this.transform.localPosition -= new Vector3(middleChild.localPosition.x, 0, 0);
+            //var middleChild = this.transform.GetChild(Mathf.FloorToInt(this.transform.childCount / 2f));
+            //this.transform.localPosition -= new Vector3(middleChild.localPosition.x, 0, 0);
+        }
+        private GameObject CreatePlayerSelector(string name, LobbyCharacter character, InputDevice device, bool inControl)
+        {
+            UnityEngine.Debug.Log("START");
+            GameObject orig = UnityEngine.GameObject.Find("Game/UI/UI_MainMenu/Canvas/ListSelector/CharacterSelect/Group").transform.GetChild(0).gameObject;
+            UnityEngine.Debug.Log("FOUND");
+            GameObject selector = GameObject.Instantiate(orig);
+            UnityEngine.Debug.Log("CLONED");
+            selector.SetActive(true);
+            selector.name = $"CharacterSelector {name}";
+            selector.GetOrAddComponent<RectTransform>();
+            UnityEngine.Debug.Log("NAME AND RECT");
+            var sizer = selector.AddComponent<ContentSizeFitter>();
+            sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            UnityEngine.Debug.Log("SIZER");
+            //UnityEngine.GameObject.Destroy(selector.GetComponent<CharacterSelectionInstance>());
+            PrivateRoomCharacterSelectionInstance charSelect = selector.AddComponent<PrivateRoomCharacterSelectionInstance>();
+            UnityEngine.Debug.Log("SELECTOR");
+            this.ExecuteAfterFrames(5, () => charSelect.StartPicking(character, device, inControl));
+            UnityEngine.Debug.Log("START PICKING");
+            selector.transform.localPosition = Vector2.zero;
+            if (selector != null) { UnityEngine.Debug.Log("SELECTOR CREATED SUCCESSFULLY"); }
+            return selector;
         }
 
-        private GameObject CreatePlayerName(string name, int team, bool isReady) {
+        private GameObject CreatePlayerName(string name, int colorID, bool isReady) {
             var playerNameGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab);
             playerNameGo.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 92);
 
@@ -158,8 +194,8 @@ namespace RWF
 
             if (isReady) {
                 particleSystem.particleSettings.size = 4;
-                particleSystem.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(team).winText;
-                particleSystem.particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(team).backgroundColor;
+                particleSystem.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(colorID).winText;
+                particleSystem.particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(colorID).backgroundColor;
                 particleSystem.particleSettings.randomColor = new Color32(255, 0, 255, 255);
             } else {
                 playerNameGo.GetComponent<Mask>().enabled = false;
@@ -168,19 +204,34 @@ namespace RWF
 
             return playerNameGo;
         }
+        private GameObject CreateTeamName(string name, int colorID)
+        {
+            var teamNameGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab);
+            teamNameGo.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 92);
 
-        private int GetNetworkPlayerTeam(Photon.Realtime.Player networkPlayer) {
-            if (networkPlayer.GetProperty<bool>("ready")) {
-                return networkPlayer.GetProperty<int>("readyOrder") % RWFMod.instance.MaxTeams;
-            }
+            var nameText = teamNameGo.GetComponent<TextMeshProUGUI>();
+            nameText.fontSize = 45;
+            nameText.font = RoundsResources.MenuFont;
+            nameText.alignment = TextAlignmentOptions.Center;
+            nameText.overflowMode = TextOverflowModes.Overflow;
+            nameText.enableWordWrapping = true;
+            nameText.color = new Color32(85, 90, 98, 255);
+            nameText.text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj2) && !(bool) allowTeamsObj2) ? "" : "TEAM ")}"+name;
+            nameText.autoSizeTextContainer = true;
 
-            for (int i = 0; i < this.teamPlayers.Count - 1; i++) {
-                if (this.teamPlayers[i] > this.teamPlayers[i + 1]) {
-                    return i + 1;
-                }
-            }
+            var sizer = teamNameGo.AddComponent<ContentSizeFitter>();
+            sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            return 0;
+            var particleSystem = teamNameGo.GetComponentInChildren<GeneralParticleSystem>();
+
+            particleSystem.particleSettings.size = 4;
+            particleSystem.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(colorID).winText;
+            particleSystem.particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(colorID).backgroundColor;
+            particleSystem.particleSettings.randomColor = new Color32(255, 0, 255, 255);
+            
+
+
+            return teamNameGo;
         }
     }
 }

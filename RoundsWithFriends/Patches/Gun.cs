@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
-using RWF.ExtensionMethods;
 using System.Reflection.Emit;
 
 namespace RWF.Patches

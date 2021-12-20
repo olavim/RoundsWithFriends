@@ -2,7 +2,6 @@
 using HarmonyLib;
 using InControl;
 using System.Reflection;
-using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {

@@ -135,6 +135,14 @@ namespace RWF
             }
         }
 
+        public int MaxPlayerPerClient
+        {
+            get
+            {
+                return 2;
+            }
+        }
+
         public bool IsCeaseFire { get; private set; }
 
         public Text infoText;
@@ -203,6 +211,7 @@ namespace RWF
 
                 PhotonPeer.RegisterType(typeof(DebugOptions), 77, DebugOptions.Serialize, DebugOptions.Deserialize);
             }
+            PhotonPeer.RegisterType(typeof(LobbyCharacter), 78, LobbyCharacter.Serialize, LobbyCharacter.Deserialize);
         }
 
         public void Update()

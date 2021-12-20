@@ -8,7 +8,6 @@ using System.Reflection.Emit;
 using InControl;
 using UnboundLib;
 using UnityEngine;
-using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {

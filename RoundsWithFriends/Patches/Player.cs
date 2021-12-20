@@ -2,7 +2,6 @@
 using HarmonyLib;
 using UnboundLib;
 using UnityEngine;
-using RWF.ExtensionMethods;
 using System.Reflection.Emit;
 
 namespace RWF.Patches

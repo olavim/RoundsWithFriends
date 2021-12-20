@@ -10,7 +10,6 @@ using UnboundLib;
 using System;
 using System.Reflection.Emit;
 using RWF.Algorithms;
-using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {

@@ -11,7 +11,6 @@ using System.Collections;
 using TMPro;
 using RWF.UI;
 using UnboundLib.GameModes;
-using RWF.ExtensionMethods;
 
 namespace RWF.Patches
 {
