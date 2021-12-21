@@ -16,12 +16,66 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.UI.ProceduralImage;
+using RWF.UI;
 
 namespace RWF
 {
+    public static class PrivateRoomPrefabs
+    {
+        private static GameObject _PrivateRoomCharacterSelectionInstance = null;
+
+        public static GameObject PrivateRoomCharacterSelectionInstance
+        {
+            get
+            {
+                if (PrivateRoomPrefabs._PrivateRoomCharacterSelectionInstance != null)
+                {
+                    return PrivateRoomPrefabs._PrivateRoomCharacterSelectionInstance;
+                }
+
+                GameObject orig = UnityEngine.GameObject.Find("Game/UI/UI_MainMenu/Canvas/ListSelector/CharacterSelect/Group").transform.GetChild(0).gameObject;
+                GameObject selector = GameObject.Instantiate(orig);
+                UnityEngine.GameObject.DontDestroyOnLoad(selector);
+                selector.SetActive(true);
+                selector.name = "PrivateRoomCharacterSelector";
+                selector.GetOrAddComponent<RectTransform>();
+                selector.GetOrAddComponent<PhotonView>();
+                var sizer = selector.AddComponent<ContentSizeFitter>();
+                sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                UnityEngine.GameObject.Destroy(selector.GetComponent<CharacterSelectionInstance>());
+                PrivateRoomCharacterSelectionInstance charSelect = selector.AddComponent<PrivateRoomCharacterSelectionInstance>();
+                UnityEngine.GameObject.Destroy(charSelect.transform.GetChild(2).gameObject);
+                UnityEngine.GameObject.Destroy(charSelect.transform.GetChild(1).gameObject);
+
+                GameObject playerName = new GameObject("PlayerName", typeof(TextMeshProUGUI));
+                playerName.transform.SetParent(selector.transform);
+                playerName.transform.localScale = Vector3.one;
+                playerName.transform.localPosition = new Vector3(0f, 80f, 0f);
+                playerName.GetComponent<TextMeshProUGUI>().color = new Color(0.556f, 0.556f, 0.556f, 1f);
+                playerName.GetComponent<TextMeshProUGUI>().fontSize = 25f;
+                playerName.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+
+                selector.transform.localPosition = Vector2.zero;
+
+                PhotonNetwork.PrefabPool.RegisterPrefab(selector.name, selector);
+
+                PrivateRoomPrefabs._PrivateRoomCharacterSelectionInstance = selector;
+
+                return PrivateRoomPrefabs._PrivateRoomCharacterSelectionInstance;
+            }
+            private set { }
+        }
+    }
+
     public class LobbyCharacter
     {
         // class to store lobby player information before actual Rounds players are created
+     
+        public static LobbyCharacter GetLobbyCharacter(int uniqueID)
+        {
+            return PhotonNetwork.CurrentRoom.Players.Values.Select(p => p.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && p.uniqueID == uniqueID).FirstOrDefault();
+        }
+        
         public static object Deserialize(byte[] data)
         {
             if ((int)data[4] == 1)
@@ -29,10 +83,10 @@ namespace RWF
                 return null;
             }
 
-            LobbyCharacter result = new LobbyCharacter(PhotonNetwork.CurrentRoom.Players[(int) data[0]], (int) data[1])
+            LobbyCharacter result = new LobbyCharacter(PhotonNetwork.CurrentRoom.Players[(int) data[0]], (int) data[1], (int)data[2])
             {
-                teamID = (int) data[2],
-                ready = (int) data[3] == 1
+                teamID = (int) data[3],
+                ready = (int) data[4] == 1
             };
             return result;
         }
@@ -42,23 +96,25 @@ namespace RWF
             if (lobbyCharacter == null) { return new byte[] { 0,0,0,0,1 }; }
 
             LobbyCharacter c = (LobbyCharacter) lobbyCharacter;
-            return new byte[] { (byte)c.actorID, (byte)c.colorID, (byte)c.teamID, (byte)(c.ready ? 1 : 0), 0};
+            return new byte[] { (byte)c.actorID, (byte)c.colorID, (byte)c.localID, (byte)c.teamID, (byte)(c.ready ? 1 : 0), 0};
         }
 
         public Photon.Realtime.Player networkPlayer;
+        public int uniqueID => this.actorID * RWFMod.instance.MaxPlayerPerClient + this.localID;
         public int colorID;
         public int teamID;
         public bool ready = false;
-        public string NickName => networkPlayer.NickName;
+        public string NickName => this.localID == 0 ? networkPlayer.NickName : networkPlayer.NickName + $" {this.localID + 1}";
         public int actorID => this.networkPlayer.ActorNumber;
-        public int localID => Enumerable.Range(0, RWFMod.instance.MaxPlayerPerClient).Where(i => PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players")[i] == this).First();
+        public int localID;
 
         public bool IsMine => this.actorID == PhotonNetwork.LocalPlayer.ActorNumber;
 
-        public LobbyCharacter(Photon.Realtime.Player networkPlayer, int colorID)
+        public LobbyCharacter(Photon.Realtime.Player networkPlayer, int colorID, int localID)
         {
             this.networkPlayer = networkPlayer;
             this.colorID = colorID;
+            this.localID = localID;
         }
 
         public void ToggleReady()
@@ -120,6 +176,9 @@ namespace RWF
         private void Awake()
         {
             PrivateRoomHandler.instance = this;
+
+            // load the prefab just once to make sure it's registered
+            GameObject prefab = PrivateRoomPrefabs.PrivateRoomCharacterSelectionInstance;
         }
 
         private void Start()
@@ -134,6 +193,9 @@ namespace RWF
             this.readyRequests = new Queue<Tuple<int, int, bool>>();
             this.devicesToUse = new Dictionary<int, InputDevice>();
             this.lockReadyRequests = false;
+
+            // necessary for VersusDisplay characters to render in the correct order
+            this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "UI";
         }
 
         private void BuildUI()
@@ -465,7 +527,7 @@ namespace RWF
 
                 int localPlayerNumber = Enumerable.Range(0, RWFMod.instance.MaxPlayerPerClient).Where(i => localCharacters[i] == null).First();
 
-                localCharacters[localPlayerNumber] = new LobbyCharacter(PhotonNetwork.LocalPlayer, colorID);
+                localCharacters[localPlayerNumber] = new LobbyCharacter(PhotonNetwork.LocalPlayer, colorID, localPlayerNumber);
 
                 PhotonNetwork.LocalPlayer.SetProperty("players", localCharacters);
 
@@ -632,6 +694,8 @@ namespace RWF
 
             //networkPlayer.SetProperty("ready", ready);
             //networkPlayer.SetProperty("readyOrder", ready ? numReady - 1 : -1);
+
+            UnityEngine.Debug.Log($"NUMREADY: {numReady} - NUMPLAYERS: {this.NumCharacters}");
 
             if (numReady == this.NumCharacters)
             {

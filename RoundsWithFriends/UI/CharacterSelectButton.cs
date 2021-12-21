@@ -10,7 +10,7 @@ using UnboundLib;
 
 namespace RWF.UI
 {
-    class CharacterSelectButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
+    class CharacterSelectButton : MonoBehaviour//, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
     {
         private LeftRight direction = CharacterSelectButton.LeftRight.Left;
         private CharacterSelectionInstance characterSelectionInstance = null;

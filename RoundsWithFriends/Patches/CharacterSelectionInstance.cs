@@ -271,7 +271,6 @@ namespace RWF.Patches
                 if (colorChanged)
                 {
                     int newColorID = __instance.currentPlayer.colorID() + colorIDDelta;
-                    bool fail = false;
 
                     // wow this syntax is concerning
                     if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
@@ -282,10 +281,11 @@ namespace RWF.Patches
                             newColorID += colorIDDelta;
                         }
 
-                        fail = newColorID >= RWFMod.instance.MaxTeams || newColorID < 0 || PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID);
                     }
+                    
+                    bool fail = newColorID >= RWFMod.MaxTeamsHardLimit || newColorID < 0 || PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID);
 
-                    if (!fail && newColorID >= 0)
+                    if (!fail)
                     {
                         __instance.currentPlayer.AssignColorID(newColorID);
                         __instance.currentPlayer.SetColors();

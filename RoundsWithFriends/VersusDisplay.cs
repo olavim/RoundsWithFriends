@@ -10,14 +10,157 @@ using UnboundLib.GameModes;
 using InControl;
 using RWF.UI;
 using UnboundLib;
+using UnboundLib.Networking;
 
 namespace RWF
 {
     class VersusDisplay : MonoBehaviour
     {
-        private Dictionary<int, int> teamPlayers = new Dictionary<int, int>();
+        // the idea with the new versus display is to create all of the team groups immediately and just activate/deactivate them
+        // as well as never destroy player objects once created, unless the player leaves
+
         private Dictionary<int, int> colorToTeam = new Dictionary<int, int>() { };
         private Dictionary<int, int> teamToColor = new Dictionary<int, int>() { };
+        private Dictionary<int, GameObject> _teamGroupGOs = new Dictionary<int, GameObject>() { };
+        private Dictionary<int, GameObject> _playerGOs = new Dictionary<int, GameObject>() { };
+        private Dictionary<int, GameObject> _playerSelectorGOs = new Dictionary<int, GameObject>() { };
+        private List<int> _playerSelectorGOsCreated = new List<int>() { };
+        private GameObject _holder;
+
+        private GameObject holder
+        {
+            get
+            {
+                if (this._holder == null)
+                {
+                    // child object to hold all pre-prepared playerGOs
+                    this._holder = new GameObject("Hold");
+                    this._holder.transform.SetParent(this.transform);
+                    this._holder.SetActive(false);
+                }
+                return this._holder;
+            }
+        }
+
+        internal GameObject TeamGroupGO(int teamID, int colorID)
+        {
+            if (!this._teamGroupGOs.TryGetValue(teamID, out GameObject teamGroupGO))
+            {
+                teamGroupGO = new GameObject($"Team {teamID}");
+                teamGroupGO.transform.SetParent(this.transform);
+                teamGroupGO.transform.SetSiblingIndex(teamID);
+                teamGroupGO.transform.localScale = Vector3.one;
+
+                teamGroupGO.AddComponent<RectTransform>();
+                var layoutGroup = teamGroupGO.AddComponent<VerticalLayoutGroup>();
+                var sizer = teamGroupGO.AddComponent<ContentSizeFitter>();
+                sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+                layoutGroup.spacing = 100;
+
+                var teamGo = new GameObject($"TeamName {teamID}");
+                teamGo.transform.SetParent(teamGroupGO.transform);
+                teamGo.transform.localScale = Vector3.one;
+                teamGo.transform.SetAsFirstSibling();
+
+                teamGo.AddComponent<RectTransform>();
+                teamGo.AddComponent<VerticalLayoutGroup>();
+                var sizer1 = teamGo.AddComponent<ContentSizeFitter>();
+                sizer1.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                sizer1.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                GameObject teamNameGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab);
+                teamNameGo.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 92);
+
+                var nameText = teamNameGo.GetComponent<TextMeshProUGUI>();
+                nameText.fontSize = 35;
+                nameText.font = RoundsResources.MenuFont;
+                nameText.alignment = TextAlignmentOptions.Center;
+                nameText.overflowMode = TextOverflowModes.Overflow;
+                nameText.enableWordWrapping = true;
+                nameText.color = new Color32(85, 90, 98, 255);
+                nameText.text = ExtraPlayerSkins.GetTeamColorName(colorID).ToUpper();
+                nameText.fontStyle = FontStyles.Bold;
+                nameText.autoSizeTextContainer = true;
+
+                var sizer2 = teamNameGo.AddComponent<ContentSizeFitter>();
+                sizer2.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                var particleSystem = teamNameGo.GetComponentInChildren<GeneralParticleSystem>();
+
+                particleSystem.particleSettings.size = 4;
+                particleSystem.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(colorID).winText;
+                particleSystem.particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(colorID).backgroundColor;
+                particleSystem.particleSettings.randomColor = PlayerSkinBank.GetPlayerSkinColors(colorID).color;
+
+                teamNameGo.transform.SetParent(teamGo.transform);
+                teamNameGo.transform.localScale = Vector3.one;
+                teamNameGo.transform.SetAsFirstSibling();
+
+                this._teamGroupGOs[teamID] = teamGroupGO;
+            }
+
+            if (teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.color != PlayerSkinBank.GetPlayerSkinColors(colorID).winText)
+            {
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().Stop();
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().StopAllCoroutines();
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = ExtraPlayerSkins.GetTeamColorName(colorID).ToUpper();
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(colorID).winText;
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(colorID).backgroundColor;
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.randomColor = PlayerSkinBank.GetPlayerSkinColors(colorID).color;
+                ((ObjectPool) teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().GetFieldValue("particlePool")).ClearPool();
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().Play();
+            }
+            return teamGroupGO;
+        }
+
+        internal GameObject PlayerGO(int uniqueID)
+        {
+            if (!this._playerGOs.TryGetValue(uniqueID, out GameObject playerGO))
+            {
+                playerGO = new GameObject($"LobbyPlayer {uniqueID}");
+                LobbyCharacter lobbyCharacter = LobbyCharacter.GetLobbyCharacter(uniqueID);
+                GameObject teamGroupGO = this.TeamGroupGO(lobbyCharacter.teamID, lobbyCharacter.colorID);
+                teamGroupGO.SetActive(true);
+                playerGO.transform.SetParent(teamGroupGO.transform);
+                playerGO.transform.localScale = Vector3.one;
+                playerGO.AddComponent<RectTransform>();
+                playerGO.AddComponent<VerticalLayoutGroup>();
+                var sizer = playerGO.AddComponent<ContentSizeFitter>();
+                sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                this._playerGOs[uniqueID] = playerGO;
+            }
+
+            return playerGO;
+        }
+
+        internal GameObject PlayerSelectorGO(int uniqueID)
+        {
+            if (!this._playerSelectorGOs.TryGetValue(uniqueID, out GameObject playerSelectorGO) && !this._playerSelectorGOsCreated.Contains(uniqueID))
+            {
+                LobbyCharacter player = LobbyCharacter.GetLobbyCharacter(uniqueID);
+                this.CreatePlayerSelector(player.NickName, player, player.IsMine ? PrivateRoomHandler.instance.devicesToUse[player.localID] : null, this.PlayerGO(player.uniqueID).transform);
+            }
+
+            UnityEngine.Debug.Log($"UNIQUE ID: {uniqueID} - {(playerSelectorGO == null ? "NULL" : "EXISTS")}");
+
+            return playerSelectorGO;
+        }
+        internal void SetPlayerSelectorGO(int uniqueID, GameObject playerSelectorGO)
+        {
+            this._playerSelectorGOs[uniqueID] = playerSelectorGO;
+        }
+
+
+
+        public static VersusDisplay instance;
+
+        private void Awake()
+        {
+            VersusDisplay.instance = this;
+        }
 
         private void Start() {
             this.gameObject.AddComponent<CanvasRenderer>();
@@ -26,212 +169,139 @@ namespace RWF
 
             var horizLayout = this.gameObject.AddComponent<HorizontalLayoutGroup>();
             horizLayout.childAlignment = TextAnchor.MiddleCenter;
-            horizLayout.spacing = 20;
+            horizLayout.spacing = 100;
+
+            /*
+            // add team names to the top of each group
+            for (int teamID = 0; teamID < RWFMod.MaxTeamsHardLimit; teamID++)
+            {
+                var teamGo = new GameObject("TeamName");
+                teamGo.transform.SetParent(groups[teamID].transform);
+                teamGo.transform.localScale = Vector3.one;
+                teamGo.transform.SetAsFirstSibling();
+
+                teamGo.AddComponent<RectTransform>();
+                teamGo.AddComponent<VerticalLayoutGroup>();
+                var sizer = teamGo.AddComponent<ContentSizeFitter>();
+                sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                var teamNameGo = this.CreateTeamName(ExtraPlayerSkins.GetTeamColorName(teamID).ToUpper(), teamID);
+                teamNameGo.transform.SetParent(teamGo.transform);
+                teamNameGo.transform.localScale = Vector3.one;
+            }
+
+            foreach (GameObject group in this.groups)
+            {
+                group.SetActive(false);
+            }*/
 
             this.UpdatePlayers();
         }
-
-        public GameObject AddPlayerGroup() {
-            var go = new GameObject("Players");
-            go.transform.SetParent(this.transform);
-            go.transform.localScale = Vector3.one;
-
-            go.AddComponent<RectTransform>();
-            var layoutGroup = go.AddComponent<VerticalLayoutGroup>();
-            var sizer = go.AddComponent<ContentSizeFitter>();
-            sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
-            layoutGroup.spacing = 35;
-
-            return go;
-        }
-
         public void UpdatePlayers() {
             UnityEngine.Debug.Log("STOP ALL COROUTINES");
             this.StopAllCoroutines();
-            this.UpdatePlayersCoroutine();
+            this.StartCoroutine(this.UpdatePlayersCoroutine());
         }
 
-        private void UpdatePlayersCoroutine() {
-            this.teamPlayers.Clear();
+        private IEnumerator UpdatePlayersCoroutine() {
             this.colorToTeam.Clear();
             this.teamToColor.Clear();
+            //yield return this.WaitForSyncUp();
             UnityEngine.Debug.Log("UPDATE PLAYERS");
-            while (this.transform.childCount > 0)
-            {
-                GameObject.DestroyImmediate(this.transform.GetChild(0).gameObject);
-            }
 
-            this.transform.localPosition = new Vector3(0, this.transform.localPosition.y, 0);
-            List<GameObject> groups = new List<GameObject>();
-            int teamCount = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p=>p!=null).Select(p => p.colorID).Distinct().Count();
+            // wait until all character creator instances exist
+            bool wait = true;
+            while (wait)
+            { 
+                wait = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && this.PlayerSelectorGO(p.uniqueID) == null).Any();
 
-            for (int i = 0; i < teamCount; i++) {
-                this.teamPlayers.Add(i, 0);
-
-                groups.Add(this.AddPlayerGroup());
+                yield return null;
             }
 
             if (PhotonNetwork.CurrentRoom != null) {
                 UnityEngine.Debug.Log("current room is not null");
                 List<LobbyCharacter> players = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null).ToList();
 
-                players.OrderBy(p => p.colorID);
-
                 // assign teamIDs according to colorIDs
                 int nextTeamID = 0;
-                foreach (LobbyCharacter player in players) {
+                foreach (LobbyCharacter player in players.OrderBy(p => p.colorID)) {
                     UnityEngine.Debug.Log("ASSIGN TEAM TO " + player.NickName);
-                    if (colorToTeam.TryGetValue(player.colorID, out int teamID))
+                    if (this.colorToTeam.TryGetValue(player.colorID, out int teamID))
                     {
                         player.teamID = teamID;
                     }
                     else
                     {
                         player.teamID = nextTeamID;
-                        colorToTeam[player.colorID] = nextTeamID;
-                        teamToColor[player.teamID] = player.colorID;
+                        this.colorToTeam[player.colorID] = nextTeamID;
+                        this.teamToColor[player.teamID] = player.colorID;
                         nextTeamID++;
                     }
+                    UnityEngine.Debug.Log($"Player: {player.NickName}, TEAMID: {player.teamID}");
 
-                    UnityEngine.Debug.Log("MAKE LOBBY PLAYER GO");
-                    var playerGo = new GameObject("LobbyPlayer");
-                    playerGo.transform.SetParent(groups[player.teamID].transform);
-                    playerGo.transform.localScale = Vector3.one;
+                    //yield return this.WaitForSyncUp();
 
-                    /*
-                    UnityEngine.Debug.Log("MAKE PLAYER NAME GO");
-                    var playerNameGo = this.CreatePlayerName(player.NickName, player.colorID, player.ready);
-                    playerNameGo.transform.SetParent(playerGo.transform);
-                    playerNameGo.transform.localScale = Vector3.one;
-                    */
-                    UnityEngine.Debug.Log("MAKE CHARACTER SELECTOR");
-                    this.ExecuteAfterFrames(1, () =>
-                    {
-                        GameObject charSelect = this.CreatePlayerSelector(player.NickName, player, player.IsMine ? PrivateRoomHandler.instance.devicesToUse[player.localID] : null, player.IsMine);
-                        charSelect.transform.SetParent(playerGo.transform);
-                        charSelect.transform.localScale = Vector3.one;
-                        UnityEngine.Debug.Log("PLAYER SELECTOR CREATED. TEAMID: " + player.teamID.ToString());
-                    });
+                    GameObject teamGroupGO = this.TeamGroupGO(player.teamID, player.colorID);
+                    teamGroupGO.SetActive(true);
+                    this.PlayerGO(player.uniqueID).SetActive(true);
+                    this.PlayerGO(player.uniqueID).transform.SetParent(teamGroupGO.transform);
+                    this.PlayerGO(player.uniqueID).transform.SetAsLastSibling();
 
-                    playerGo.AddComponent<RectTransform>();
-                    playerGo.AddComponent<VerticalLayoutGroup>();
-                    var sizer = playerGo.AddComponent<ContentSizeFitter>();
-                    sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-                    sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-                    this.teamPlayers[player.teamID] = this.teamPlayers[player.teamID] + 1;
                 }
-
-                // add team names to the top of each group
-                foreach (int teamID in this.teamPlayers.Keys.OrderBy(i => i))
-                {
-                    var teamGo = new GameObject("TeamName");
-                    teamGo.transform.SetParent(groups[teamID].transform);
-                    teamGo.transform.localScale = Vector3.one;
-                    teamGo.transform.SetAsFirstSibling();
-
-                    teamGo.AddComponent<RectTransform>();
-                    teamGo.AddComponent<VerticalLayoutGroup>();
-                    var sizer = teamGo.AddComponent<ContentSizeFitter>();
-                    sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-                    sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-                    var teamNameGo = this.CreateTeamName(ExtraPlayerSkins.GetTeamColorName(this.teamToColor[teamID]).ToUpper(), this.teamToColor[teamID]);
-                    teamNameGo.transform.SetParent(teamGo.transform);
-                    teamNameGo.transform.localScale = Vector3.one;
-                }
+                this.HideEmptyTeams(players.Select(p => p.teamID).ToArray());
             }
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(this.gameObject.GetComponent<RectTransform>());
-
+            
+            yield break;
             //var middleChild = this.transform.GetChild(Mathf.FloorToInt(this.transform.childCount / 2f));
             //this.transform.localPosition -= new Vector3(middleChild.localPosition.x, 0, 0);
         }
-        private GameObject CreatePlayerSelector(string name, LobbyCharacter character, InputDevice device, bool inControl)
+
+        private void HideEmptyTeams(int[] teamIDs)
         {
-            UnityEngine.Debug.Log("START");
-            GameObject orig = UnityEngine.GameObject.Find("Game/UI/UI_MainMenu/Canvas/ListSelector/CharacterSelect/Group").transform.GetChild(0).gameObject;
-            UnityEngine.Debug.Log("FOUND");
-            GameObject selector = GameObject.Instantiate(orig);
-            UnityEngine.Debug.Log("CLONED");
-            selector.SetActive(true);
-            selector.name = $"CharacterSelector {name}";
-            selector.GetOrAddComponent<RectTransform>();
-            UnityEngine.Debug.Log("NAME AND RECT");
-            var sizer = selector.AddComponent<ContentSizeFitter>();
-            sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            UnityEngine.Debug.Log("SIZER");
-            //UnityEngine.GameObject.Destroy(selector.GetComponent<CharacterSelectionInstance>());
-            PrivateRoomCharacterSelectionInstance charSelect = selector.AddComponent<PrivateRoomCharacterSelectionInstance>();
-            UnityEngine.Debug.Log("SELECTOR");
-            this.ExecuteAfterFrames(5, () => charSelect.StartPicking(character, device, inControl));
-            UnityEngine.Debug.Log("START PICKING");
-            selector.transform.localPosition = Vector2.zero;
-            if (selector != null) { UnityEngine.Debug.Log("SELECTOR CREATED SUCCESSFULLY"); }
-            return selector;
+            foreach (int i in this._teamGroupGOs.Keys.Where(k => !teamIDs.Contains(k)))
+            {
+                this._teamGroupGOs[i].SetActive(false);
+            }
         }
 
-        private GameObject CreatePlayerName(string name, int colorID, bool isReady) {
-            var playerNameGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab);
-            playerNameGo.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 92);
-
-            var nameText = playerNameGo.GetComponent<TextMeshProUGUI>();
-            nameText.fontSize = 40;
-            nameText.font = RoundsResources.MenuFont;
-            nameText.alignment = TextAlignmentOptions.Center;
-            nameText.overflowMode = TextOverflowModes.Ellipsis;
-            nameText.enableWordWrapping = false;
-            nameText.color = new Color32(85, 90, 98, 255);
-            nameText.text = name;
-            nameText.autoSizeTextContainer = true;
-
-            var sizer = playerNameGo.AddComponent<ContentSizeFitter>();
-            sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            var particleSystem = playerNameGo.GetComponentInChildren<GeneralParticleSystem>();
-
-            if (isReady) {
-                particleSystem.particleSettings.size = 4;
-                particleSystem.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(colorID).winText;
-                particleSystem.particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(colorID).backgroundColor;
-                particleSystem.particleSettings.randomColor = new Color32(255, 0, 255, 255);
-            } else {
-                playerNameGo.GetComponent<Mask>().enabled = false;
-                playerNameGo.transform.Find("UI_ParticleSystem").gameObject.SetActive(false);
+        private void CreatePlayerSelector(string name, LobbyCharacter character, InputDevice device, Transform parent)
+        {
+            if (!character.IsMine || this._playerSelectorGOsCreated.Contains(character.uniqueID)) { return; }
+            this._playerSelectorGOsCreated.Add(character.uniqueID);
+            parent.gameObject.SetActive(true);
+            this.TeamGroupGO(character.teamID, character.colorID).SetActive(true);
+            PhotonNetwork.Instantiate(
+                PrivateRoomPrefabs.PrivateRoomCharacterSelectionInstance.name,
+                parent.position,
+                parent.rotation,
+                0,
+                new object[] { character.actorID, character.localID, device != null ? InputManager.ActiveDevices.IndexOf(device) : -1, name}
+            );
+        }
+        private IEnumerator WaitForSyncUp()
+        {
+            if (PhotonNetwork.OfflineMode)
+            {
+                yield break;
             }
 
-            return playerNameGo;
+            yield return this.SyncMethod(nameof(VersusDisplay.RPC_RequestSync), null, PhotonNetwork.LocalPlayer.ActorNumber);
         }
-        private GameObject CreateTeamName(string name, int colorID)
+        [UnboundRPC]
+        public static void RPC_RequestSync(int requestingPlayer)
         {
-            var teamNameGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab);
-            teamNameGo.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 92);
-
-            var nameText = teamNameGo.GetComponent<TextMeshProUGUI>();
-            nameText.fontSize = 45;
-            nameText.font = RoundsResources.MenuFont;
-            nameText.alignment = TextAlignmentOptions.Center;
-            nameText.overflowMode = TextOverflowModes.Overflow;
-            nameText.enableWordWrapping = true;
-            nameText.color = new Color32(85, 90, 98, 255);
-            nameText.text = $"{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj2) && !(bool) allowTeamsObj2) ? "" : "TEAM ")}"+name;
-            nameText.autoSizeTextContainer = true;
-
-            var sizer = teamNameGo.AddComponent<ContentSizeFitter>();
-            sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            var particleSystem = teamNameGo.GetComponentInChildren<GeneralParticleSystem>();
-
-            particleSystem.particleSettings.size = 4;
-            particleSystem.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(colorID).winText;
-            particleSystem.particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(colorID).backgroundColor;
-            particleSystem.particleSettings.randomColor = new Color32(255, 0, 255, 255);
-            
-
-
-            return teamNameGo;
+            NetworkingManager.RPC(typeof(VersusDisplay), nameof(VersusDisplay.RPC_SyncResponse), requestingPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
+        }
+        [UnboundRPC]
+        public static void RPC_SyncResponse(int requestingPlayer, int readyPlayer)
+        {
+            if (PhotonNetwork.LocalPlayer.ActorNumber == requestingPlayer)
+            {
+                VersusDisplay.instance.RemovePendingRequest(readyPlayer, nameof(VersusDisplay.RPC_RequestSync));
+            }
         }
     }
 }
