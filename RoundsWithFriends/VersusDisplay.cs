@@ -57,7 +57,7 @@ namespace RWF
                 sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                 sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 layoutGroup.childAlignment = TextAnchor.MiddleCenter;
-                layoutGroup.spacing = 100;
+                layoutGroup.spacing = 50f;
 
                 var teamGo = new GameObject($"TeamName {teamID}");
                 teamGo.transform.SetParent(teamGroupGO.transform);
@@ -74,7 +74,7 @@ namespace RWF
                 teamNameGo.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 92);
 
                 var nameText = teamNameGo.GetComponent<TextMeshProUGUI>();
-                nameText.fontSize = 35;
+                nameText.fontSize = 45;
                 nameText.font = RoundsResources.MenuFont;
                 nameText.alignment = TextAlignmentOptions.Center;
                 nameText.overflowMode = TextOverflowModes.Overflow;
@@ -86,6 +86,26 @@ namespace RWF
 
                 var sizer2 = teamNameGo.AddComponent<ContentSizeFitter>();
                 sizer2.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                // add grid layout group for players
+                GameObject teamGridGO = new GameObject("Grid");
+                teamGridGO.transform.SetParent(teamGroupGO.transform);
+                teamGridGO.transform.SetAsLastSibling();
+                teamGridGO.transform.localScale = Vector3.one;
+
+                teamGridGO.AddComponent<RectTransform>();
+                var layoutGroup1 = teamGridGO.AddComponent<GridLayoutGroup>();
+                var sizer3 = teamGridGO.AddComponent<ContentSizeFitter>();
+                sizer3.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                sizer3.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                layoutGroup1.childAlignment = TextAnchor.MiddleCenter;
+                layoutGroup1.spacing = new Vector2(150f, 75);
+                layoutGroup1.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+                layoutGroup1.constraintCount = 2;
+                layoutGroup1.startCorner = GridLayoutGroup.Corner.UpperLeft;
+                layoutGroup1.startAxis = GridLayoutGroup.Axis.Horizontal;
+                layoutGroup1.cellSize = new Vector2(0f, 100f);
+
 
                 var particleSystem = teamNameGo.GetComponentInChildren<GeneralParticleSystem>();
 
@@ -123,7 +143,7 @@ namespace RWF
                 LobbyCharacter lobbyCharacter = LobbyCharacter.GetLobbyCharacter(uniqueID);
                 GameObject teamGroupGO = this.TeamGroupGO(lobbyCharacter.teamID, lobbyCharacter.colorID);
                 teamGroupGO.SetActive(true);
-                playerGO.transform.SetParent(teamGroupGO.transform);
+                playerGO.transform.SetParent(teamGroupGO.transform.GetChild(1));
                 playerGO.transform.localScale = Vector3.one;
                 playerGO.AddComponent<RectTransform>();
                 playerGO.AddComponent<VerticalLayoutGroup>();
@@ -245,7 +265,7 @@ namespace RWF
                     GameObject teamGroupGO = this.TeamGroupGO(player.teamID, player.colorID);
                     teamGroupGO.SetActive(true);
                     this.PlayerGO(player.uniqueID).SetActive(true);
-                    this.PlayerGO(player.uniqueID).transform.SetParent(teamGroupGO.transform);
+                    this.PlayerGO(player.uniqueID).transform.SetParent(teamGroupGO.transform.GetChild(1));
                     this.PlayerGO(player.uniqueID).transform.SetAsLastSibling();
 
                 }

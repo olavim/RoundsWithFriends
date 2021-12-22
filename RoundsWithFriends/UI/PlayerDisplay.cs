@@ -18,10 +18,10 @@ namespace RWF.UI
         private static Color defaultColorMax = new Color(0.4434f, 0.2781f, 0.069f, 1f);
         private static Color defaultColorMin = new Color(0.5094f, 0.3371f, 0.0889f, 1f);
 
-        private static Color highlightedColorMax = new Color(0.4434f, 0.2781f, 0.069f, 0.1f);
-        private static Color highlightedColorMin = new Color(0.5094f, 0.3371f, 0.0889f, 0.1f);
+        private static Color highlightedColorMax = new Color(0.3204f, 0.3751f, 0.409f, 0.3396f);
+        private static Color highlightedColorMin = new Color(0f, 0f, 0f, 0.3396f);
 
-        private static Color selectedColorMax = new Color(0f, 0f, 0.0898f, 0.2252f);
+        private static Color selectedColorMax = new Color(0f, 0f, 0.0898f, 0.7925f);
         private static Color selectedColorMin = new Color(0f, 0.0921f, 0.0898f, 0.7925f);
 
         private static ParticleSystem Particles => UnityEngine.GameObject.Find("Game/UI/UI_MainMenu/Canvas/Particle").GetComponent<ParticleSystem>();
@@ -80,8 +80,8 @@ namespace RWF.UI
             this.group.spacing = 100;
 
             // set up the menu bar
-            this.setBar.heightMult = 2f;
-            this.setBar.verticalOffset = -1f;
+            this.setBar.heightMult = 1.25f;
+            this.setBar.verticalOffset = 0f;
             this.setBar.SetEnabled(false);
 
             // add text
