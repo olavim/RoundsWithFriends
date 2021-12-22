@@ -129,11 +129,11 @@ namespace RWF
         private static string PrevHandlerID;
         private static GameSettings PrevSettings;
 
-        private Button readyButton;
-        private ListMenuButton readyListButton;
+        //private Button readyButton;
+        //private ListMenuButton readyListButton;
         private TextMeshProUGUI gameModeText;
         private GameObject grid;
-        private GameObject readyCheckbox;
+        //private GameObject readyCheckbox;
         private GameObject waiting;
         private VersusDisplay versusDisplay;
         private bool waitingForToggle;
@@ -195,6 +195,7 @@ namespace RWF
             this.lockReadyRequests = false;
 
             // necessary for VersusDisplay characters to render in the correct order
+            // must be reverted to MostFront when leaving the lobby
             this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "UI";
         }
 
@@ -212,10 +213,16 @@ namespace RWF
             this.grid.transform.SetParent(mainPageGo.transform);
             this.grid.transform.localScale = Vector3.one;
 
+            /*
             var playersGo = new GameObject("Players");
             playersGo.transform.SetParent(this.grid.transform);
             playersGo.transform.localScale = Vector3.one;
-            playersGo.transform.localPosition += new Vector3(0, 300, 0);
+            */
+            //playersGo.transform.localPosition += new Vector3(0, 300, 0);
+            var playersGo = new GameObject("Players", typeof(PlayerDisplay));
+            playersGo.transform.SetParent(this.grid.transform);
+            playersGo.transform.localScale = Vector3.one;
+            this.versusDisplay = playersGo.GetOrAddComponent<VersusDisplay>();
 
             this.waiting = new GameObject("Waiting");
             this.waiting.transform.SetParent(this.grid.transform);
@@ -230,6 +237,7 @@ namespace RWF
             divGo1.transform.SetParent(this.grid.transform);
             divGo1.transform.localScale = Vector3.one;
 
+            /*
             var readyGo = new GameObject("Ready");
             readyGo.transform.SetParent(this.grid.transform);
             readyGo.transform.localScale = Vector3.one;
@@ -237,11 +245,11 @@ namespace RWF
             var readyTextGo = GetText("READY");
             readyTextGo.transform.SetParent(readyGo.transform);
             readyTextGo.transform.localScale = Vector3.one;
-
+            
             this.readyCheckbox = new GameObject("Checkbox");
             this.readyCheckbox.transform.SetParent(readyGo.transform);
             this.readyCheckbox.transform.localScale = Vector3.one;
-
+            */
             var inviteGo = new GameObject("Invite");
             inviteGo.transform.SetParent(this.grid.transform);
             inviteGo.transform.localScale = Vector3.one;
@@ -266,11 +274,11 @@ namespace RWF
             backTextGo.transform.SetParent(backGo.transform);
             backTextGo.transform.localScale = Vector3.one;
 
-            var playersGoRect = playersGo.AddComponent<RectTransform>();
+            /*
             var playersGoLayout = playersGo.AddComponent<LayoutElement>();
             this.versusDisplay = playersGo.AddComponent<VersusDisplay>();
             playersGoLayout.ignoreLayout = true;
-
+            */
             var waitingGoRect = this.waiting.AddComponent<RectTransform>();
             var waitingGoLayout = this.waiting.AddComponent<LayoutElement>();
             var waitingText = waitingTextGo.GetComponent<TextMeshProUGUI>();
@@ -279,6 +287,7 @@ namespace RWF
             waitingGoLayout.ignoreLayout = true;
             waitingGoRect.sizeDelta = new Vector2(900, 300);
 
+            /*
             readyGo.AddComponent<RectTransform>();
             readyGo.AddComponent<CanvasRenderer>();
             var readyLayout = readyGo.AddComponent<LayoutElement>();
@@ -286,9 +295,11 @@ namespace RWF
             this.readyButton = readyGo.AddComponent<Button>();
             this.readyListButton = readyGo.AddComponent<ListMenuButton>();
             this.readyListButton.setBarHeight = 92f;
+            */
 
-            this.readyButton.onClick.AddListener(() => this.StartCoroutine(this.ToggleReady()));
+            //this.readyButton.onClick.AddListener(() => this.StartCoroutine(this.ToggleReady()));
 
+            /*
             var readyBoxRect = this.readyCheckbox.AddComponent<RectTransform>();
             var readyBoxImage = this.readyCheckbox.AddComponent<ProceduralImage>();
             var readyBoxModifier = this.readyCheckbox.AddComponent<UniformModifier>();
@@ -297,6 +308,7 @@ namespace RWF
             readyBoxImage.color = new Color32(255, 255, 255, 222); // Slightly glowing white
             readyBoxModifier.Radius = 3;
             this.readyCheckbox.transform.localPosition += new Vector3(150, 0, 0);
+            */
 
             inviteGo.AddComponent<RectTransform>();
             inviteGo.AddComponent<CanvasRenderer>();
@@ -346,6 +358,8 @@ namespace RWF
 
             backButton.onClick.AddListener(() =>
             {
+                // return Canvas to its original position
+                this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
                 NetworkConnectionHandler.instance.NetworkRestart();
             });
 
@@ -364,8 +378,8 @@ namespace RWF
             this.MainPage.firstSelected = inviteListButton;
             this.MainPage.Close();
 
-            readyGo.SetActive(false);
-            playersGo.SetActive(false);
+            //readyGo.SetActive(false);
+            //playersGo.SetActive(false);
         }
 
         private GameObject GetText(string str)
@@ -395,6 +409,29 @@ namespace RWF
                 var request = this.readyRequests.Dequeue();
                 this.HandlePlayerReadyToggle(request.Item1, request.Item2, request.Item3);
             }
+        }
+        private void LateUpdate()
+        {
+            return;
+            /*
+            // check for players trying to join
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                this.StartCoroutine(this.ToggleReady(null));
+            }
+
+            var m_JoinButtonWasPressedOnDevice = typeof(PlayerAssigner).GetMethod("JoinButtonWasPressedOnDevice", BindingFlags.Instance | BindingFlags.NonPublic);
+            for (int i = 0; i < InputManager.ActiveDevices.Count; i++)
+            {
+                InputDevice device = InputManager.ActiveDevices[i];
+
+                var joinButtonPressed = (bool) m_JoinButtonWasPressedOnDevice.Invoke(PlayerAssigner.instance, new object[] { device });
+
+                if (joinButtonPressed)
+                {
+                    this.StartCoroutine(this.ToggleReady(device));
+                }
+            }*/
         }
 
         override public void OnJoinedRoom()
@@ -474,7 +511,7 @@ namespace RWF
             base.OnPlayerLeftRoom(otherPlayer);
         }
 
-        private IEnumerator ToggleReady()
+        internal IEnumerator ToggleReady(InputDevice deviceReadied, bool doNotReady = false)
         {
             if (DevConsole.isTyping)
             {
@@ -494,23 +531,6 @@ namespace RWF
             LobbyCharacter[] localCharacters = PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players");
 
             // figure out who pressed ready, if it was a device not yet in use, then add a new player IF there is room
-            InputDevice deviceReadied = null;
-
-            var m_JoinButtonWasPressedOnDevice = typeof(PlayerAssigner).GetMethod("JoinButtonWasPressedOnDevice", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            for (int i = 0; i < InputManager.ActiveDevices.Count; i++)
-            {
-                InputDevice device = InputManager.ActiveDevices[i];
-
-                var joinButtonPressed = (bool) m_JoinButtonWasPressedOnDevice.Invoke(PlayerAssigner.instance, new object[] { device });
-
-                if (joinButtonPressed)
-                {
-                    deviceReadied = device;
-                    break;
-                }
-            }
-
             bool newDevice = !this.devicesToUse.Where(kv => kv.Value == deviceReadied).Any();
 
             // handle the case of a new device
@@ -539,7 +559,7 @@ namespace RWF
 
                 yield break;
             }
-            else
+            else if (!doNotReady)
             {
                 this.waitingForToggle = true;
 
@@ -645,17 +665,25 @@ namespace RWF
                 return;
             }
 
-            if (PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= 2 && !instance.versusDisplay.gameObject.activeSelf)
+            if (RWFMod.DEBUG)
             {
                 instance.versusDisplay.gameObject.SetActive(true);
-                instance.readyListButton.gameObject.SetActive(true);
+                //instance.readyListButton.gameObject.SetActive(true);
                 instance.waiting.SetActive(false);
-                ListMenu.instance.SelectButton(instance.readyListButton);
+                //ListMenu.instance.SelectButton(instance.readyListButton);
+            }
+
+            else if (PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= 2 && !instance.versusDisplay.gameObject.activeSelf)
+            {
+                instance.versusDisplay.gameObject.SetActive(true);
+                //instance.readyListButton.gameObject.SetActive(true);
+                instance.waiting.SetActive(false);
+                //ListMenu.instance.SelectButton(instance.readyListButton);
             }
             else if ((PhotonNetwork.CurrentRoom == null || PhotonNetwork.CurrentRoom.PlayerCount < 2) && instance.versusDisplay.gameObject.activeSelf)
             {
                 instance.versusDisplay.gameObject.SetActive(false);
-                instance.readyListButton.gameObject.SetActive(false);
+                //instance.readyListButton.gameObject.SetActive(false);
                 instance.waiting.SetActive(true);
             }
 
@@ -727,6 +755,9 @@ namespace RWF
 
         private IEnumerator StartGamePreparation()
         {
+            // return Canvas to its original position
+            this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
+
             var players = PhotonNetwork.CurrentRoom.Players.Values.ToList();
 
             foreach (var player in this.PrivateRoomCharacters)

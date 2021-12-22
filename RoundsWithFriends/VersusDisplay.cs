@@ -163,11 +163,11 @@ namespace RWF
         }
 
         private void Start() {
-            this.gameObject.AddComponent<CanvasRenderer>();
-            var fitter = this.gameObject.AddComponent<ContentSizeFitter>();
+            this.gameObject.GetOrAddComponent<CanvasRenderer>();
+            var fitter = this.gameObject.GetOrAddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            var horizLayout = this.gameObject.AddComponent<HorizontalLayoutGroup>();
+            var horizLayout = this.gameObject.GetOrAddComponent<HorizontalLayoutGroup>();
             horizLayout.childAlignment = TextAnchor.MiddleCenter;
             horizLayout.spacing = 100;
 
