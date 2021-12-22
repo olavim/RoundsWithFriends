@@ -42,8 +42,6 @@ namespace RWF.UI
 
             LobbyCharacter lobbyCharacter = PhotonNetwork.CurrentRoom.GetPlayer(actorID).GetProperty<LobbyCharacter[]>("players")[localID];
             
-            UnityEngine.Debug.Log($"aID: {actorID}, lID: {localID}, dID: {deviceID}, u: {lobbyCharacter.uniqueID}, name: {name}");
-
             this.gameObject.name += " " + name;
 
             InputDevice inputDevice = deviceID >= 0 ? InputManager.ActiveDevices[deviceID] : null;
@@ -101,7 +99,6 @@ namespace RWF.UI
 
         public void StartPicking(LobbyCharacter pickingCharacter, InputDevice device)
         {
-            UnityEngine.Debug.Log("START PICKING: " + pickingCharacter.NickName);
             this.currentPlayer = pickingCharacter;
             this.device = device;
             this.currentlySelectedFace = 0;
@@ -127,12 +124,10 @@ namespace RWF.UI
 
                 this.buttons[i].GetComponent<SimulatedSelection>().InvokeMethod("Start");
 
-                UnityEngine.Debug.Log($"BUTTON: {i}");
                 this.buttons[i].enabled = false;
                 this.buttons[i].GetComponent<Button>().interactable = false;
                 this.buttons[i].GetComponent<CharacterCreatorPortrait>().controlType = MenuControllerHandler.MenuControl.Controller;
 
-                UnityEngine.Debug.Log("SET FACE NAME: " + pickingCharacter.NickName);
                 this.buttons[i].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().text = "";
                 this.buttons[i].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
                 this.buttons[i].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().fontSize = 25f;
@@ -195,11 +190,14 @@ namespace RWF.UI
             this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke();
             this.buttons[this.currentlySelectedFace].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
         }
-
-        public void ReadyUp()
+        public void ReadyUp(bool ready)
         {
-            //this.getReadyObj.GetComponent<TextMeshProUGUI>().text = "";
-            this.isReady = !this.isReady;
+            if (PhotonNetwork.IsMasterClient) { this.view.RPC(nameof(this.RPCA_ReadyUp), RpcTarget.All, ready); }
+        }
+        [PunRPC]
+        public void RPCA_ReadyUp(bool ready)
+        {
+            this.isReady = ready;
             for (int i = 0; i < this.buttons.Length; i++)
             {
                 this.buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(this.isReady);
@@ -219,21 +217,23 @@ namespace RWF.UI
 
         private void Update()
         {
-            if (this.currentPlayer == null || !this.currentPlayer.IsMine)
+            if (this.currentPlayer == null || !this.currentPlayer.IsMine || !this.enableInput || this.isReady)
             {
                 return;
             }
+            /*
             if (this.device == null)
             {
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
                     this.ReadyUp();
                 }
-            }
+            }*/
+            /*
             else if ((this.device != null) && (this.device.CommandWasPressed || this.device.Action1.WasPressed) && this.counter > 0f)
             {
                 this.ReadyUp();
-            }
+            }*/
             HoverEvent component = this.buttons[this.currentlySelectedFace].GetComponent<HoverEvent>();
             if (this.currentButton != component)
             {
@@ -266,7 +266,7 @@ namespace RWF.UI
                 {
                     this.currentlySelectedFace++;
                 }
-                else if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.LeftStickX.Value <= 0.5f) || (this.device == null && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))))
+                else if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.LeftStickX.Value < -0.5f) || (this.device == null && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))))
                 {
                     this.currentlySelectedFace--;
                 }
@@ -275,13 +275,11 @@ namespace RWF.UI
                 // change team
                 if ((this.device != null && this.device.DPadRight.WasPressed) || ((this.device == null) && (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))))
                 {
-                    //newTeamID = UnityEngine.Mathf.Clamp(this.currentPlayer.teamID + 1, 0, RWFMod.MaxTeamsHardLimit - 1);
                     colorIDDelta = +1;
                     colorChanged = true;
                 }
                 else if ((this.device != null && this.device.DPadLeft.WasPressed) || ((this.device == null) && (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))))
                 {
-                    //newTeamID = UnityEngine.Mathf.Clamp(this.currentPlayer.teamID - 1, 0, RWFMod.MaxTeamsHardLimit - 1);
                     colorIDDelta = -1;
                     colorChanged = true;
                 }
@@ -289,7 +287,7 @@ namespace RWF.UI
                 if (colorChanged)
                 {
                     // ask the host client for permission to change team
-                    this.view.RPC(nameof(this.RequestChangeTeam), RpcTarget.MasterClient, colorIDDelta);
+                    this.view.RPC(nameof(this.RPCM_RequestChangeTeam), RpcTarget.MasterClient, colorIDDelta);
                 }
 
                 this.counter = 0f;
@@ -297,8 +295,13 @@ namespace RWF.UI
             this.currentlySelectedFace = Mathf.Clamp(this.currentlySelectedFace, 0, this.buttons.Length - 1);
 
         }
+        public void SetInputEnabled(bool enabled)
+        {
+            this.enableInput = enabled;
+        }
+
         [PunRPC]
-        private void RequestChangeTeam(int colorIDDelta)
+        private void RPCM_RequestChangeTeam(int colorIDDelta)
         {
             // ask the host if the team can be changed in the direction specified
             int newColorID = this.currentPlayer.colorID + colorIDDelta;
@@ -318,14 +321,15 @@ namespace RWF.UI
             if (!fail)
             {
                 // approve the request and send it to all clients
-                this.view.RPC(nameof(this.ChangeTeam), RpcTarget.All, newColorID);
+                this.view.RPC(nameof(this.RPCA_ChangeTeam), RpcTarget.All, newColorID);
             }
         }
         [PunRPC]
-        private void ChangeTeam(int newColorID)
+        private void RPCA_ChangeTeam(int newColorID)
         {
             // host has approved the team change, update across all clients
             this.currentPlayer.colorID = newColorID;
+            PrivateRoomHandler.instance.FindLobbyCharacter(this.currentPlayer.actorID, this.currentPlayer.localID).colorID = newColorID;
             for (int i = 0; i < this.buttons.Length; i++)
             {
                 this.buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = ExtraPlayerSkins.GetPlayerSkinColors(this.currentPlayer.colorID).color;
@@ -352,6 +356,8 @@ namespace RWF.UI
         public bool isReady;
 
         private float counter;
+
+        private bool enableInput = true;
     }
 
 }

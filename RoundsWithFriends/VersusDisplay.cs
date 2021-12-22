@@ -14,7 +14,7 @@ using UnboundLib.Networking;
 
 namespace RWF
 {
-    class VersusDisplay : MonoBehaviour
+    public class VersusDisplay : MonoBehaviour
     {
         // the idea with the new versus display is to create all of the team groups immediately and just activate/deactivate them
         // as well as never destroy player objects once created, unless the player leaves
@@ -26,6 +26,7 @@ namespace RWF
         private Dictionary<int, GameObject> _playerSelectorGOs = new Dictionary<int, GameObject>() { };
         private List<int> _playerSelectorGOsCreated = new List<int>() { };
         private GameObject _holder;
+        private Coroutine updatePlayersCO = null;
 
         private GameObject holder
         {
@@ -164,8 +165,6 @@ namespace RWF
                 this.CreatePlayerSelector(player.NickName, player, player.IsMine ? PrivateRoomHandler.instance.devicesToUse[player.localID] : null, this.PlayerGO(player.uniqueID).transform);
             }
 
-            UnityEngine.Debug.Log($"UNIQUE ID: {uniqueID} - {(playerSelectorGO == null ? "NULL" : "EXISTS")}");
-
             return playerSelectorGO;
         }
         internal void SetPlayerSelectorGO(int uniqueID, GameObject playerSelectorGO)
@@ -218,17 +217,16 @@ namespace RWF
 
             this.UpdatePlayers();
         }
-        public void UpdatePlayers() {
-            UnityEngine.Debug.Log("STOP ALL COROUTINES");
-            this.StopAllCoroutines();
-            this.StartCoroutine(this.UpdatePlayersCoroutine());
+        public void UpdatePlayers() 
+        {
+            if (this.updatePlayersCO != null) { this.StopCoroutine(this.updatePlayersCO); }
+            this.updatePlayersCO = this.StartCoroutine(this.UpdatePlayersCoroutine());
         }
 
-        private IEnumerator UpdatePlayersCoroutine() {
+        private IEnumerator UpdatePlayersCoroutine() 
+        {
             this.colorToTeam.Clear();
             this.teamToColor.Clear();
-            //yield return this.WaitForSyncUp();
-            UnityEngine.Debug.Log("UPDATE PLAYERS");
 
             // wait until all character creator instances exist
             bool wait = true;
@@ -238,15 +236,11 @@ namespace RWF
 
                 yield return null;
             }
-
             if (PhotonNetwork.CurrentRoom != null) {
-                UnityEngine.Debug.Log("current room is not null");
                 List<LobbyCharacter> players = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null).ToList();
-
                 // assign teamIDs according to colorIDs
                 int nextTeamID = 0;
                 foreach (LobbyCharacter player in players.OrderBy(p => p.colorID)) {
-                    UnityEngine.Debug.Log("ASSIGN TEAM TO " + player.NickName);
                     if (this.colorToTeam.TryGetValue(player.colorID, out int teamID))
                     {
                         player.teamID = teamID;
@@ -259,8 +253,6 @@ namespace RWF
                         nextTeamID++;
                     }
                     UnityEngine.Debug.Log($"Player: {player.NickName}, TEAMID: {player.teamID}");
-
-                    //yield return this.WaitForSyncUp();
 
                     GameObject teamGroupGO = this.TeamGroupGO(player.teamID, player.colorID);
                     teamGroupGO.SetActive(true);
@@ -275,8 +267,6 @@ namespace RWF
             LayoutRebuilder.ForceRebuildLayoutImmediate(this.gameObject.GetComponent<RectTransform>());
             
             yield break;
-            //var middleChild = this.transform.GetChild(Mathf.FloorToInt(this.transform.childCount / 2f));
-            //this.transform.localPosition -= new Vector3(middleChild.localPosition.x, 0, 0);
         }
 
         private void HideEmptyTeams(int[] teamIDs)
@@ -285,6 +275,35 @@ namespace RWF
             {
                 this._teamGroupGOs[i].SetActive(false);
             }
+        }
+
+        public void SetInputEnabled(bool enabled)
+        {
+            foreach (GameObject selector in this._playerSelectorGOs.Values)
+            {
+
+                selector?.GetComponent<PrivateRoomCharacterSelectionInstance>()?.SetInputEnabled(enabled);
+
+            }
+        }
+
+        public void ReadyPlayer(LobbyCharacter character)
+        {
+            this.StartCoroutine(this.ReadyPlayerCoroutine(character));
+        }
+        private IEnumerator ReadyPlayerCoroutine(LobbyCharacter character)
+        {
+            bool wait = true;
+            while (wait)
+            {
+                wait = !this._playerSelectorGOs.Keys.Contains(character.uniqueID);
+
+                yield return null;
+            }
+
+            this._playerSelectorGOs[character.uniqueID].GetComponent<PrivateRoomCharacterSelectionInstance>().ReadyUp(character.ready);
+
+            yield break;
         }
 
         private void CreatePlayerSelector(string name, LobbyCharacter character, InputDevice device, Transform parent)
@@ -301,7 +320,7 @@ namespace RWF
                 new object[] { character.actorID, character.localID, device != null ? InputManager.ActiveDevices.IndexOf(device) : -1, name}
             );
         }
-        private IEnumerator WaitForSyncUp()
+        internal IEnumerator WaitForSyncUp()
         {
             if (PhotonNetwork.OfflineMode)
             {

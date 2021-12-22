@@ -10,6 +10,8 @@ namespace RWF.UI
 {
     class PlayerDisplay : MonoBehaviour
     {
+        public static PlayerDisplay instance;
+
         private const float padding = 100f;
 
         private static readonly Color disabledTextColor = new Color32(150, 150, 150, 16);
@@ -35,14 +37,22 @@ namespace RWF.UI
         LayoutElement layout;
         PrivateRoomHandler PrivateRoom => PrivateRoomHandler.instance;
 
-        private MethodInfo m_JoinButtonWasPressedOnDevice = typeof(PlayerAssigner).GetMethod("JoinButtonWasPressedOnDevice", BindingFlags.Instance | BindingFlags.NonPublic);
-
+        bool isHighlighted = false;
         bool selected = false;
         bool playersAdded = false;
 
         public bool IsSelected => this.selected;
         public bool PlayersHaveBeenAdded => this.playersAdded;
 
+        public void SetHighlighted(bool isHighlighted)
+        {
+            this.isHighlighted = isHighlighted;
+        }
+
+        private void Awake()
+        {
+            PlayerDisplay.instance = this;
+        }
         void Start()
         {
             // add the necessary components
@@ -99,8 +109,14 @@ namespace RWF.UI
 
         void Select()
         {
+            if (this.selected)
+            {
+                return;
+            }
+
             this.ExecuteAfterFrames(2, () => this.selected = true);
             this.setBar.Select();
+            this.versusDisplay.SetInputEnabled(true);
 
             // set the bar color
             ParticleSystem.MainModule main = PlayerDisplay.Particles.main;
@@ -125,33 +141,12 @@ namespace RWF.UI
                     text.color = PlayerDisplay.disabledTextColor;
                 }
             }
-
-
-            // figure out which input device selected the button, null for mouse/keyboard
-            bool deviceFound = false;
-            for (int i = 0; i < InputManager.ActiveDevices.Count; i++)
-            {
-                InputDevice device = InputManager.ActiveDevices[i];
-
-                bool joinButtonPressed = (bool) this.m_JoinButtonWasPressedOnDevice.Invoke(PlayerAssigner.instance, new object[] { device });
-
-                if (joinButtonPressed)
-                {
-                    this.PrivateRoom.StartCoroutine(this.PrivateRoom.ToggleReady(device, true));
-                    deviceFound = true;
-                    break;
-                }
-            }
-            if (!deviceFound)
-            {
-                UnityEngine.Debug.Log("JOIN ON KEYBOARD");
-                this.PrivateRoom.StartCoroutine(this.PrivateRoom.ToggleReady(null, true));
-            }
         }
         void Deselect()
         {
             this.selected = false;
             this.setBar.Deselect();
+            this.versusDisplay.SetInputEnabled(false);
 
             // restore the bar color
             ParticleSystem.MainModule main = PlayerDisplay.Particles.main;
@@ -185,33 +180,33 @@ namespace RWF.UI
 
         void LateUpdate()
         {
-            if (!this.selected) { return; }
+            // when this button is highlighted or locked in, check for inputs
+            // can't do this with button.OnClick since there's no good way to get which device triggered that
+            if (!this.isHighlighted && !this.selected) { return; }
 
             // check for exit, ready, or join
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Q))
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Q) || Input.GetMouseButtonDown(1)) // exit with Esc, Q, or RMB
             {
                 this.Deselect();
                 return;
             }
-            else if (Input.GetKeyDown(KeyCode.Space))
+            else if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButton(0)) // ready or join with Space or LMB
             {
-                this.PrivateRoom.StartCoroutine(this.PrivateRoom.ToggleReady(null, false));
+                this.PrivateRoom.StartCoroutine(this.PrivateRoom.ToggleReady(null, !this.selected));
             }
 
             for (int i = 0; i < InputManager.ActiveDevices.Count; i++)
             {
                 InputDevice device = InputManager.ActiveDevices[i];
 
-                if (device.CommandWasPressed)
+                if (device.CommandWasPressed) // exit with Start or Select
                 {
                     this.Deselect();
                 }
 
-                bool joinButtonPressed = (bool) this.m_JoinButtonWasPressedOnDevice.Invoke(PlayerAssigner.instance, new object[] { device });
-
-                if (joinButtonPressed)
+                if (device.Action1.WasPressed || device.Action2.WasPressed || device.Action3.WasPressed || device.Action4.WasPressed)
                 {
-                    this.PrivateRoom.StartCoroutine(this.PrivateRoom.ToggleReady(device, false));
+                    this.PrivateRoom.StartCoroutine(this.PrivateRoom.ToggleReady(device, !this.selected));
                 }
             }
         }

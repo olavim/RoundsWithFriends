@@ -89,11 +89,13 @@ namespace RWF.UI
         new public void OnSelect(BaseEventData eventData)
         {
             this.Select();
+            this.PlayerDisplay.SetHighlighted(true);
             ListMenu.instance.SelectButton(this);
         }
 
         public void OnDeselect(BaseEventData eventData)
         {
+            this.PlayerDisplay.SetHighlighted(false);
             this.Deselect();
         }
 

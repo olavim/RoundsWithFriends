@@ -410,29 +410,6 @@ namespace RWF
                 this.HandlePlayerReadyToggle(request.Item1, request.Item2, request.Item3);
             }
         }
-        private void LateUpdate()
-        {
-            return;
-            /*
-            // check for players trying to join
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                this.StartCoroutine(this.ToggleReady(null));
-            }
-
-            var m_JoinButtonWasPressedOnDevice = typeof(PlayerAssigner).GetMethod("JoinButtonWasPressedOnDevice", BindingFlags.Instance | BindingFlags.NonPublic);
-            for (int i = 0; i < InputManager.ActiveDevices.Count; i++)
-            {
-                InputDevice device = InputManager.ActiveDevices[i];
-
-                var joinButtonPressed = (bool) m_JoinButtonWasPressedOnDevice.Invoke(PlayerAssigner.instance, new object[] { device });
-
-                if (joinButtonPressed)
-                {
-                    this.StartCoroutine(this.ToggleReady(device));
-                }
-            }*/
-        }
 
         override public void OnJoinedRoom()
         {
@@ -441,8 +418,6 @@ namespace RWF
                 return;
             }
 
-            //PhotonNetwork.LocalPlayer.SetProperty("ready", false);
-            //PhotonNetwork.LocalPlayer.SetProperty("readyOrder", -1);
             PhotonNetwork.LocalPlayer.SetProperty("players", new LobbyCharacter[RWFMod.instance.MaxPlayerPerClient]);
 
             if (RWFMod.DEBUG && PhotonNetwork.IsMasterClient)
@@ -561,6 +536,7 @@ namespace RWF
             }
             else if (!doNotReady)
             {
+                UnityEngine.Debug.Log("READY PLAYER");
                 this.waitingForToggle = true;
 
                 // the player already exists
@@ -695,6 +671,8 @@ namespace RWF
 
         private void HandlePlayerReadyToggle(int actorID, int localID, bool ready)
         {
+            // this is only run on the host client
+
             var networkPlayer = PhotonNetwork.CurrentRoom.GetPlayer(actorID);
 
             if (networkPlayer == null)
@@ -714,11 +692,9 @@ namespace RWF
             }
 
             LobbyCharacter character = this.FindLobbyCharacter(actorID, localID);
-            character.ToggleReady();
+            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RPCA_ReadyPlayer), character);
 
-            LobbyCharacter[] characters = networkPlayer.GetProperty<LobbyCharacter[]>("players");
-            characters[character.localID] = character;
-            networkPlayer.SetProperty("players", characters);
+            this.versusDisplay.ReadyPlayer(character);
 
             //networkPlayer.SetProperty("ready", ready);
             //networkPlayer.SetProperty("readyOrder", ready ? numReady - 1 : -1);
@@ -749,6 +725,13 @@ namespace RWF
                     nextReadyOrder++;
                 }
             }*/
+
+        }
+
+        [UnboundRPC]
+        private static void RPCA_ReadyPlayer(LobbyCharacter character)
+        {
+            character.ToggleReady();
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdatePlayerDisplay));
         }
