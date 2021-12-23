@@ -30,22 +30,32 @@ namespace RWF.UI
 
         public void OnPhotonInstantiate(Photon.Pun.PhotonMessageInfo info)
         {
+            RWFMod.instance.StartCoroutine(this.Instantiate(info));
+        }
+        private IEnumerator Instantiate(Photon.Pun.PhotonMessageInfo info)
+        {
             // info[0] will be the actorID of the player and info[1] will be the localID of the player
-            // info[2] will be the device ID if this is controlled locally and is a controller, -1 otherwise for a keyboard or remote player
-            // info[3] will be the name of the player picking, purely to assign this gameobject's new name
+            // info[2] will be the name of the player picking, purely to assign this gameobject's new name
             object[] instantiationData = info.photonView.InstantiationData;
 
             int actorID = (int) instantiationData[0];
             int localID = (int) instantiationData[1];
-            int deviceID = (int) instantiationData[2];
-            string name = (string) instantiationData[3];
+            string name = (string) instantiationData[2];
+
+            yield return new WaitUntil(() =>
+            {
+                return PhotonNetwork.CurrentRoom != null
+                    && PhotonNetwork.CurrentRoom.GetPlayer(actorID).GetProperty<LobbyCharacter[]>("players") != null
+                    && PhotonNetwork.CurrentRoom.GetPlayer(actorID).GetProperty<LobbyCharacter[]>("players").Count() > localID
+                    && PhotonNetwork.CurrentRoom.GetPlayer(actorID).GetProperty<LobbyCharacter[]>("players")[localID] != null
+                    && (PhotonNetwork.LocalPlayer.ActorNumber != actorID || PrivateRoomHandler.instance.devicesToUse.Count() > localID);
+            });
 
             LobbyCharacter lobbyCharacter = PhotonNetwork.CurrentRoom.GetPlayer(actorID).GetProperty<LobbyCharacter[]>("players")[localID];
-            
+
             this.gameObject.name += " " + name;
 
-            InputDevice inputDevice = deviceID >= 0 ? InputManager.ActiveDevices[deviceID] : null;
-
+            InputDevice inputDevice = lobbyCharacter.IsMine ? PrivateRoomHandler.instance.devicesToUse[localID] : null;
 
             VersusDisplay.instance.SetPlayerSelectorGO(lobbyCharacter.uniqueID, this.gameObject);
 
@@ -59,13 +69,18 @@ namespace RWF.UI
             this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
             for (int i = 0; i < this.buttons.Length; i++)
             {
-                this.buttons[i].GetComponent<SimulatedSelection>().InvokeMethod("Start");
+                if (this.buttons[i].GetComponent<SimulatedSelection>() != null)
+                {
+                    UnityEngine.GameObject.DestroyImmediate(this.buttons[i].GetComponent<SimulatedSelection>());
+                }
+                this.buttons[i].gameObject.GetOrAddComponent<PrivateRoomSimulatedSelection>().InvokeMethod("Start");
             }
 
             this.transform.GetChild(1).gameObject.GetComponent<TextMeshProUGUI>().text = name;
 
             this.StartPicking(lobbyCharacter, inputDevice);
 
+            yield break;
         }
         private void Start()
         {
@@ -75,7 +90,11 @@ namespace RWF.UI
             this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
             for (int i = 0; i < this.buttons.Length; i++)
             {
-                this.buttons[i].GetComponent<SimulatedSelection>().InvokeMethod("Start");
+                if (this.buttons[i].GetComponent<SimulatedSelection>() != null)
+                {
+                    UnityEngine.GameObject.DestroyImmediate(this.buttons[i].GetComponent<SimulatedSelection>());
+                }
+                this.buttons[i].gameObject.GetOrAddComponent<PrivateRoomSimulatedSelection>().InvokeMethod("Start");
             }
         }
 
@@ -122,7 +141,7 @@ namespace RWF.UI
             for (int i = 0; i < this.buttons.Length; i++)
             {
 
-                this.buttons[i].GetComponent<SimulatedSelection>().InvokeMethod("Start");
+                this.buttons[i].gameObject.GetOrAddComponent<PrivateRoomSimulatedSelection>().InvokeMethod("Start");
 
                 this.buttons[i].enabled = false;
                 this.buttons[i].GetComponent<Button>().interactable = false;
@@ -186,7 +205,7 @@ namespace RWF.UI
             }
             this.buttons[this.currentlySelectedFace].transform.GetChild(4).gameObject.SetActive(true);
             this.buttons[this.currentlySelectedFace].gameObject.SetActive(true);
-            this.buttons[this.currentlySelectedFace].GetComponent<SimulatedSelection>().Select();
+            this.buttons[this.currentlySelectedFace].GetComponent<PrivateRoomSimulatedSelection>().Select();
             this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke();
             this.buttons[this.currentlySelectedFace].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
         }
@@ -239,7 +258,7 @@ namespace RWF.UI
             {
                 if (this.currentButton)
                 {
-                    this.currentButton.GetComponent<SimulatedSelection>().Deselect();
+                    this.currentButton.GetComponent<PrivateRoomSimulatedSelection>().Deselect();
                     this.currentButton.gameObject.SetActive(false);
                 }
                 else
@@ -247,14 +266,14 @@ namespace RWF.UI
                     for (int i = 0; i < this.buttons.Length; i++)
                     {
                         if (i == this.currentlySelectedFace) { continue; }
-                        this.buttons[i].GetComponent<SimulatedSelection>().Deselect();
+                        this.buttons[i].GetComponent<PrivateRoomSimulatedSelection>().Deselect();
                         this.buttons[i].gameObject.SetActive(false);
                     }
                 }
                 this.currentButton = component;
                 this.currentButton.transform.GetChild(4).gameObject.SetActive(true);
                 this.currentButton.gameObject.SetActive(true);
-                this.currentButton.GetComponent<SimulatedSelection>().Select();
+                this.currentButton.GetComponent<PrivateRoomSimulatedSelection>().Select();
                 this.currentButton.GetComponent<Button>().onClick.Invoke();
                 this.currentButton.transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
             }
@@ -310,7 +329,7 @@ namespace RWF.UI
             if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
             {
                 // teams not allowed, continue to next colorID() - if the last (or first) colorID() is passed, then just fail to change team
-                while (PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID) && newColorID < RWFMod.instance.MaxTeams && newColorID >= 0)
+                while (PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && p.uniqueID != this.currentPlayer.uniqueID && p.colorID == newColorID).Any() && newColorID < RWFMod.instance.MaxTeams && newColorID >= 0)
                 {
                     newColorID += colorIDDelta;
                 }
@@ -336,7 +355,7 @@ namespace RWF.UI
             }
             if (PhotonNetwork.IsMasterClient)
             {
-                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdatePlayerDisplay));
+                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdateVersusDisplay));
             }
         }
 

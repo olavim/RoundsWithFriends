@@ -28,6 +28,8 @@ namespace RWF
         private GameObject _holder;
         private Coroutine updatePlayersCO = null;
 
+        public bool PlayersHaveBeenAdded => this._playerGOs.Keys.Any();
+        
         private GameObject holder
         {
             get
@@ -131,7 +133,10 @@ namespace RWF
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(colorID).backgroundColor;
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.randomColor = PlayerSkinBank.GetPlayerSkinColors(colorID).color;
                 ((ObjectPool) teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().GetFieldValue("particlePool")).ClearPool();
-                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().Play();
+                if (teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().gameObject.activeSelf)
+                {
+                    teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().Play();
+                }
             }
             return teamGroupGO;
         }
@@ -162,7 +167,7 @@ namespace RWF
             if (!this._playerSelectorGOs.TryGetValue(uniqueID, out GameObject playerSelectorGO) && !this._playerSelectorGOsCreated.Contains(uniqueID))
             {
                 LobbyCharacter player = LobbyCharacter.GetLobbyCharacter(uniqueID);
-                this.CreatePlayerSelector(player.NickName, player, player.IsMine ? PrivateRoomHandler.instance.devicesToUse[player.localID] : null, this.PlayerGO(player.uniqueID).transform);
+                this.CreatePlayerSelector(player.NickName, player, this.PlayerGO(player.uniqueID).transform);
             }
 
             return playerSelectorGO;
@@ -228,15 +233,17 @@ namespace RWF
             this.colorToTeam.Clear();
             this.teamToColor.Clear();
 
-            // wait until all character creator instances exist
-            bool wait = true;
-            while (wait)
-            { 
-                wait = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && this.PlayerSelectorGO(p.uniqueID) == null).Any();
+            if (PhotonNetwork.CurrentRoom != null)
+            {
+                // wait until all character creator instances exist
+                bool wait = true;
+                while (wait)
+                { 
+                    wait = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && this.PlayerSelectorGO(p.uniqueID) == null).Any();
 
-                yield return null;
-            }
-            if (PhotonNetwork.CurrentRoom != null) {
+                    yield return null;
+                }
+
                 List<LobbyCharacter> players = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null).ToList();
                 // assign teamIDs according to colorIDs
                 int nextTeamID = 0;
@@ -264,7 +271,10 @@ namespace RWF
                 this.HideEmptyTeams(players.Select(p => p.teamID).ToArray());
             }
 
-            LayoutRebuilder.ForceRebuildLayoutImmediate(this.gameObject.GetComponent<RectTransform>());
+            if (this?.gameObject?.GetComponent<RectTransform>() != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(this.gameObject.GetComponent<RectTransform>());
+            }
             
             yield break;
         }
@@ -287,11 +297,11 @@ namespace RWF
             }
         }
 
-        public void ReadyPlayer(LobbyCharacter character)
+        public void ReadyPlayer(LobbyCharacter character, bool ready)
         {
-            this.StartCoroutine(this.ReadyPlayerCoroutine(character));
+            this.StartCoroutine(this.ReadyPlayerCoroutine(character, ready));
         }
-        private IEnumerator ReadyPlayerCoroutine(LobbyCharacter character)
+        private IEnumerator ReadyPlayerCoroutine(LobbyCharacter character, bool ready)
         {
             bool wait = true;
             while (wait)
@@ -301,12 +311,12 @@ namespace RWF
                 yield return null;
             }
 
-            this._playerSelectorGOs[character.uniqueID].GetComponent<PrivateRoomCharacterSelectionInstance>().ReadyUp(character.ready);
+            this._playerSelectorGOs[character.uniqueID].GetComponent<PrivateRoomCharacterSelectionInstance>().ReadyUp(ready);
 
             yield break;
         }
 
-        private void CreatePlayerSelector(string name, LobbyCharacter character, InputDevice device, Transform parent)
+        private void CreatePlayerSelector(string name, LobbyCharacter character, Transform parent)
         {
             if (!character.IsMine || this._playerSelectorGOsCreated.Contains(character.uniqueID)) { return; }
             this._playerSelectorGOsCreated.Add(character.uniqueID);
@@ -317,7 +327,7 @@ namespace RWF
                 parent.position,
                 parent.rotation,
                 0,
-                new object[] { character.actorID, character.localID, device != null ? InputManager.ActiveDevices.IndexOf(device) : -1, name}
+                new object[] { character.actorID, character.localID, name}
             );
         }
         internal IEnumerator WaitForSyncUp()

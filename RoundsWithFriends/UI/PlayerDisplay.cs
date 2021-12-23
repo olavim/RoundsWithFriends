@@ -170,7 +170,17 @@ namespace RWF.UI
 
         void Update()
         {
-            if (!this.playersAdded) { return; }
+            if (!this.playersAdded) 
+            {
+                if (VersusDisplay.instance.PlayersHaveBeenAdded)
+                {
+                    this.playersAdded = true;
+                }
+                else
+                {
+                    return;
+                }
+            }
             try
             {
                 this.layout.minHeight = 2f * this.gameObject.GetComponentsInChildren<RectTransform>(false).Where(r => r != this.GetComponent<RectTransform>()).Select(r => r.sizeDelta.y).Max() + PlayerDisplay.padding;
@@ -199,12 +209,12 @@ namespace RWF.UI
             {
                 InputDevice device = InputManager.ActiveDevices[i];
 
-                if (device.CommandWasPressed) // exit with Start or Select
+                if (device.CommandWasPressed || device.Action2.WasPressed) // exit with Start, Select, or B
                 {
                     this.Deselect();
                 }
 
-                if (device.Action1.WasPressed || device.Action2.WasPressed || device.Action3.WasPressed || device.Action4.WasPressed)
+                else if (device.Action1.WasPressed || device.Action3.WasPressed || device.Action4.WasPressed)
                 {
                     this.PrivateRoom.StartCoroutine(this.PrivateRoom.ToggleReady(device, !this.selected));
                 }

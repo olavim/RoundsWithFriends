@@ -78,11 +78,10 @@ namespace RWF
         
         public static object Deserialize(byte[] data)
         {
-            if ((int)data[4] == 1)
+            if (PhotonNetwork.CurrentRoom == null || data == null || (int)data[5] == 1)
             {
                 return null;
             }
-
             LobbyCharacter result = new LobbyCharacter(PhotonNetwork.CurrentRoom.Players[(int) data[0]], (int) data[1], (int)data[2])
             {
                 teamID = (int) data[3],
@@ -93,7 +92,7 @@ namespace RWF
 
         public static byte[] Serialize(object lobbyCharacter)
         {
-            if (lobbyCharacter == null) { return new byte[] { 0,0,0,0,1 }; }
+            if (lobbyCharacter == null) { return new byte[] { 0,0,0,0,0,1 }; }
 
             LobbyCharacter c = (LobbyCharacter) lobbyCharacter;
             return new byte[] { (byte)c.actorID, (byte)c.colorID, (byte)c.localID, (byte)c.teamID, (byte)(c.ready ? 1 : 0), 0};
@@ -117,9 +116,9 @@ namespace RWF
             this.localID = localID;
         }
 
-        public void ToggleReady()
+        public void SetReady(bool ready)
         {
-            this.ready = !this.ready;
+            this.ready = ready;
         }
     }
 
@@ -156,7 +155,7 @@ namespace RWF
         {
             get
             {
-                return this.grid.activeSelf;
+                return this?.grid?.activeSelf ?? false;
             }
         }
 
@@ -185,6 +184,21 @@ namespace RWF
         {
             this.Init();
             this.BuildUI();
+        }
+
+        new private void OnEnable()
+        {
+            this.waitingForToggle = false;
+            this.readyRequests = new Queue<Tuple<int, int, bool>>();
+            this.devicesToUse = new Dictionary<int, InputDevice>();
+            this.lockReadyRequests = false;
+            PhotonNetwork.LocalPlayer.SetProperty("players", new LobbyCharacter[RWFMod.instance.MaxPlayerPerClient]);
+
+            // necessary for VersusDisplay characters to render in the correct order
+            // must be reverted to MostFront when leaving the lobby
+            this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "UI";
+
+            base.OnEnable();
         }
 
         private void Init()
@@ -361,6 +375,7 @@ namespace RWF
                 // return Canvas to its original position
                 this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
                 NetworkConnectionHandler.instance.NetworkRestart();
+                UnityEngine.Debug.Log("NETWORK RESTART");
             });
 
             var backListButton = backGo.AddComponent<ListMenuButton>();
@@ -433,7 +448,7 @@ namespace RWF
                 }
 
                 PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "TEAM DEATHMATCH" : "DEATHMATCH";
-                PrivateRoomHandler.UpdatePlayerDisplay();
+                PrivateRoomHandler.UpdateVersusDisplay();
             }
 
             /* The local player's nickname is also set in NetworkConnectionHandler::OnJoinedRoom, but we'll do it here too so we don't
@@ -449,7 +464,7 @@ namespace RWF
             }
 
             // If we handled this from OnPlayerEnteredRoom handler for other clients, the joined client's nickname might not have been set yet
-            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdatePlayerDisplay));
+            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdateVersusDisplay));
             base.OnJoinedRoom();
         }
 
@@ -473,7 +488,7 @@ namespace RWF
 
             this.ExecuteAfterSeconds(0.1f, () =>
             {
-                PrivateRoomHandler.UpdatePlayerDisplay();
+                PrivateRoomHandler.UpdateVersusDisplay();
             });
 
             base.OnPlayerEnteredRoom(newPlayer);
@@ -482,7 +497,7 @@ namespace RWF
         override public void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
         {
             this.ClearPendingRequests(otherPlayer.ActorNumber);
-            PrivateRoomHandler.UpdatePlayerDisplay();
+            PrivateRoomHandler.UpdateVersusDisplay();
             base.OnPlayerLeftRoom(otherPlayer);
         }
 
@@ -530,7 +545,7 @@ namespace RWF
 
                 SoundPlayerStatic.Instance.PlayPlayerAdded();
 
-                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdatePlayerDisplay));
+                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdateVersusDisplay));
 
                 yield break;
             }
@@ -608,7 +623,7 @@ namespace RWF
             GameModeManager.CurrentHandler.SetSettings(settings);
 
             PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "TEAM DEATHMATCH" : "DEATHMATCH";
-            PrivateRoomHandler.UpdatePlayerDisplay();
+            PrivateRoomHandler.UpdateVersusDisplay();
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettingsResponse), PhotonNetwork.LocalPlayer.ActorNumber);
         }
@@ -632,7 +647,7 @@ namespace RWF
         }
 
         [UnboundRPC]
-        public static void UpdatePlayerDisplay()
+        public static void UpdateVersusDisplay()
         {
             var instance = PrivateRoomHandler.instance;
 
@@ -692,9 +707,13 @@ namespace RWF
             }
 
             LobbyCharacter character = this.FindLobbyCharacter(actorID, localID);
-            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RPCA_ReadyPlayer), character);
+            character.SetReady(ready);
+            LobbyCharacter[] characters = PhotonNetwork.CurrentRoom.Players[actorID].GetProperty<LobbyCharacter[]>("players");
+            characters[localID] = character;
+            PhotonNetwork.CurrentRoom.GetPlayer(actorID).SetProperty("players", characters);
+            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RPCA_ReadyPlayer), character, ready);
 
-            this.versusDisplay.ReadyPlayer(character);
+            //this.versusDisplay.ReadyPlayer(character);
 
             //networkPlayer.SetProperty("ready", ready);
             //networkPlayer.SetProperty("readyOrder", ready ? numReady - 1 : -1);
@@ -729,11 +748,12 @@ namespace RWF
         }
 
         [UnboundRPC]
-        private static void RPCA_ReadyPlayer(LobbyCharacter character)
+        private static void RPCA_ReadyPlayer(LobbyCharacter character, bool ready)
         {
-            character.ToggleReady();
+            character.SetReady(ready);
+            VersusDisplay.instance.ReadyPlayer(character, ready);
 
-            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdatePlayerDisplay));
+            //NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdatePlayerDisplay));
         }
 
         private IEnumerator StartGamePreparation()
@@ -813,7 +833,7 @@ namespace RWF
                 ListMenu.instance.OpenPage(this.MainPage);
                 this.MainPage.Open();
                 ArtHandler.instance.NextArt();
-                PrivateRoomHandler.UpdatePlayerDisplay();
+                PrivateRoomHandler.UpdateVersusDisplay();
             });
         }
     }
