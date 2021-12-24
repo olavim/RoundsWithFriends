@@ -10,6 +10,7 @@ using Photon.Pun;
 using UnboundLib;
 using System.Collections;
 using UnityEngine.UI.ProceduralImage;
+using System.Reflection;
 
 namespace RWF.UI
 {
@@ -120,7 +121,16 @@ namespace RWF.UI
         {
             this.currentPlayer = pickingCharacter;
             this.device = device;
-            this.currentlySelectedFace = 0;
+            this.currentlySelectedFace = pickingCharacter.faceID;
+            if (this.currentPlayer.IsMine)
+            {
+                PlayerFace faceToSend = CharacterCreatorHandler.instance.GetFacePreset(this.currentlySelectedFace);
+                this.view.RPC(nameof(RPCO_SelectFace), RpcTarget.Others, this.currentlySelectedFace, faceToSend.eyeID, faceToSend.eyeOffset, faceToSend.mouthID, faceToSend.mouthOffset, faceToSend.detailID, faceToSend.detailOffset, faceToSend.detail2ID, faceToSend.detail2Offset);
+            }
+            else
+            {
+                this.view.RPC(nameof(RPCS_RequestSelectedFace), this.currentPlayer.networkPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
+            }
             try
             {
                 this.GetComponentInChildren<GeneralParticleSystem>(true).gameObject.SetActive(false);
@@ -208,6 +218,23 @@ namespace RWF.UI
             this.buttons[this.currentlySelectedFace].GetComponent<PrivateRoomSimulatedSelection>().Select();
             this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke();
             this.buttons[this.currentlySelectedFace].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
+
+            this.StartCoroutine(this.FinishSetup());
+        }
+        private IEnumerator FinishSetup()
+        {
+            yield return new WaitUntil(() => this.buttons[this.currentlySelectedFace].gameObject.activeInHierarchy);
+            yield return new WaitForSecondsRealtime(0.1f);
+            this.buttons[this.currentlySelectedFace].GetComponent<PrivateRoomSimulatedSelection>().Select();
+            this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke();
+            this.buttons[this.currentlySelectedFace].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
+
+            if (this.currentPlayer.ready)
+            {
+                this.RPCA_ReadyUp(this.currentPlayer.ready);
+            }
+
+            yield break;
         }
         public void ReadyUp(bool ready)
         {
@@ -219,6 +246,7 @@ namespace RWF.UI
             this.isReady = ready;
             for (int i = 0; i < this.buttons.Length; i++)
             {
+                this.buttons[i].transform.GetChild(4).gameObject.SetActive(true);
                 this.buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(this.isReady);
                 this.buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(this.isReady);
                 foreach (Graphic graphic in this.buttons[i].transform.GetChild(4).GetChild(0).GetComponentsInChildren<Graphic>(true))
@@ -278,6 +306,7 @@ namespace RWF.UI
                 this.currentButton.transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
             }
             this.counter += Time.deltaTime;
+            int previouslySelectedFace = this.currentlySelectedFace;
             if (((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && (Mathf.Abs(this.device.LeftStickX.Value) > 0.5f || this.device.DPadLeft.WasPressed || this.device.DPadRight.WasPressed)) || (this.device == null && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.DownArrow)))) && this.counter > 0.2f)
             {
                 // change face
@@ -306,22 +335,86 @@ namespace RWF.UI
                 if (colorChanged)
                 {
                     // ask the host client for permission to change team
-                    this.view.RPC(nameof(this.RPCM_RequestChangeTeam), RpcTarget.MasterClient, colorIDDelta);
+                    this.view.RPC(nameof(this.RPCH_RequestChangeTeam), RpcTarget.MasterClient, colorIDDelta);
                 }
 
                 this.counter = 0f;
             }
             this.currentlySelectedFace = Mathf.Clamp(this.currentlySelectedFace, 0, this.buttons.Length - 1);
-
+            if (this.currentlySelectedFace != previouslySelectedFace)
+            {
+                this.currentPlayer.faceID = this.currentlySelectedFace;
+                LobbyCharacter[] characters = PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players");
+                characters[this.currentPlayer.localID] = this.currentPlayer;
+                PhotonNetwork.LocalPlayer.SetProperty("players", characters);
+                PlayerFace faceToSend = CharacterCreatorHandler.instance.GetFacePreset(this.currentlySelectedFace);
+                this.view.RPC(nameof(RPCO_SelectFace), RpcTarget.Others, this.currentlySelectedFace, faceToSend.eyeID, faceToSend.eyeOffset, faceToSend.mouthID, faceToSend.mouthOffset, faceToSend.detailID, faceToSend.detailOffset, faceToSend.detail2ID, faceToSend.detail2Offset);
+            }
         }
         public void SetInputEnabled(bool enabled)
         {
             this.enableInput = enabled;
         }
+        [PunRPC]
+        private void RPCS_RequestSelectedFace(int askerID)
+        {
+            PlayerFace faceToSend = CharacterCreatorHandler.instance.GetFacePreset(this.currentlySelectedFace);
+            this.view.RPC(nameof(RPCO_SelectFace), PhotonNetwork.CurrentRoom.GetPlayer(askerID), this.currentlySelectedFace, faceToSend.eyeID, faceToSend.eyeOffset, faceToSend.mouthID, faceToSend.mouthOffset, faceToSend.detailID, faceToSend.detailOffset, faceToSend.detail2ID, faceToSend.detail2Offset);
+        }
+        [PunRPC]
+        private void RPCO_SelectFace(int faceID, int eyeID, Vector2 eyeOffset, int mouthID, Vector2 mouthOffset, int detailID, Vector2 detailOffset, int detail2ID, Vector2 detail2Offset)
+        {
+            this.currentPlayer.faceID = faceID;
+            this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
+            for (int i = 0; i < this.buttons.Length; i++)
+            {
+                if (i == faceID)
+                {
+                    this.buttons[i].gameObject.SetActive(true);
+                    this.StartCoroutine(this.SelectFaceCoroutine(this.buttons[i], eyeID, eyeOffset, mouthID, mouthOffset, detailID, detailOffset, detail2ID, detail2Offset));
+                }
+                else
+                {
+                    this.buttons[i].GetComponent<PrivateRoomSimulatedSelection>().Deselect();
+                    this.buttons[i].gameObject.SetActive(false);
+                }
+            }
+        }
+        private IEnumerator SelectFaceCoroutine(HoverEvent button, int eyeID, Vector2 eyeOffset, int mouthID, Vector2 mouthOffset, int detailID, Vector2 detailOffset, int detail2ID, Vector2 detail2Offset)
+        {
+            yield return new WaitUntil(() => button.gameObject.activeInHierarchy);
+
+            button.GetComponent<PrivateRoomSimulatedSelection>().Select();
+            button.transform.GetChild(1).gameObject.SetActive(true);
+            button.transform.GetChild(4).gameObject.SetActive(true);
+            button.transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
+            button.GetComponent<CharacterCreatorItemEquipper>().RPCA_SetFace(eyeID, eyeOffset, mouthID, mouthOffset, detailID, detailOffset, detail2ID, detail2Offset);
+            
+
+            yield break;
+        }
+        /*
+        private IEnumerator SetFaceCoroutine(HoverEvent button, int eyeID, Vector2 eyeOffset, int mouthID, Vector2 mouthOffset, int detailID, Vector2 detailOffset, int detail2ID, Vector2 detail2Offset)
+        {
+            yield return new WaitUntil(() => button.gameObject.activeInHierarchy);
+
+            for (int j = 0; j < 3; j++)
+            {
+                yield return new WaitForEndOfFrame();
+
+                button.GetComponent<CharacterCreatorItemEquipper>().RPCA_SetFace(eyeID, eyeOffset, mouthID, mouthOffset, detailID, detailOffset, detail2ID, detail2Offset);
+            }
+
+
+            yield break;
+        }*/
 
         [PunRPC]
-        private void RPCM_RequestChangeTeam(int colorIDDelta)
+        private void RPCH_RequestChangeTeam(int colorIDDelta)
         {
+            // RPCH -> RPC(Host)
+            // this is only sent to the host client
+
             // ask the host if the team can be changed in the direction specified
             int newColorID = this.currentPlayer.colorID + colorIDDelta;
 
@@ -346,9 +439,13 @@ namespace RWF.UI
         [PunRPC]
         private void RPCA_ChangeTeam(int newColorID)
         {
+            // RPCA -> RPC(All)
+            // this is sent to all players
+
             // host has approved the team change, update across all clients
             this.currentPlayer.colorID = newColorID;
             PrivateRoomHandler.instance.FindLobbyCharacter(this.currentPlayer.actorID, this.currentPlayer.localID).colorID = newColorID;
+            this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
             for (int i = 0; i < this.buttons.Length; i++)
             {
                 this.buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = ExtraPlayerSkins.GetPlayerSkinColors(this.currentPlayer.colorID).color;
@@ -358,6 +455,42 @@ namespace RWF.UI
                 NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdateVersusDisplay));
             }
         }
+        
+        /*
+        [PunRPC]
+        private void RPCS_SendFaces(int requestingID)
+        {
+            UnityEngine.Debug.Log("REQUEST TO SEND FACES FROM: " + requestingID.ToString());
+
+            // RPCS -> RPC(Specific) or RPC(Single)
+            // this is only sent to the player who owns this instance, but just to be sure it is checked here
+            if (!(this?.currentPlayer?.IsMine ?? false)) { return; }
+
+            // set the face for all portraits for all other players
+            this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
+
+
+            for (int i = 0; i < this.buttons.Count(); i++)
+            {
+                PlayerFace faceToSend = this.buttons[i].GetComponent<CharacterCreatorPortrait>().myFace;
+                this.view.RPC(nameof(RPCO_SetFace), PhotonNetwork.CurrentRoom.GetPlayer(requestingID), i, faceToSend.eyeID, faceToSend.eyeOffset, faceToSend.mouthID, faceToSend.mouthOffset, faceToSend.detailID, faceToSend.detailOffset, faceToSend.detail2ID, faceToSend.detail2Offset);
+            }
+            
+
+        }
+        [PunRPC]
+        public void RPCO_SetFace(int index, int eyeID, Vector2 eyeOffset, int mouthID, Vector2 mouthOffset, int detailID, Vector2 detailOffset, int detail2ID, Vector2 detail2Offset)
+        {
+            UnityEngine.Debug.Log("RECEIVED FACE FOR INDEX: " + index.ToString());
+
+            // RPCS -> RPC(Specific) or RPC(Single)
+            // this is sent to the player that requested RPCS_SendFaces
+
+            this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
+            //this.buttons[index].GetComponent<CharacterCreatorPortrait>().myFace = face;
+            //this.buttons[index].GetComponent<CharacterCreatorItemEquipper>().RPCA_SetFace(eyeID, eyeOffset, mouthID, mouthOffset, detailID, detailOffset, detail2ID, detail2Offset);
+            this.StartCoroutine(this.SetFaceCoroutine(this.buttons[index], eyeID, eyeOffset, mouthID, mouthOffset, detailID, detailOffset, detail2ID, detail2Offset));
+        }*/
 
 
         public int currentlySelectedFace;

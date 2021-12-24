@@ -13,6 +13,25 @@ using RWF.Algorithms;
 
 namespace RWF.Patches
 {
+    [HarmonyPatch(typeof(PlayerManager), "GetPlayerWithActorID")]
+    [HarmonyPriority(Priority.First)]
+    class PlayerManager_Patch_GetPlayerWithActorID
+    {
+        static bool Prefix(PlayerManager __instance, ref Player __result, int actorID)
+        {
+            // if actorID is negative, then its actually a uniqueID
+            if (actorID < 0)
+            {
+                __result = __instance.GetPlayerWithUniqueID(actorID);
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(PlayerManager), "PlayerJoined")]
     class PlayerManager_Patch_PlayerJoined
     {

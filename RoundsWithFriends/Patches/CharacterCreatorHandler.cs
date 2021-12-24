@@ -9,12 +9,12 @@ using UnityEngine;
 namespace RWF.Patches
 {
     [HarmonyPatch(typeof(CharacterCreatorHandler), "Awake")]
-    class CharacterCreatorHandler_Patch_SelectFace
+    class CharacterCreatorHandler_Patch_Awake
     {
         static void Prefix(CharacterCreatorHandler __instance)
         {
-            __instance.selectedFaceID = new int[RWFMod.instance.MaxPlayers];
-            __instance.selectedPlayerFaces = new PlayerFace[RWFMod.instance.MaxPlayers];
+            __instance.selectedFaceID = new int[RWFMod.MaxPlayersHardLimit];
+            __instance.selectedPlayerFaces = new PlayerFace[RWFMod.MaxPlayersHardLimit];
         }
     }
 }

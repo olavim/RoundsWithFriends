@@ -67,14 +67,14 @@ namespace RWF.Patches
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
             var list = instructions.ToList();
-            var m_getMaxPlayers = typeof(RWFMod).GetProperty("MaxPlayers").GetGetMethod();
-            var f_teamManagerInstance = AccessTools.Field(typeof(RWFMod), "instance");
+            var m_getMaxPlayers = typeof(RWFMod).GetProperty("MaxClients").GetGetMethod();
+            var f_RWFinstance = AccessTools.Field(typeof(RWFMod), "instance");
             var f_roomOptionsMaxPlayers = AccessTools.Field(typeof(RoomOptions), "MaxPlayers");
 
             for (int i = 0; i < list.Count; i++) {
                 if (i < list.Count - 1 && list[i + 1].StoresField(f_roomOptionsMaxPlayers)) {
-                    // Replace `options.MaxPlayers = 2` with `options.MaxPlayers = (byte)TeamManager.instance.MaxPlayers`
-                    yield return new CodeInstruction(OpCodes.Ldsfld, f_teamManagerInstance);
+                    // Replace `options.MaxPlayers = 2` with `options.MaxPlayers = (byte)RWFMod.instance.MaxClients`
+                    yield return new CodeInstruction(OpCodes.Ldsfld, f_RWFinstance);
                     yield return new CodeInstruction(OpCodes.Callvirt, m_getMaxPlayers);
                     yield return new CodeInstruction(OpCodes.Conv_U1);
                     yield return list[i + 1];

@@ -7,6 +7,18 @@ namespace RWF
 {
     public static class PlayerManagerExtensions
     {
+        public static Player GetPlayerWithUniqueID(this PlayerManager instance, int uniqueID)
+        {
+            for (int i = 0; i < instance.players.Count; i++)
+            {
+                if (instance.players[i].GetUniqueID() == uniqueID)
+                {
+                    return instance.players[i];
+                }
+            }
+            return null;
+        }
+
         public static void AddPlayerJoinedAction(this PlayerManager instance, Action<Player> action) {
             instance.SetPropertyValue("PlayerJoinedAction", Delegate.Combine(instance.PlayerJoinedAction, action));
         }

@@ -110,12 +110,21 @@ namespace RWF
 
         public const int MaxPlayersHardLimit = 32;
         public const int MaxTeamsHardLimit = 32;
+        public const int MaxCharactersPerClientHardLimit = 2;
+
+        public int MaxClients
+        {
+            get
+            {
+                return 8;
+            }
+        }
 
         public int MaxPlayers
         {
             get
             {
-                return 32;
+                return 16;
             }
         }
 
@@ -135,11 +144,11 @@ namespace RWF
             }
         }
 
-        public int MaxPlayerPerClient
+        public int MaxCharactersPerClient
         {
             get
             {
-                return 2;
+                return RWFMod.MaxCharactersPerClientHardLimit;
             }
         }
 
@@ -254,7 +263,7 @@ namespace RWF
             {
                 if (player.data.view.IsMine)
                 {
-                    PlayerFace playerFace = CharacterCreatorHandler.instance.selectedPlayerFaces[0];
+                    PlayerFace playerFace = CharacterCreatorHandler.instance.selectedPlayerFaces[player.GetAdditionalData().localID];
                     player.data.view.RPC("RPCA_SetFace", RpcTarget.All, new object[]
                     {
                         playerFace.eyeID,

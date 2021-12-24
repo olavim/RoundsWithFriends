@@ -67,61 +67,6 @@ namespace RWF
         }
     }
 
-    public class LobbyCharacter
-    {
-        // class to store lobby player information before actual Rounds players are created
-     
-        public static LobbyCharacter GetLobbyCharacter(int uniqueID)
-        {
-            return PhotonNetwork.CurrentRoom.Players.Values.Select(p => p.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && p.uniqueID == uniqueID).FirstOrDefault();
-        }
-        
-        public static object Deserialize(byte[] data)
-        {
-            if (PhotonNetwork.CurrentRoom == null || data == null || (int)data[5] == 1)
-            {
-                return null;
-            }
-            LobbyCharacter result = new LobbyCharacter(PhotonNetwork.CurrentRoom.Players[(int) data[0]], (int) data[1], (int)data[2])
-            {
-                teamID = (int) data[3],
-                ready = (int) data[4] == 1
-            };
-            return result;
-        }
-
-        public static byte[] Serialize(object lobbyCharacter)
-        {
-            if (lobbyCharacter == null) { return new byte[] { 0,0,0,0,0,1 }; }
-
-            LobbyCharacter c = (LobbyCharacter) lobbyCharacter;
-            return new byte[] { (byte)c.actorID, (byte)c.colorID, (byte)c.localID, (byte)c.teamID, (byte)(c.ready ? 1 : 0), 0};
-        }
-
-        public Photon.Realtime.Player networkPlayer;
-        public int uniqueID => this.actorID * RWFMod.instance.MaxPlayerPerClient + this.localID;
-        public int colorID;
-        public int teamID;
-        public bool ready = false;
-        public string NickName => this.localID == 0 ? networkPlayer.NickName : networkPlayer.NickName + $" {this.localID + 1}";
-        public int actorID => this.networkPlayer.ActorNumber;
-        public int localID;
-
-        public bool IsMine => this.actorID == PhotonNetwork.LocalPlayer.ActorNumber;
-
-        public LobbyCharacter(Photon.Realtime.Player networkPlayer, int colorID, int localID)
-        {
-            this.networkPlayer = networkPlayer;
-            this.colorID = colorID;
-            this.localID = localID;
-        }
-
-        public void SetReady(bool ready)
-        {
-            this.ready = ready;
-        }
-    }
-
     class PrivateRoomHandler : MonoBehaviourPunCallbacks
     {
         public static PrivateRoomHandler instance;
@@ -149,6 +94,10 @@ namespace RWF
         public LobbyCharacter FindLobbyCharacter(int actorID, int localID)
         {
             return this.PrivateRoomCharacters.Where(p => p.actorID == actorID && p.localID == localID).FirstOrDefault();
+        }
+        public LobbyCharacter FindLobbyCharacter(int uniqueID)
+        {
+            return this.PrivateRoomCharacters.Where(p => p.uniqueID == uniqueID).FirstOrDefault();
         }
 
         public bool IsOpen
@@ -192,7 +141,7 @@ namespace RWF
             this.readyRequests = new Queue<Tuple<int, int, bool>>();
             this.devicesToUse = new Dictionary<int, InputDevice>();
             this.lockReadyRequests = false;
-            PhotonNetwork.LocalPlayer.SetProperty("players", new LobbyCharacter[RWFMod.instance.MaxPlayerPerClient]);
+            PhotonNetwork.LocalPlayer.SetProperty("players", new LobbyCharacter[RWFMod.instance.MaxCharactersPerClient]);
 
             // necessary for VersusDisplay characters to render in the correct order
             // must be reverted to MostFront when leaving the lobby
@@ -433,7 +382,7 @@ namespace RWF
                 return;
             }
 
-            PhotonNetwork.LocalPlayer.SetProperty("players", new LobbyCharacter[RWFMod.instance.MaxPlayerPerClient]);
+            PhotonNetwork.LocalPlayer.SetProperty("players", new LobbyCharacter[RWFMod.instance.MaxCharactersPerClient]);
 
             if (RWFMod.DEBUG && PhotonNetwork.IsMasterClient)
             {
@@ -535,7 +484,7 @@ namespace RWF
                 // add a new local player to the first available slot with the next unused colorID
                 int colorID = Enumerable.Range(0, RWFMod.MaxTeamsHardLimit).Except(this.PrivateRoomCharacters.Select(p => p.colorID).Distinct()).FirstOrDefault();
 
-                int localPlayerNumber = Enumerable.Range(0, RWFMod.instance.MaxPlayerPerClient).Where(i => localCharacters[i] == null).First();
+                int localPlayerNumber = Enumerable.Range(0, RWFMod.instance.MaxCharactersPerClient).Where(i => localCharacters[i] == null).First();
 
                 localCharacters[localPlayerNumber] = new LobbyCharacter(PhotonNetwork.LocalPlayer, colorID, localPlayerNumber);
 
@@ -761,10 +710,9 @@ namespace RWF
             // return Canvas to its original position
             this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
 
-            var players = PhotonNetwork.CurrentRoom.Players.Values.ToList();
-
-            foreach (var player in this.PrivateRoomCharacters)
+            foreach (var player in this.PrivateRoomCharacters.OrderBy(p => p.teamID).ThenBy(p => p.localID))
             {
+                UnityEngine.Debug.Log("CREATE: " + player.NickName);
                 yield return this.SyncMethod(nameof(PrivateRoomHandler.CreatePlayer), player.actorID, player.actorID, player.localID);
             }
 
@@ -788,13 +736,12 @@ namespace RWF
             UIHandler.instance.ShowJoinGameText("LETS GOO!", PlayerSkinBank.GetPlayerSkinColors(1).winText);
 
             RWFMod.instance.SetSoundEnabled("PlayerAdded", false);
-            yield return PlayerAssigner.instance.CreatePlayer(this.devicesToUse[localID], false);
+            //PlayerAssigner.instance.SetFieldValue("hasCreatedLocalPlayer", false);
+            LobbyCharacter lobbyCharacter = this.FindLobbyCharacter(actorID, localID);
+            yield return PlayerAssigner.instance.CreatePlayer(lobbyCharacter, this.devicesToUse[localID]);
             RWFMod.instance.SetSoundEnabled("PlayerAdded", true);
 
-            Player newPlayer = PlayerManager.instance.players[PlayerManager.instance.players.Count() - 1];
-            LobbyCharacter lobbyCharacter = this.FindLobbyCharacter(actorID, localID);
-            newPlayer.AssignColorID(lobbyCharacter.colorID);
-            newPlayer.AssignTeamID(lobbyCharacter.teamID);
+            //Player newPlayer = PlayerManager.instance.players[PlayerManager.instance.players.Count() - 1];
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.CreatePlayerResponse), PhotonNetwork.LocalPlayer.ActorNumber);
         }

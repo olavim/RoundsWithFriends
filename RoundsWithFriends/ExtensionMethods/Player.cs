@@ -2,6 +2,8 @@
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnboundLib;
+using Photon.Pun;
+using ExitGames.Client.Photon;
 
 namespace RWF
 {
@@ -9,10 +11,16 @@ namespace RWF
     public class PlayerAdditionalData
     {
         public int colorID;
+        public int localID;
+        private int uniqueID; // this value is not meant to be read or written directly. only through PlayerExtensions.Get/SetUniqueID
+        public LobbyCharacter character;
 
         public PlayerAdditionalData()
         {
             this.colorID = -1;
+            this.localID = 0;
+            this.uniqueID = 1;
+            this.character = null;
         }
     }
     public static class PlayerExtensions
@@ -63,6 +71,37 @@ namespace RWF
                 backgroundColor = new Color(0.2223f, 0.3679f, 0.1649f, 1f),
             }
         };
+
+        public static void AssignCharacter(this Player instance, LobbyCharacter character, int playerID)
+        {
+            instance.GetAdditionalData().character = character;
+
+            PhotonNetwork.LocalPlayer.SetCharacter(character);
+
+            instance.AssignLocalID(character.localID);
+            instance.AssignUniqueID(character.uniqueID);
+            instance.AssignColorID(character.colorID);
+            instance.AssignTeamID(character.teamID);
+            instance.AssignPlayerID(playerID);
+        }
+
+        public static void AssignUniqueID(this Player instance, int uniqueID)
+        {
+            instance.GetAdditionalData().SetFieldValue("uniqueID", uniqueID);
+        }
+        public static int GetUniqueID(this Player instance)
+        {
+            // return uniqueID if it has been assigned (i.e. is negative), otherwise just return the actorID
+
+            int uniqueID = (int)instance.GetAdditionalData().GetFieldValue("uniqueID");
+
+            return uniqueID < 0 ? uniqueID : instance.data.view.ControllerActorNr;
+        }
+
+        public static void AssignLocalID(this Player instance, int localID)
+        {
+            instance.GetAdditionalData().localID = localID;
+        }
 
         public static void AssignColorID(this Player instance, int colorID)
         {

@@ -37,6 +37,11 @@ namespace RWF.Patches
     {
         static bool Prefix(CharacterSelectionMenu __instance, Player joinedPlayer)
         {
+            if (!__instance.gameObject.activeInHierarchy)
+            {
+                return false;
+            }
+
             // if the current gamemode doesn't allow duplicate colors, assign this player the first available colorID
             if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
             {

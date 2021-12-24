@@ -15,7 +15,22 @@ namespace RWF.Patches
             }
         }
     }
-
+    [HarmonyPatch(typeof(Player), "ReadTeamID")]
+    class Player_Patch_ReadTeamID
+    {
+        static bool Prefix()
+        {
+            return false;
+        }
+    }
+    [HarmonyPatch(typeof(Player), "ReadPlayerID")]
+    class Player_Patch_ReadPlayerID
+    {
+        static bool Prefix()
+        {
+            return false;
+        }
+    }
     [HarmonyPatch(typeof(Player), "AssignTeamID")]
     class Player_Patch_AssignTeamID
     {

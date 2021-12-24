@@ -175,6 +175,9 @@ namespace RWF.UI
                 if (VersusDisplay.instance.PlayersHaveBeenAdded)
                 {
                     this.playersAdded = true;
+                    // once this has been selected once, hide the text and change the bar height and offset
+                    this.text.gameObject.SetActive(false);
+                    this.setBar.SetEnabled(true);
                 }
                 else
                 {
