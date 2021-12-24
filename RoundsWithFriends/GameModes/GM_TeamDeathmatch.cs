@@ -76,8 +76,8 @@ namespace RWF.GameModes
             if (!this.teamRounds.ContainsKey(player.teamID)) { this.teamRounds.Add(player.teamID, 0); }
 		}
 
-		public void PlayerDied(Player killedPlayer, int playersAlive) {
-			if (playersAlive == 1) {
+		public void PlayerDied(Player killedPlayer, int teamsAlive) {
+			if (teamsAlive == 1) {
 				TimeHandler.instance.DoSlowDown();
 
 				if (PhotonNetwork.IsMasterClient) {

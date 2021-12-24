@@ -13,6 +13,24 @@ using RWF.Algorithms;
 
 namespace RWF.Patches
 {
+    // patch to return the correct number of TEAMS remaining
+    [Serializable]
+    [HarmonyPatch(typeof(PlayerManager), "PlayerDied")]
+    class PlayerManagerPatchPlayerDied
+    {
+        private static bool Prefix(PlayerManager __instance, Player player)
+        {
+            int num = PlayerManager.instance.players.Where(p => !p.data.dead).Select(p => p.teamID).Distinct().Count();
+
+            if ((Action<Player, int>) __instance.GetFieldValue("PlayerDiedAction") != null)
+            {
+                ((Action<Player, int>) __instance.GetFieldValue("PlayerDiedAction"))(player, num);
+            }
+            return false;
+
+        }
+    }
+
     [HarmonyPatch(typeof(PlayerManager), "GetPlayerWithActorID")]
     [HarmonyPriority(Priority.First)]
     class PlayerManager_Patch_GetPlayerWithActorID
