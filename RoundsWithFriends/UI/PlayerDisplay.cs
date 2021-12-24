@@ -186,7 +186,7 @@ namespace RWF.UI
             }
             try
             {
-                this.layout.minHeight = 2f * this.gameObject.GetComponentsInChildren<RectTransform>(false).Where(r => r != this.GetComponent<RectTransform>()).Select(r => r.sizeDelta.y).Max() + PlayerDisplay.padding;
+                this.layout.minHeight = 1.25f * this.gameObject.GetComponentsInChildren<RectTransform>(false).Where(r => r != this.GetComponent<RectTransform>()).Select(r => r.sizeDelta.y).Max() + PlayerDisplay.padding;
             }
             catch { }
         }

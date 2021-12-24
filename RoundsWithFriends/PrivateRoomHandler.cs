@@ -69,6 +69,9 @@ namespace RWF
 
     class PrivateRoomHandler : MonoBehaviourPunCallbacks
     {
+        private const int ReadyStartGameCountdown = 3;
+        private const string DefaultHeaderText = "ROUNDS WITH FRIENDS";
+
         public static PrivateRoomHandler instance;
         private static string PrevHandlerID;
         private static GameSettings PrevSettings;
@@ -79,9 +82,12 @@ namespace RWF
         private GameObject grid;
         //private GameObject readyCheckbox;
         private GameObject waiting;
+        private GameObject header;
+        private TextMeshProUGUI headerText;
         private VersusDisplay versusDisplay;
         private bool waitingForToggle;
         private bool lockReadyRequests;
+        private Coroutine countdownCoroutine;
         private Queue<Tuple<int, int, bool>> readyRequests;
         internal Dictionary<int, InputDevice> devicesToUse;
 
@@ -175,6 +181,45 @@ namespace RWF
             this.grid = new GameObject("Group");
             this.grid.transform.SetParent(mainPageGo.transform);
             this.grid.transform.localScale = Vector3.one;
+
+            this.header = new GameObject("Header");
+            this.header.transform.SetParent(this.grid.transform);
+            this.header.transform.localScale = Vector3.one;
+            //this.header.transform.localPosition += new Vector3(0, 300, 0);
+            var headerTextGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.header.transform);
+            headerTextGo.transform.localScale = Vector3.one;
+            headerTextGo.transform.localPosition = Vector3.zero;
+            var headerGoRect = this.header.AddComponent<RectTransform>();
+            var headerGoLayout = this.header.AddComponent<LayoutElement>();
+            this.headerText = headerTextGo.GetComponent<TextMeshProUGUI>();
+            this.headerText.text = "ROUNDS WITH FRIENDS";
+            this.headerText.fontSize = 80;
+            this.headerText.fontStyle = FontStyles.Bold;
+            this.headerText.enableWordWrapping = false;
+            this.headerText.overflowMode = TextOverflowModes.Overflow;
+            headerGoLayout.ignoreLayout = false;
+            headerGoLayout.minHeight = 92f;
+
+            // three different colors for the header:
+            // the ROUNDS WITH colors (66% of the time)
+            // the FRIENDS colors (33% of the time)
+            // bright white colors (1% of the time)
+            switch (UnityEngine.Random.Range(0f,1f))
+            {
+                case float n when n < 0.66f:
+                    this.SetHeaderParticles(5, new Color(0f, 0.22f, 0.5f, 1f), new Color(0.5f, 0.5f, 0f, 1f), new Color(0f, 0.5094f, 0.23f, 1f));
+                    break;
+                case float n when (n >= 0.66f && n < 0.99f):
+                    this.SetHeaderParticles(5, new Color(0.5f, 0.087f, 0f, 1f), new Color(0.25f, 0.25f, 0f, 1f), new Color(0.554f,0.3694f, 0f, 1f));
+                    break;
+                case float n when (n >= 0.99f):
+                    this.SetHeaderParticles(5, new Color(0.5f,0.5f,0.5f, 1f), new Color(1f, 1f, 1f, 1f), new Color(0.25f, 0.25f, 0.25f, 1f));
+                    break;
+                default:
+                    this.SetHeaderParticles(5, new Color(0f, 0.22f, 0.5f, 1f), new Color(0.5f, 0.5f, 0f, 1f), new Color(0f, 0.5094f, 0.23f, 1f));
+                    break;
+
+            }
 
             /*
             var playersGo = new GameObject("Players");
@@ -345,6 +390,38 @@ namespace RWF
             //readyGo.SetActive(false);
             //playersGo.SetActive(false);
         }
+
+        private void ResetHeaderText()
+        {
+            this.headerText.text = "ROUNDS WITH FRIENDS";
+            this.headerText.fontSize = 80;
+            this.headerText.fontStyle = FontStyles.Bold;
+            this.headerText.enableWordWrapping = false;
+            this.headerText.overflowMode = TextOverflowModes.Overflow;
+        }
+        private void SetHeaderText(string text, float fontSize = 80f)
+        {
+            this.headerText.text = text;
+            this.headerText.fontSize = fontSize;
+        }
+        private void SetHeaderParticles(float? size = null, Color? color = null, Color? randomAddedColor = null, Color? randomColor = null)
+        {
+            var particleSystem = this.headerText.GetComponentInChildren<GeneralParticleSystem>();
+
+            if (size != null) { particleSystem.particleSettings.size = (float)size; }
+            if (color != null) 
+            { 
+                particleSystem.particleSettings.color = (Color)color; 
+            }
+            if (randomAddedColor != null) 
+            { 
+                particleSystem.particleSettings.randomAddedColor = (Color) randomAddedColor; 
+            }
+            if (randomColor != null)
+            {
+                particleSystem.particleSettings.randomColor = (Color)randomColor;
+            }
+         }
 
         private GameObject GetText(string str)
         {
@@ -667,14 +744,14 @@ namespace RWF
             //networkPlayer.SetProperty("ready", ready);
             //networkPlayer.SetProperty("readyOrder", ready ? numReady - 1 : -1);
 
-            UnityEngine.Debug.Log($"NUMREADY: {numReady} - NUMPLAYERS: {this.NumCharacters}");
-
             if (numReady == this.NumCharacters)
             {
-                this.lockReadyRequests = true;
-
-                // Tell all clients to create their players. The game begins once players have been created.
-                this.StartCoroutine(this.StartGamePreparation());
+                this.countdownCoroutine = this.StartCoroutine(this.StartGameCountdown());
+            }
+            else if (this.countdownCoroutine != null)
+            {
+                this.StopCoroutine(this.countdownCoroutine);
+                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RPCA_DisplayCountdown), PrivateRoomHandler.DefaultHeaderText);
             }
 
             /*
@@ -696,6 +773,36 @@ namespace RWF
 
         }
 
+        private IEnumerator StartGameCountdown()
+        {
+            // start a countdown, during which players can unready to cancel
+
+            for (int t = PrivateRoomHandler.ReadyStartGameCountdown; t >= 0; t--)
+            {
+                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RPCA_DisplayCountdown), t > 0 ? t.ToString() : "GO!");
+                yield return new WaitForSecondsRealtime(1f);
+            }
+
+            int numReady = this.PrivateRoomCharacters.Where(p => p.ready).Count();
+            if (numReady != this.NumCharacters) 
+            {
+                this.ResetHeaderText();
+                yield break; 
+            }
+
+            this.lockReadyRequests = true;
+
+            // Tell all clients to create their players. The game begins once players have been created.
+            this.StartCoroutine(this.StartGamePreparation());
+            yield break;
+        }
+        [UnboundRPC]
+        private static void RPCA_DisplayCountdown(string text)
+        {
+            SoundPlayerStatic.Instance.PlayButtonClick();
+            PrivateRoomHandler.instance.SetHeaderText(text);
+        }
+
         [UnboundRPC]
         private static void RPCA_ReadyPlayer(LobbyCharacter character, bool ready)
         {
@@ -710,9 +817,8 @@ namespace RWF
             // return Canvas to its original position
             this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
 
-            foreach (var player in this.PrivateRoomCharacters.OrderBy(p => p.teamID).ThenBy(p => p.localID))
+            foreach (var player in this.PrivateRoomCharacters.OrderBy(p => p.teamID).ThenBy(p => p.uniqueID))
             {
-                UnityEngine.Debug.Log("CREATE: " + player.NickName);
                 yield return this.SyncMethod(nameof(PrivateRoomHandler.CreatePlayer), player.actorID, player.actorID, player.localID);
             }
 
@@ -758,6 +864,8 @@ namespace RWF
         [UnboundRPC]
         public static void StartGame()
         {
+            SoundPlayerStatic.Instance.PlayMatchFound();
+
             var instance = PrivateRoomHandler.instance;
             instance.StopAllCoroutines();
             GameModeManager.CurrentHandler.StartGame();
@@ -766,7 +874,6 @@ namespace RWF
             {
                 PrivateRoomHandler.SaveSettings();
             }
-
             //PhotonNetwork.LocalPlayer.SetProperty("ready", false);
             //PhotonNetwork.LocalPlayer.SetProperty("readyOrder", -1);
 
