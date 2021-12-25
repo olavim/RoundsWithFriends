@@ -61,6 +61,9 @@
     <Reference Include="InControl">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\InControl.dll</HintPath>
     </Reference>
+    <Reference Include="MMHOOK_Assembly-CSharp">
+      <HintPath>..\Assemblies\MMHOOK_Assembly-CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="Photon3Unity3D">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\Photon3Unity3D.dll</HintPath>
     </Reference>

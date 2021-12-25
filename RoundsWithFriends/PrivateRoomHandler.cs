@@ -149,10 +149,6 @@ namespace RWF
             this.lockReadyRequests = false;
             PhotonNetwork.LocalPlayer.SetProperty("players", new LobbyCharacter[RWFMod.instance.MaxCharactersPerClient]);
 
-            // necessary for VersusDisplay characters to render in the correct order
-            // must be reverted to MostFront when leaving the lobby
-            this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "UI";
-
             base.OnEnable();
         }
 
@@ -162,10 +158,6 @@ namespace RWF
             this.readyRequests = new Queue<Tuple<int, int, bool>>();
             this.devicesToUse = new Dictionary<int, InputDevice>();
             this.lockReadyRequests = false;
-
-            // necessary for VersusDisplay characters to render in the correct order
-            // must be reverted to MostFront when leaving the lobby
-            this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "UI";
         }
 
         private void BuildUI()
@@ -484,6 +476,10 @@ namespace RWF
             {
                 return;
             }
+
+            // necessary for VersusDisplay characters to render in the correct order
+            // must be reverted to MostFront when leaving the lobby
+            this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "UI";
 
             PhotonNetwork.LocalPlayer.SetProperty("players", new LobbyCharacter[RWFMod.instance.MaxCharactersPerClient]);
 
@@ -915,6 +911,10 @@ namespace RWF
         {
             this.ExecuteAfterFrames(1, () =>
             {
+                // necessary for VersusDisplay characters to render in the correct order
+                // must be reverted to MostFront when leaving the lobby
+                this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "UI";
+
                 ListMenu.instance.OpenPage(this.MainPage);
                 this.MainPage.Open();
                 ArtHandler.instance.NextArt();

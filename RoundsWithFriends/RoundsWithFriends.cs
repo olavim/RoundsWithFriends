@@ -14,6 +14,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Photon.Pun.UtilityScripts;
 using ExitGames.Client.Photon;
+using RWF.UI;
+using On;
 
 namespace RWF
 {
@@ -56,7 +58,7 @@ namespace RWF
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "1.3.9";
+        public const string Version = "2.0.0";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
@@ -221,6 +223,18 @@ namespace RWF
                 PhotonPeer.RegisterType(typeof(DebugOptions), 77, DebugOptions.Serialize, DebugOptions.Deserialize);
             }
             PhotonPeer.RegisterType(typeof(LobbyCharacter), 78, LobbyCharacter.Serialize, LobbyCharacter.Deserialize);
+
+            // add beta text
+            BetaTextHandler.AddBetaText(true);
+
+            On.MainMenuHandler.Awake += (orig, self) =>
+            {
+                orig(self);
+
+                // add beta text
+                BetaTextHandler.AddBetaText(true);
+            };
+
         }
 
         public void Update()
