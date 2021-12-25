@@ -6,13 +6,18 @@ using System.Reflection.Emit;
 
 namespace RWF.Patches
 {
-    [HarmonyPatch(typeof(Player), "Start")]
-    class Player_Patch_Start
+    [HarmonyPatch(typeof(Player), "AssignPlayerID")]
+    class Player_Patch_AssignPlayerID
     {
-        static void Postfix(Player __instance) {
-            if (__instance.data.view.IsMine) {
-
+        // postfix to ensure sprite layer is set correctly on remote clients
+        static void Postfix(Player __instance) 
+        {
+            if (__instance?.gameObject?.GetComponentInChildren<SetPlayerSpriteLayer>(true) != null)
+            {
+                UnityEngine.Debug.Log("SET SPRITE LAYER: " + (__instance.playerID + 1));
+                __instance.gameObject.GetComponentInChildren<SetPlayerSpriteLayer>(true).InvokeMethod("Start");
             }
+
         }
     }
     [HarmonyPatch(typeof(Player), "ReadTeamID")]
