@@ -270,23 +270,27 @@ namespace RWF.Patches
 
                 if (colorChanged)
                 {
-                    int newColorID = __instance.currentPlayer.colorID() + colorIDDelta;
+                    int newColorID = Math.mod((__instance.currentPlayer.colorID() + colorIDDelta), RWFMod.MaxColorsHardLimit);
+                    int orig = __instance.currentPlayer.colorID();
 
                     // wow this syntax is concerning
                     if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
                     {
-                        // teams not allowed, continue to next colorID() - if the last (or first) colorID() is passed, then just fail to change team
-                        while (PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID) && newColorID < RWFMod.instance.MaxTeams && newColorID >= 0)
+                        // teams not allowed, continue to next colorID()
+                        while (PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID) && newColorID != orig)
                         {
-                            newColorID += colorIDDelta;
+                            newColorID = Math.mod((newColorID + colorIDDelta), RWFMod.MaxColorsHardLimit);
                         }
 
                     }
                     
-                    bool fail = newColorID >= RWFMod.MaxTeamsHardLimit || newColorID < 0 || PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID);
+                    bool fail = newColorID == orig || newColorID >= RWFMod.MaxColorsHardLimit || newColorID < 0 || (!(bool)allowTeamsObj && PlayerManager.instance.players.Select(p => p.colorID()).Contains(newColorID));
 
                     if (!fail)
                     {
+                        // update player preferences
+                        PlayerPrefs.SetInt(RWFMod.GetCustomPropertyKey("PreferredColor" + __instance.currentPlayer.playerID.ToString()), newColorID);
+
                         __instance.currentPlayer.AssignColorID(newColorID);
                         __instance.currentPlayer.SetColors();
                         for (int i = 0; i < ___buttons.Length; i++)
@@ -335,7 +339,7 @@ namespace RWF.Patches
                 }
 
             }
-            __instance.currentlySelectedFace = Mathf.Clamp(__instance.currentlySelectedFace, 0, ___buttons.Length - 1);
+            __instance.currentlySelectedFace = Math.mod(__instance.currentlySelectedFace, ___buttons.Length);
 
             return false;
         }

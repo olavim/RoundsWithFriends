@@ -67,6 +67,7 @@ namespace RWF.UI
 
             if (this.currentlySelectedFace == this.characterSelectionInstance.currentlySelectedFace) { return; }
 
+            /*
             if (this.characterSelectionInstance.currentlySelectedFace == 0 && this.direction == CharacterSelectButton.LeftRight.Left)
             {
                 this.text.color = CharacterSelectButton.disabledColor;
@@ -78,7 +79,8 @@ namespace RWF.UI
             else
             {
                 this.text.color = CharacterSelectButton.enabledColor;
-            }
+            }*/
+            this.text.color = CharacterSelectButton.enabledColor;
 
 
             if (this.currentlySelectedFace < this.characterSelectionInstance.currentlySelectedFace && this.direction == CharacterSelectButton.LeftRight.Right)

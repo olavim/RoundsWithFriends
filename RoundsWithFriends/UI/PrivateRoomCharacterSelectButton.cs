@@ -66,7 +66,7 @@ namespace RWF.UI
             }
 
             if (this.currentlySelectedFace == this.characterSelectionInstance.currentlySelectedFace) { return; }
-
+            /*
             if (this.characterSelectionInstance.currentlySelectedFace == 0 && this.direction == PrivateRoomCharacterSelectButton.LeftRight.Left)
             {
                 this.text.color = PrivateRoomCharacterSelectButton.disabledColor;
@@ -78,7 +78,8 @@ namespace RWF.UI
             else
             {
                 this.text.color = PrivateRoomCharacterSelectButton.enabledColor;
-            }
+            }*/
+            this.text.color = PrivateRoomCharacterSelectButton.enabledColor;
 
 
             if (this.currentlySelectedFace < this.characterSelectionInstance.currentlySelectedFace && this.direction == PrivateRoomCharacterSelectButton.LeftRight.Right)

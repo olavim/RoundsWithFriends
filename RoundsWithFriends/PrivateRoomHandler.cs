@@ -350,6 +350,7 @@ namespace RWF
                     this.ExecuteAfterGameModeInitialized(nextGameMode, () =>
                     {
                         this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
+                        this.HandleTeamRules();
                     });
                 }
             });
@@ -369,7 +370,6 @@ namespace RWF
                 // return Canvas to its original position
                 this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
                 NetworkConnectionHandler.instance.NetworkRestart();
-                UnityEngine.Debug.Log("NETWORK RESTART");
             });
 
             var backListButton = backGo.AddComponent<ListMenuButton>();
@@ -389,6 +389,32 @@ namespace RWF
 
             //readyGo.SetActive(false);
             //playersGo.SetActive(false);
+        }
+
+        private void HandleTeamRules()
+        {
+            // prevent players from being on the same team if the new gamemode prohibits it
+            if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
+            {
+                // teams not allowed, search through players for any players on the same team and assign them the next available colorID
+                foreach (LobbyCharacter character in PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null))
+                {
+                    int orig = character.colorID;
+                    int newColorID = character.colorID;
+                    while (PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && p.uniqueID != character.uniqueID && p.colorID == newColorID).Any())
+                    {
+                        newColorID = Math.mod((newColorID + 1), RWFMod.MaxColorsHardLimit);
+                        if (newColorID == orig)
+                        {
+                            // make sure its impossible to get stuck in an infinite loop here,
+                            // even though prior logic limiting the number of players should prevent this
+                            break;
+                        }
+                    }
+                    this.versusDisplay.PlayerSelectorGO(character.uniqueID).GetComponent<PhotonView>().RPC("RPCA_ChangeTeam", RpcTarget.All, newColorID);
+                }
+
+            }
         }
 
         private void ResetHeaderText()
@@ -550,18 +576,22 @@ namespace RWF
             bool newDevice = !this.devicesToUse.Where(kv => kv.Value == deviceReadied).Any();
 
             // handle the case of a new device
-            if (newDevice && !localCharacters.Where(p => p == null).Any())
+            if (newDevice && !(localCharacters.Where(p => p != null).Count() < RWFMod.instance.MaxCharactersPerClient))
             {
                 // there is no room for another local player
                 yield break;
             }
             else if (newDevice)
             {
-                UnityEngine.Debug.Log("NEW DEVICE");
-                // add a new local player to the first available slot with the next unused colorID
-                int colorID = Enumerable.Range(0, RWFMod.MaxTeamsHardLimit).Except(this.PrivateRoomCharacters.Select(p => p.colorID).Distinct()).FirstOrDefault();
-
                 int localPlayerNumber = Enumerable.Range(0, RWFMod.instance.MaxCharactersPerClient).Where(i => localCharacters[i] == null).First();
+                
+                // add a new local player to the first available slot with either their preferred color if its available or the next unused colorID
+                // preferred colors are NOT set in the online lobby, but instead in the local lobby - that way they don't change every match a player doesn't get their preferred color
+                int colorID = PlayerPrefs.GetInt(RWFMod.GetCustomPropertyKey("PreferredColor" + localPlayerNumber.ToString()));
+                if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj && this.PrivateRoomCharacters.Select(p => p.colorID).Distinct().Contains(colorID))
+                {
+                    colorID = Enumerable.Range(0, RWFMod.MaxColorsHardLimit).Except(this.PrivateRoomCharacters.Select(p => p.colorID).Distinct()).FirstOrDefault();
+                }
 
                 localCharacters[localPlayerNumber] = new LobbyCharacter(PhotonNetwork.LocalPlayer, colorID, localPlayerNumber);
 
@@ -577,7 +607,6 @@ namespace RWF
             }
             else if (!doNotReady)
             {
-                UnityEngine.Debug.Log("READY PLAYER");
                 this.waitingForToggle = true;
 
                 // the player already exists
@@ -744,7 +773,8 @@ namespace RWF
             //networkPlayer.SetProperty("ready", ready);
             //networkPlayer.SetProperty("readyOrder", ready ? numReady - 1 : -1);
 
-            if (numReady == this.NumCharacters)
+            // to start the game, everyone must be ready, there must be at least two clients, and there must be at least two teams
+            if (numReady == this.NumCharacters && PhotonNetwork.CurrentRoom.PlayerCount > 1 && this.PrivateRoomCharacters.Select(p => p.colorID).Distinct().Count() > 1)
             {
                 this.countdownCoroutine = this.StartCoroutine(this.StartGameCountdown());
             }

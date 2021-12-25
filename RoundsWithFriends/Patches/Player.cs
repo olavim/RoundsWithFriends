@@ -14,7 +14,6 @@ namespace RWF.Patches
         {
             if (__instance?.gameObject?.GetComponentInChildren<SetPlayerSpriteLayer>(true) != null)
             {
-                UnityEngine.Debug.Log("SET SPRITE LAYER: " + (__instance.playerID + 1));
                 __instance.gameObject.GetComponentInChildren<SetPlayerSpriteLayer>(true).InvokeMethod("Start");
             }
 

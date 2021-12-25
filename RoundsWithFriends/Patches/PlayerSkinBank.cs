@@ -358,7 +358,7 @@ namespace RWF.Patches
         public static PlayerSkin GetPlayerSkinColors(int colorID)
         {
             // if somehow the requested id is greater than the total number of extra skins, just loop it
-            colorID = colorID % ExtraPlayerSkins.numberOfSkins;
+            colorID = Math.mod(colorID, ExtraPlayerSkins.numberOfSkins);
 
             // if the skin gameobject hasn't been made yet, make it
             if (ExtraPlayerSkins.skins[colorID] == null)

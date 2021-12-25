@@ -42,11 +42,13 @@ namespace RWF.Patches
                 return false;
             }
 
-            // if the current gamemode doesn't allow duplicate colors, assign this player the first available colorID
-            if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
+            // set the players colorID to their preferred color if its available or the next unused colorID
+            int colorID = PlayerPrefs.GetInt(RWFMod.GetCustomPropertyKey("PreferredColor" + joinedPlayer.playerID.ToString()));
+            if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj && PlayerManager.instance.players.Where(p => p.playerID != joinedPlayer.playerID).Select(p => p.colorID()).Distinct().Contains(colorID))
             {
-                joinedPlayer.AssignColorID(Enumerable.Range(0, RWFMod.MaxTeamsHardLimit).Except(PlayerManager.instance.players.Where(p => p.playerID != joinedPlayer.playerID).Select(p => p.colorID())).Distinct().First());
+                colorID = Enumerable.Range(0, RWFMod.MaxColorsHardLimit).Except(PlayerManager.instance.players.Where(p => p.playerID != joinedPlayer.playerID).Select(p => p.colorID())).Distinct().First();
             }
+            joinedPlayer.AssignColorID(colorID);
 
             __instance.transform.GetChild(0).GetComponent<CharacterSelectionMenuLayoutGroup>().PlayerJoined(joinedPlayer);
             __instance.transform.GetChild(0).GetChild(joinedPlayer.playerID).GetComponent<CharacterSelectionInstance>().StartPicking(joinedPlayer);

@@ -259,7 +259,6 @@ namespace RWF
                         this.teamToColor[player.teamID] = player.colorID;
                         nextTeamID++;
                     }
-                    UnityEngine.Debug.Log($"Player: {player.NickName}, TEAMID: {player.teamID}");
 
                     GameObject teamGroupGO = this.TeamGroupGO(player.teamID, player.colorID);
                     teamGroupGO.SetActive(true);

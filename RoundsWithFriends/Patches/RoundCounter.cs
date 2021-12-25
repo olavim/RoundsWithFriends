@@ -88,7 +88,7 @@ namespace RWF.Patches
             var deltaY = roundCountBlue.transform.position.y - roundCountOrange.transform.position.y;
             var localDeltaY = roundCountBlue.transform.localPosition.y - roundCountOrange.transform.localPosition.y;
 
-            // This postfix just adds handling for more than two teams, so we skip the first two
+            // This postfix just adds handling for more than two teams, so we skip instantiating the first two
             for (int i = 0; i < numTeams; i++) {
                 GameObject roundCountGo = null;
 

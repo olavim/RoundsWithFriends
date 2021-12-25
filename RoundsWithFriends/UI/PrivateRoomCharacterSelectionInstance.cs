@@ -178,6 +178,13 @@ namespace RWF.UI
                 // update colors
                 this.buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = ExtraPlayerSkins.GetPlayerSkinColors(this.currentPlayer.colorID).color;
 
+                if (this.currentPlayer.IsMine)
+                {
+                    // set "playerID" so that preferences will be updated when changed
+                    this.buttons[i].GetComponentInChildren<CharacterCreatorPortrait>().playerId = this.currentPlayer.localID;
+                }
+
+
             }
 
             if (this.transform.GetChild(0).Find("CharacterSelectButtons") != null)
@@ -216,7 +223,7 @@ namespace RWF.UI
             this.buttons[this.currentlySelectedFace].transform.GetChild(4).gameObject.SetActive(true);
             this.buttons[this.currentlySelectedFace].gameObject.SetActive(true);
             this.buttons[this.currentlySelectedFace].GetComponent<PrivateRoomSimulatedSelection>().Select();
-            this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke();
+            if (this.currentPlayer.IsMine) { this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke(); }
             this.buttons[this.currentlySelectedFace].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
 
             this.StartCoroutine(this.FinishSetup());
@@ -226,14 +233,13 @@ namespace RWF.UI
             yield return new WaitUntil(() => this.buttons[this.currentlySelectedFace].gameObject.activeInHierarchy);
             yield return new WaitForSecondsRealtime(0.1f);
             this.buttons[this.currentlySelectedFace].GetComponent<PrivateRoomSimulatedSelection>().Select();
-            this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke();
+            if (this.currentPlayer.IsMine) { this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke(); }
             this.buttons[this.currentlySelectedFace].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
 
             if (this.currentPlayer.ready)
             {
                 this.RPCA_ReadyUp(this.currentPlayer.ready);
             }
-
             yield break;
         }
         public void ReadyUp(bool ready)
@@ -302,7 +308,7 @@ namespace RWF.UI
                 this.currentButton.transform.GetChild(4).gameObject.SetActive(true);
                 this.currentButton.gameObject.SetActive(true);
                 this.currentButton.GetComponent<PrivateRoomSimulatedSelection>().Select();
-                this.currentButton.GetComponent<Button>().onClick.Invoke();
+                if (this.currentPlayer.IsMine) { this.currentButton.GetComponent<Button>().onClick.Invoke(); }
                 this.currentButton.transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
             }
             this.counter += Time.deltaTime;
@@ -340,7 +346,7 @@ namespace RWF.UI
 
                 this.counter = 0f;
             }
-            this.currentlySelectedFace = Mathf.Clamp(this.currentlySelectedFace, 0, this.buttons.Length - 1);
+            this.currentlySelectedFace = Math.mod(this.currentlySelectedFace, this.buttons.Length);
             if (this.currentlySelectedFace != previouslySelectedFace)
             {
                 this.currentPlayer.faceID = this.currentlySelectedFace;
@@ -418,19 +424,26 @@ namespace RWF.UI
             // this is only sent to the host client
 
             // ask the host if the team can be changed in the direction specified
-            int newColorID = this.currentPlayer.colorID + colorIDDelta;
+            int newColorID = Math.mod((this.currentPlayer.colorID + colorIDDelta), RWFMod.MaxColorsHardLimit);
+            int orig = this.currentPlayer.colorID;
 
             // wow this syntax is concerning
             if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
             {
-                // teams not allowed, continue to next colorID() - if the last (or first) colorID() is passed, then just fail to change team
-                while (PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && p.uniqueID != this.currentPlayer.uniqueID && p.colorID == newColorID).Any() && newColorID < RWFMod.instance.MaxTeams && newColorID >= 0)
+                // teams not allowed, continue to next colorID
+                while (PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && p.uniqueID != this.currentPlayer.uniqueID && p.colorID == newColorID).Any() && newColorID < RWFMod.MaxColorsHardLimit && newColorID >= 0)
                 {
-                    newColorID += colorIDDelta;
+                    newColorID = Math.mod((newColorID + colorIDDelta), RWFMod.MaxColorsHardLimit);
+                    if (newColorID == orig)
+                    {
+                        // make sure its impossible to get stuck in an infinite loop here,
+                        // even though prior logic limiting the number of players should prevent this
+                        break;
+                    }
                 }
             }
 
-            bool fail = newColorID >= RWFMod.MaxTeamsHardLimit || newColorID < 0;
+            bool fail = newColorID == orig || newColorID >= RWFMod.MaxColorsHardLimit || newColorID < 0;
 
             if (!fail)
             {
