@@ -412,6 +412,8 @@ namespace RWF.UI
         [PunRPC]
         private void RPCH_RequestChangeTeam(int colorIDDelta)
         {
+            if (colorIDDelta == 0) { return; }
+
             // RPCH -> RPC(Host)
             // this is only sent to the host client
 
