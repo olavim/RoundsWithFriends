@@ -863,7 +863,7 @@ namespace RWF
         public static void StartGame()
         {
             // return Canvas to its original position
-            this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
+            PrivateRoomHandler.instance.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
 
             SoundPlayerStatic.Instance.PlayMatchFound();
 
