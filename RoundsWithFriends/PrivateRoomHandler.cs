@@ -814,8 +814,6 @@ namespace RWF
 
         private IEnumerator StartGamePreparation()
         {
-            // return Canvas to its original position
-            this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
 
             foreach (var player in this.PrivateRoomCharacters.OrderBy(p => p.teamID).ThenBy(p => p.uniqueID))
             {
@@ -864,6 +862,9 @@ namespace RWF
         [UnboundRPC]
         public static void StartGame()
         {
+            // return Canvas to its original position
+            this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
+
             SoundPlayerStatic.Instance.PlayMatchFound();
 
             var instance = PrivateRoomHandler.instance;
