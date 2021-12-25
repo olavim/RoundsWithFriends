@@ -10,6 +10,7 @@ using UnboundLib;
 using System;
 using System.Reflection.Emit;
 using RWF.Algorithms;
+using UnboundLib.Networking;
 
 namespace RWF.Patches
 {
@@ -238,7 +239,11 @@ namespace RWF.Patches
     {
         static bool Prefix(PlayerManager __instance, SpawnPoint[] spawnPoints)
         {
-            __instance.StartCoroutine(PlayerManager_Patch_MovePlayers.WaitForMapToLoad(__instance, spawnPoints));
+            // only calculate spawn positions on the host
+            if (PhotonNetwork.IsMasterClient)
+            {
+                __instance.StartCoroutine(PlayerManager_Patch_MovePlayers.WaitForMapToLoad(__instance, spawnPoints));
+            }
             return false;
         }
         static bool MapHasValidGround(Map map)
@@ -267,17 +272,26 @@ namespace RWF.Patches
             }
 
             var spawnDictionary = GeneralizedSpawnPositions.GetSpawnDictionary(__instance.players, spawnPoints);
+            var serializableSpawnDictionary = PlayerManager.instance.players.Select(p => spawnDictionary[p]).ToArray();
 
-            for (int i = 0; i < __instance.players.Count; i++)
+            // send the spawn dictionary to all clients as a vector2 array where the position is the playerID
+            NetworkingManager.RPC(typeof(PlayerManager_Patch_MovePlayers), nameof(PlayerManager_Patch_MovePlayers.RPCA_MovePlayers), serializableSpawnDictionary);
+
+            yield break;
+        }
+        [UnboundRPC]
+        private static void RPCA_MovePlayers(Vector2[] spawnDictionary)
+        {
+            for (int i = 0; i < PlayerManager.instance.players.Count; i++)
             {
 
-                __instance.StartCoroutine((IEnumerator) typeof(PlayerManager).InvokeMember("Move",
+                PlayerManager.instance.StartCoroutine((IEnumerator) typeof(PlayerManager).InvokeMember("Move",
                     BindingFlags.Instance | BindingFlags.InvokeMethod |
-                    BindingFlags.NonPublic, null, __instance, new object[] { __instance.players[i].data.playerVel, (Vector3) spawnDictionary[__instance.players[i]] }));
+                    BindingFlags.NonPublic, null, PlayerManager.instance, new object[] { PlayerManager.instance.players[i].data.playerVel, (Vector3) spawnDictionary[PlayerManager.instance.players[i].playerID] }));
 
-                int j = i % __instance.soundCharacterSpawn.Length;
+                int j = i % PlayerManager.instance.soundCharacterSpawn.Length;
 
-                SoundManager.Instance.Play(__instance.soundCharacterSpawn[j], __instance.players[i].transform);
+                SoundManager.Instance.Play(PlayerManager.instance.soundCharacterSpawn[j], PlayerManager.instance.players[i].transform);
             }
         }
     }
