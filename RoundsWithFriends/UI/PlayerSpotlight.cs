@@ -11,14 +11,33 @@ namespace RWF.UI
 {
     static class PlayerSpotlight
     {
-        internal static float SpotlightSizeMult = 25f;
+        internal static float SpotlightSizeMult = 1f;
 
         private static bool fadeInProgress = false;
+
+        private const int layer = 31;
 
         private const float MaxShadowOpacity = 1f;
         private const float DefaultFadeInTime = 0.25f;
         private const float DefaultFadeOutTime = 1f;
         private const float DefaultFadeOutDelay = 1f;
+
+        private static GameObject _Cam = null;
+
+        public static GameObject Cam
+        {
+            get
+            {
+                if (PlayerSpotlight._Cam != null) { return PlayerSpotlight._Cam; }
+
+                PlayerSpotlight._Cam = new GameObject("SpotlightCam", typeof(Camera));
+                PlayerSpotlight._Cam.GetComponent<Camera>().CopyFrom(MainCam.instance.cam);
+                PlayerSpotlight._Cam.GetComponent<Camera>().depth = 4;
+                PlayerSpotlight._Cam.GetComponent<Camera>().cullingMask = (1 << PlayerSpotlight.layer);
+
+                return PlayerSpotlight._Cam;
+            }
+        }
 
         private static GameObject _Group = null;
 
@@ -29,11 +48,10 @@ namespace RWF.UI
                 if (PlayerSpotlight._Group != null) { return PlayerSpotlight._Group; }
 
                 PlayerSpotlight._Group = new GameObject("SpotlightGroup", typeof(SortingGroup));
-                PlayerSpotlight._Group.transform.SetParent(UnityEngine.GameObject.Find("Game/UI/UI_Game/Canvas").transform);
                 PlayerSpotlight._Group.SetActive(true);
                 PlayerSpotlight._Group.transform.localScale = Vector3.one;
-                PlayerSpotlight._Group.GetComponent<SortingGroup>().sortingLayerName = "MapParticle";
                 PlayerSpotlight._Group.GetComponent<SortingGroup>().sortingOrder = 10;
+                PlayerSpotlight._Group.layer = PlayerSpotlight.layer;
 
                 return PlayerSpotlight._Group;
             }
@@ -48,7 +66,7 @@ namespace RWF.UI
             {
                 if (PlayerSpotlight._BG != null) { return PlayerSpotlight._BG; }
 
-                GameObject bg = UnityEngine.GameObject.Find("Game/UI/UI_Game/Canvas/EscapeMenu/bg");
+                //GameObject bg = UnityEngine.GameObject.Find("Game/UI/UI_Game/Canvas/EscapeMenu/bg");
                 PlayerSpotlight._BG = new GameObject("SpotlightShadow", typeof(SpriteRenderer));
                 PlayerSpotlight._BG.transform.SetParent(PlayerSpotlight._Group.transform);
                 PlayerSpotlight._BG.SetActive(false);
@@ -57,7 +75,7 @@ namespace RWF.UI
                 PlayerSpotlight._BG.GetComponent<SpriteRenderer>().color = Color.black;//bg.GetComponent<Graphic>().color;
                 PlayerSpotlight._BG.GetComponent<SpriteRenderer>().sortingOrder = 0;
                 PlayerSpotlight._BG.GetComponent<SpriteRenderer>().maskInteraction = SpriteMaskInteraction.VisibleOutsideMask;
-                PlayerSpotlight._BG.GetComponent<SpriteRenderer>().sortingLayerName = "MapParticle";
+                PlayerSpotlight._BG.layer = PlayerSpotlight.layer;
 
                 return PlayerSpotlight._BG;
             }
@@ -74,12 +92,12 @@ namespace RWF.UI
                 GameObject portrait = characterSelect.GetComponentInChildren<CharacterCreatorPortrait>(true).gameObject;
                 GameObject circle = portrait.transform.GetChild(2).GetChild(0).gameObject;
 
-                PlayerSpotlight._Spot = new GameObject("Spotlight", typeof(SpriteMask), typeof(SpriteRenderer));
+                PlayerSpotlight._Spot = new GameObject("Spotlight", typeof(SpriteMask));
                 GameObject.DontDestroyOnLoad(PlayerSpotlight._Spot);
 
                 PlayerSpotlight._Spot.GetOrAddComponent<SpriteMask>().sprite = circle.GetComponent<SpriteRenderer>().sprite;
                 PlayerSpotlight._Spot.GetOrAddComponent<SpriteMask>().sortingOrder = 1;
-                PlayerSpotlight._Spot.GetOrAddComponent<SpriteMask>().sortingLayerName = "MapParticle";
+                PlayerSpotlight._Spot.layer = PlayerSpotlight.layer;
                 PlayerSpotlight._Spot.SetActive(false);
 
                 return PlayerSpotlight._Spot;
@@ -140,6 +158,8 @@ namespace RWF.UI
 
         public static void AddSpotToPlayer(Player player)
         {
+            // get the camera to make sure the object is made
+            GameObject _ = PlayerSpotlight.Cam;
             GameObject Group = PlayerSpotlight.Group;
             GameObject spotlight = GameObject.Instantiate(PlayerSpotlight.Spot, Group.transform);
             spotlight.GetOrAddComponent<FollowPlayer>().SetPlayer(player);
@@ -172,6 +192,10 @@ namespace RWF.UI
         }
         void Update()
         {
+            if (this.player == null)
+            {
+                GameObject.Destroy(this);
+            }
             this.transform.position = this.player.gameObject.transform.position;
             // scale with player size
             this.transform.localScale = (this.player.transform.localScale.x / 1.25f) * PlayerSpotlight.SpotlightSizeMult * Vector3.one;
