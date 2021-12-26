@@ -11,6 +11,7 @@ using System.Collections;
 using TMPro;
 using RWF.UI;
 using UnboundLib.GameModes;
+using Photon.Pun;
 
 namespace RWF.Patches
 {
@@ -37,7 +38,7 @@ namespace RWF.Patches
     {
         static bool Prefix(CharacterSelectionMenu __instance, Player joinedPlayer)
         {
-            if (!__instance.gameObject.activeInHierarchy)
+            if (!__instance.gameObject.activeInHierarchy || !PhotonNetwork.OfflineMode)
             {
                 return false;
             }
