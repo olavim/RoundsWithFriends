@@ -258,12 +258,12 @@ namespace RWF.GameModes
 
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
-            /*
+            
 			for (int i = 4; i >= 1; i--) {
 				UIHandler.instance.DisplayRoundStartText($"{i}");
 				SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_A_Ball_Shrink_Go_To_Left_Corner, this.transform);
 				yield return new WaitForSeconds(0.5f);
-			}*/
+			}
 
 			SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
 			UIHandler.instance.DisplayRoundStartText("FIGHT");
@@ -290,13 +290,13 @@ namespace RWF.GameModes
 
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
-            /*
+            
 			for (int i = 4; i >= 1; i--)
 			{
 				UIHandler.instance.DisplayRoundStartText($"{i}");
 				SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_A_Ball_Shrink_Go_To_Left_Corner, this.transform);
 				yield return new WaitForSeconds(0.5f);
-			}*/
+			}
 
 			SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
 			UIHandler.instance.DisplayRoundStartText("FIGHT");

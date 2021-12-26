@@ -209,6 +209,7 @@ namespace RWF
             GameModeManager.AddHook(GameModeHooks.HookInitEnd, this.OnGameModeInitialized);
             GameModeManager.AddHook(GameModeHooks.HookGameStart, this.UnsetFaces);
             GameModeManager.AddHook(GameModeHooks.HookPickStart, this.SetPlayerFaces);
+            GameModeManager.AddHook(GameModeHooks.HookBattleStart, PlayerSpotlight.BattleStartFailsafe);
 
             this.gameObject.AddComponent<RoundEndHandler>();
 

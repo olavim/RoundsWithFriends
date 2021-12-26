@@ -3,9 +3,21 @@ using HarmonyLib;
 using UnboundLib;
 using UnityEngine;
 using System.Reflection.Emit;
+using RWF.UI;
 
 namespace RWF.Patches
 {
+    [HarmonyPatch(typeof(Player), "Start")]
+    class Player_Patch_Start
+    {
+        static void Postfix(Player __instance)
+        {
+            if (__instance.data.view.IsMine)
+            {
+                PlayerSpotlight.AddSpotToPlayer(__instance);
+            }
+        }
+    }
     [HarmonyPatch(typeof(Player), "AssignPlayerID")]
     class Player_Patch_AssignPlayerID
     {
