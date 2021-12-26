@@ -132,7 +132,7 @@ namespace RWF.UI
             this.playersAdded = true;
 
             // disable all other menu items in the same list
-            foreach (ListMenuButton listMenuButton in this.transform.parent.gameObject.GetComponentsInChildren<ListMenuButton>(true).Where(lm => lm != this.menuButton))
+            foreach (ListMenuButton listMenuButton in this.transform.parent.gameObject.GetComponentsInChildren<ListMenuButton>(true).Where(lm => lm != this.menuButton && lm.GetComponent<CharacterCreatorPortrait>() == null))
             {
                 listMenuButton.enabled = false;
                 listMenuButton.GetComponent<Button>().enabled = false;
@@ -157,7 +157,7 @@ namespace RWF.UI
             PlayerDisplay.Particles.Play();
 
             // reenable menu inputs
-            foreach (ListMenuButton listMenuButton in this.transform.parent.gameObject.GetComponentsInChildren<ListMenuButton>(true).Where(lm => lm != this.menuButton))
+            foreach (ListMenuButton listMenuButton in this.transform.parent.gameObject.GetComponentsInChildren<ListMenuButton>(true).Where(lm => lm != this.menuButton && lm.GetComponent<CharacterCreatorPortrait>() == null))
             {
                 listMenuButton.enabled = true;
                 listMenuButton.GetComponent<Button>().enabled = true;
