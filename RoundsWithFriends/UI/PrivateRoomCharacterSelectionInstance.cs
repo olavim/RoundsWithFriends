@@ -130,6 +130,7 @@ namespace RWF.UI
             else
             {
                 this.view.RPC(nameof(RPCS_RequestSelectedFace), this.currentPlayer.networkPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
+                this.RPCA_ReadyUp(this.currentPlayer.ready);
             }
             try
             {
