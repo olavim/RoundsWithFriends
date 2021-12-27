@@ -19,31 +19,17 @@ namespace RWF
         // the idea with the new versus display is to create all of the team groups immediately and just activate/deactivate them
         // as well as never destroy player objects once created, unless the player leaves
 
+        private const float SizeOnTeam = 0.75f;
+
         private Dictionary<int, int> colorToTeam = new Dictionary<int, int>() { };
         private Dictionary<int, int> teamToColor = new Dictionary<int, int>() { };
         private Dictionary<int, GameObject> _teamGroupGOs = new Dictionary<int, GameObject>() { };
         private Dictionary<int, GameObject> _playerGOs = new Dictionary<int, GameObject>() { };
         private Dictionary<int, GameObject> _playerSelectorGOs = new Dictionary<int, GameObject>() { };
         private List<int> _playerSelectorGOsCreated = new List<int>() { };
-        private GameObject _holder;
         private Coroutine updatePlayersCO = null;
 
         public bool PlayersHaveBeenAdded => this._playerGOs.Keys.Any();
-        
-        private GameObject holder
-        {
-            get
-            {
-                if (this._holder == null)
-                {
-                    // child object to hold all pre-prepared playerGOs
-                    this._holder = new GameObject("Hold");
-                    this._holder.transform.SetParent(this.transform);
-                    this._holder.SetActive(false);
-                }
-                return this._holder;
-            }
-        }
 
         internal GameObject TeamGroupGO(int teamID, int colorID)
         {
@@ -57,6 +43,7 @@ namespace RWF
                 teamGroupGO.AddComponent<RectTransform>();
                 var layoutGroup = teamGroupGO.AddComponent<VerticalLayoutGroup>();
                 var sizer = teamGroupGO.AddComponent<ContentSizeFitter>();
+                var layout0 = teamGroupGO.AddComponent<LayoutElement>();
                 sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                 sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 layoutGroup.childAlignment = TextAnchor.MiddleCenter;
@@ -77,18 +64,20 @@ namespace RWF
                 teamNameGo.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 92);
 
                 var nameText = teamNameGo.GetComponent<TextMeshProUGUI>();
-                nameText.fontSize = 45;
+                nameText.fontSize = 35;
                 nameText.font = RoundsResources.MenuFont;
                 nameText.alignment = TextAlignmentOptions.Center;
                 nameText.overflowMode = TextOverflowModes.Overflow;
                 nameText.enableWordWrapping = true;
                 nameText.color = new Color32(85, 90, 98, 255);
-                nameText.text = ExtraPlayerSkins.GetTeamColorName(colorID).ToUpper();
+                nameText.text = ExtraPlayerSkins.GetTeamColorName(colorID).ToUpper().Replace(" ", "\n");
                 nameText.fontStyle = FontStyles.Bold;
                 nameText.autoSizeTextContainer = true;
 
                 var sizer2 = teamNameGo.AddComponent<ContentSizeFitter>();
                 sizer2.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                var layout = teamNameGo.AddComponent<LayoutElement>();
+                layout.minHeight = 85;
 
                 // add grid layout group for players
                 GameObject teamGridGO = new GameObject("Grid");
@@ -102,13 +91,12 @@ namespace RWF
                 sizer3.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                 sizer3.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 layoutGroup1.childAlignment = TextAnchor.MiddleCenter;
-                layoutGroup1.spacing = new Vector2(150f, 75);
+                layoutGroup1.spacing = new Vector2(125f, 35f);
                 layoutGroup1.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
                 layoutGroup1.constraintCount = 2;
                 layoutGroup1.startCorner = GridLayoutGroup.Corner.UpperLeft;
                 layoutGroup1.startAxis = GridLayoutGroup.Axis.Horizontal;
                 layoutGroup1.cellSize = new Vector2(0f, 100f);
-
 
                 var particleSystem = teamNameGo.GetComponentInChildren<GeneralParticleSystem>();
 
@@ -128,7 +116,7 @@ namespace RWF
             {
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().Stop();
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().StopAllCoroutines();
-                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = ExtraPlayerSkins.GetTeamColorName(colorID).ToUpper();
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = ExtraPlayerSkins.GetTeamColorName(colorID).ToUpper().Replace(" ", "\n");
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(colorID).winText;
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(colorID).backgroundColor;
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.randomColor = PlayerSkinBank.GetPlayerSkinColors(colorID).color;
@@ -193,32 +181,7 @@ namespace RWF
 
             var horizLayout = this.gameObject.GetOrAddComponent<HorizontalLayoutGroup>();
             horizLayout.childAlignment = TextAnchor.MiddleCenter;
-            horizLayout.spacing = 100;
-
-            /*
-            // add team names to the top of each group
-            for (int teamID = 0; teamID < RWFMod.MaxTeamsHardLimit; teamID++)
-            {
-                var teamGo = new GameObject("TeamName");
-                teamGo.transform.SetParent(groups[teamID].transform);
-                teamGo.transform.localScale = Vector3.one;
-                teamGo.transform.SetAsFirstSibling();
-
-                teamGo.AddComponent<RectTransform>();
-                teamGo.AddComponent<VerticalLayoutGroup>();
-                var sizer = teamGo.AddComponent<ContentSizeFitter>();
-                sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-                sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-                var teamNameGo = this.CreateTeamName(ExtraPlayerSkins.GetTeamColorName(teamID).ToUpper(), teamID);
-                teamNameGo.transform.SetParent(teamGo.transform);
-                teamNameGo.transform.localScale = Vector3.one;
-            }
-
-            foreach (GameObject group in this.groups)
-            {
-                group.SetActive(false);
-            }*/
+            horizLayout.spacing = 25;
 
             this.UpdatePlayers();
         }
@@ -268,6 +231,7 @@ namespace RWF
 
                 }
                 this.HideEmptyTeams(players.Select(p => p.teamID).ToArray());
+                this.ResizeObjects(players);
             }
 
             if (this?.gameObject?.GetComponent<RectTransform>() != null)
@@ -283,6 +247,24 @@ namespace RWF
             foreach (int i in this._teamGroupGOs.Keys.Where(k => !teamIDs.Contains(k)))
             {
                 this._teamGroupGOs[i].SetActive(false);
+            }
+        }
+        private void ResizeObjects(List<LobbyCharacter> players)
+        {
+            foreach (LobbyCharacter player in players)
+            {
+                if (players.Where(p => p.uniqueID != player.uniqueID).Select(p => p.teamID).Contains(player.teamID))
+                {
+                    // player is on a team
+                    this.PlayerGO(player.uniqueID).transform.localScale = VersusDisplay.SizeOnTeam * Vector3.one;
+                    this.TeamGroupGO(player.teamID, player.colorID).GetComponent<LayoutElement>().minWidth = 300;
+                }
+                else
+                {
+                    // player is alone
+                    this.PlayerGO(player.uniqueID).transform.localScale = Vector3.one;
+                    this.TeamGroupGO(player.teamID, player.colorID).GetComponent<LayoutElement>().minWidth = -1;
+                }
             }
         }
 

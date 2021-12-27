@@ -91,7 +91,7 @@ namespace RWF.UI
 
             // set up the menu bar
             this.setBar.heightMult = 1.25f;
-            this.setBar.verticalOffset = 0f;
+            this.setBar.verticalOffset = -0.5f;
             this.setBar.SetEnabled(false);
 
             // add text
