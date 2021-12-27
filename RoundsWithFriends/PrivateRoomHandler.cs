@@ -684,11 +684,6 @@ namespace RWF
             PhotonNetwork.CurrentRoom.GetPlayer(actorID).SetProperty("players", characters);
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RPCA_ReadyPlayer), character, ready);
 
-            //this.versusDisplay.ReadyPlayer(character);
-
-            //networkPlayer.SetProperty("ready", ready);
-            //networkPlayer.SetProperty("readyOrder", ready ? numReady - 1 : -1);
-
             // to start the game, everyone must be ready, there must be at least two clients, and there must be at least two teams
             if (numReady == this.NumCharacters && PhotonNetwork.CurrentRoom.PlayerCount > 1 && this.PrivateRoomCharacters.Select(p => p.colorID).Distinct().Count() > 1)
             {
@@ -699,24 +694,6 @@ namespace RWF
                 this.StopCoroutine(this.countdownCoroutine);
                 NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RPCA_DisplayCountdown), PrivateRoomHandler.DefaultHeaderText);
             }
-
-            /*
-            // If the player unreadied, reassign ready orders so that they grow continuously from 0.
-            if (!ready)
-            {
-                int nextReadyOrder = 0;
-
-                var readyPlayers = PhotonNetwork.CurrentRoom.Players.Values.ToList()
-                    .Where(p => p.GetProperty<bool>("ready"))
-                    .OrderBy(p => p.GetProperty<int>("readyOrder"));
-
-                foreach (var readyPlayer in readyPlayers)
-                {
-                    readyPlayer.SetProperty("readyOrder", nextReadyOrder);
-                    nextReadyOrder++;
-                }
-            }*/
-
         }
 
         private IEnumerator StartGameCountdown()
@@ -754,14 +731,38 @@ namespace RWF
         {
             character.SetReady(ready);
             VersusDisplay.instance.ReadyPlayer(character, ready);
-
-            //NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdatePlayerDisplay));
         }
 
         private IEnumerator StartGamePreparation()
         {
+            // this is only executed on the host, so its safe to use Random()
 
-            foreach (var player in this.PrivateRoomCharacters.OrderBy(p => p.teamID).ThenBy(p => p.uniqueID))
+
+            Dictionary<int, int> colorToTeam = new Dictionary<int, int>() { };
+
+            // assign teamIDs according to colorIDs, in a random order
+            int nextTeamID = 0;
+            foreach (LobbyCharacter player in this.PrivateRoomCharacters.OrderBy(_ => UnityEngine.Random.Range(0f,1f)))
+            {
+                if (colorToTeam.TryGetValue(player.colorID, out int teamID))
+                {
+                    player.teamID = teamID;
+                }
+                else
+                {
+                    player.teamID = nextTeamID;
+                    colorToTeam[player.colorID] = nextTeamID;
+                    nextTeamID++;
+                }
+            }
+            
+
+            foreach (int actorID in PhotonNetwork.CurrentRoom.Players.Select(p => p.Key))
+            {
+                PhotonNetwork.CurrentRoom.GetPlayer(actorID).SetProperty("players", this.PrivateRoomCharacters.Where(p => p.actorID == actorID).OrderBy(p => p.localID).ToArray());
+            }
+
+            foreach (var player in this.PrivateRoomCharacters.OrderBy(p => p.teamID).ThenBy(_ => UnityEngine.Random.Range(0f,1f)))
             {
                 yield return this.SyncMethod(nameof(PrivateRoomHandler.CreatePlayer), player.actorID, player.actorID, player.localID);
             }
@@ -786,12 +787,10 @@ namespace RWF
             UIHandler.instance.ShowJoinGameText("LETS GOO!", PlayerSkinBank.GetPlayerSkinColors(1).winText);
 
             RWFMod.instance.SetSoundEnabled("PlayerAdded", false);
-            //PlayerAssigner.instance.SetFieldValue("hasCreatedLocalPlayer", false);
             LobbyCharacter lobbyCharacter = this.FindLobbyCharacter(actorID, localID);
+            UnityEngine.Debug.Log($"COLORID: {lobbyCharacter.colorID} | TEAMID: {lobbyCharacter.teamID}");
             yield return PlayerAssigner.instance.CreatePlayer(lobbyCharacter, this.devicesToUse[localID]);
             RWFMod.instance.SetSoundEnabled("PlayerAdded", true);
-
-            //Player newPlayer = PlayerManager.instance.players[PlayerManager.instance.players.Count() - 1];
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.CreatePlayerResponse), PhotonNetwork.LocalPlayer.ActorNumber);
         }
@@ -821,10 +820,7 @@ namespace RWF
             {
                 PrivateRoomHandler.SaveSettings();
             }
-            //PhotonNetwork.LocalPlayer.SetProperty("ready", false);
-            //PhotonNetwork.LocalPlayer.SetProperty("readyOrder", -1);
 
-            //instance.UpdateReadyBox();
         }
 
         public void Open()

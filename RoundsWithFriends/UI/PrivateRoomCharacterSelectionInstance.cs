@@ -387,21 +387,6 @@ namespace RWF.UI
 
             yield break;
         }
-        /*
-        private IEnumerator SetFaceCoroutine(HoverEvent button, int eyeID, Vector2 eyeOffset, int mouthID, Vector2 mouthOffset, int detailID, Vector2 detailOffset, int detail2ID, Vector2 detail2Offset)
-        {
-            yield return new WaitUntil(() => button.gameObject.activeInHierarchy);
-
-            for (int j = 0; j < 3; j++)
-            {
-                yield return new WaitForEndOfFrame();
-
-                button.GetComponent<CharacterCreatorItemEquipper>().RPCA_SetFace(eyeID, eyeOffset, mouthID, mouthOffset, detailID, detailOffset, detail2ID, detail2Offset);
-            }
-
-
-            yield break;
-        }*/
 
         [PunRPC]
         private void RPCH_RequestChangeTeam(int colorIDDelta)
