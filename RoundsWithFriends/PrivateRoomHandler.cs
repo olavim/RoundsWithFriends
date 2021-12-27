@@ -80,10 +80,11 @@ namespace RWF
         //private ListMenuButton readyListButton;
         private TextMeshProUGUI gameModeText;
         private GameObject grid;
-        //private GameObject readyCheckbox;
-        private GameObject waiting;
+        //private GameObject waiting;
         private GameObject header;
+        private GameObject gamemodeHeader;
         private TextMeshProUGUI headerText;
+        private TextMeshProUGUI gamemodeHeaderText;
         private VersusDisplay versusDisplay;
         private bool waitingForToggle;
         private bool lockReadyRequests;
@@ -191,32 +192,34 @@ namespace RWF
             headerGoLayout.ignoreLayout = false;
             headerGoLayout.minHeight = 92f;
 
-            // three different colors for the header:
-            // the ROUNDS WITH colors (66% of the time)
-            // the FRIENDS colors (33% of the time)
-            // bright white colors (1% of the time)
-            switch (UnityEngine.Random.Range(0f,1f))
-            {
-                case float n when n < 0.66f:
-                    this.SetHeaderParticles(5, new Color(0f, 0.22f, 0.5f, 1f), new Color(0.5f, 0.5f, 0f, 1f), new Color(0f, 0.5094f, 0.23f, 1f));
-                    break;
-                case float n when (n >= 0.66f && n < 0.99f):
-                    this.SetHeaderParticles(5, new Color(0.5f, 0.087f, 0f, 1f), new Color(0.25f, 0.25f, 0f, 1f), new Color(0.554f,0.3694f, 0f, 1f));
-                    break;
-                case float n when (n >= 0.99f):
-                    this.SetHeaderParticles(5, new Color(0.5f,0.5f,0.5f, 1f), new Color(1f, 1f, 1f, 1f), new Color(0.25f, 0.25f, 0.25f, 1f));
-                    break;
-                default:
-                    this.SetHeaderParticles(5, new Color(0f, 0.22f, 0.5f, 1f), new Color(0.5f, 0.5f, 0f, 1f), new Color(0f, 0.5094f, 0.23f, 1f));
-                    break;
+            this.SetTextParticles(this.headerText.gameObject, 5, new Color(0f, 0.22f, 0.5f, 1f), new Color(0.5f, 0.5f, 0f, 1f), new Color(0f, 0.5094f, 0.23f, 1f));
+   
 
-            }
+            this.gamemodeHeader = new GameObject("GameModeHeader");
+            this.gamemodeHeader.transform.SetParent(this.grid.transform);
+            this.gamemodeHeader.transform.localScale = Vector3.one;
+            var gamemodeTextGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.gamemodeHeader.transform);
+            gamemodeTextGo.transform.localScale = Vector3.one;
+            gamemodeTextGo.transform.localPosition = Vector3.zero;
+            var gamemodeGoRect = this.gamemodeHeader.AddComponent<RectTransform>();
+            var gamemodeGoLayout = this.gamemodeHeader.AddComponent<LayoutElement>();
+            this.gamemodeHeaderText = gamemodeTextGo.GetComponent<TextMeshProUGUI>();
+            this.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
+            this.gamemodeHeaderText.fontSize = 60;
+            this.gamemodeHeaderText.fontStyle = FontStyles.Bold;
+            this.gamemodeHeaderText.enableWordWrapping = false;
+            this.gamemodeHeaderText.overflowMode = TextOverflowModes.Overflow;
+            gamemodeGoLayout.ignoreLayout = false;
+            gamemodeGoLayout.minHeight = 92f;
+
+            this.SetTextParticles(this.gamemodeHeaderText.gameObject, 5, new Color(0.5f, 0.087f, 0f, 1f), new Color(0.25f, 0.25f, 0f, 1f), new Color(0.554f, 0.3694f, 0f, 1f));
+
 
             var playersGo = new GameObject("Players", typeof(PlayerDisplay));
             playersGo.transform.SetParent(this.grid.transform);
             playersGo.transform.localScale = Vector3.one;
             this.versusDisplay = playersGo.GetOrAddComponent<VersusDisplay>();
-
+            /*
             this.waiting = new GameObject("Waiting");
             this.waiting.transform.SetParent(this.grid.transform);
             this.waiting.transform.localScale = Vector3.one;
@@ -224,7 +227,7 @@ namespace RWF
 
             var waitingTextGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.waiting.transform);
             waitingTextGo.transform.localScale = Vector3.one;
-            waitingTextGo.transform.localPosition = Vector3.zero;
+            waitingTextGo.transform.localPosition = Vector3.zero;*/
 
             var divGo1 = new GameObject("Divider1");
             divGo1.transform.SetParent(this.grid.transform);
@@ -242,7 +245,7 @@ namespace RWF
             gameModeGo.transform.SetParent(this.grid.transform);
             gameModeGo.transform.localScale = Vector3.one;
 
-            var gameModeTextGo = GetText(GameModeManager.CurrentHandlerID == "Deathmatch" ? "DEATHMATCH" : "TEAM DEATHMATCH");
+            var gameModeTextGo = GetText(GameModeManager.CurrentHandlerID?.ToUpper() ?? "");
             gameModeTextGo.transform.SetParent(gameModeGo.transform);
             gameModeTextGo.transform.localScale = Vector3.one;
 
@@ -254,6 +257,7 @@ namespace RWF
             backTextGo.transform.SetParent(backGo.transform);
             backTextGo.transform.localScale = Vector3.one;
 
+            /*
             var waitingGoRect = this.waiting.AddComponent<RectTransform>();
             var waitingGoLayout = this.waiting.AddComponent<LayoutElement>();
             var waitingText = waitingTextGo.GetComponent<TextMeshProUGUI>();
@@ -261,7 +265,7 @@ namespace RWF
             waitingText.fontSize = 80;
             waitingGoLayout.ignoreLayout = true;
             waitingGoRect.sizeDelta = new Vector2(900, 300);
-
+            */
             inviteGo.AddComponent<RectTransform>();
             inviteGo.AddComponent<CanvasRenderer>();
             var inviteLayout = inviteGo.AddComponent<LayoutElement>();
@@ -371,9 +375,11 @@ namespace RWF
             this.headerText.text = text;
             this.headerText.fontSize = fontSize;
         }
-        private void SetHeaderParticles(float? size = null, Color? color = null, Color? randomAddedColor = null, Color? randomColor = null)
+        private void SetTextParticles(GameObject text, float? size = null, Color? color = null, Color? randomAddedColor = null, Color? randomColor = null)
         {
-            var particleSystem = this.headerText.GetComponentInChildren<GeneralParticleSystem>();
+            var particleSystem = text?.GetComponentInChildren<GeneralParticleSystem>();
+
+            if (particleSystem == null) { return; }
 
             if (size != null) { particleSystem.particleSettings.size = (float)size; }
             if (color != null) 
@@ -447,7 +453,8 @@ namespace RWF
                     GameModeManager.SetGameMode("Team Deathmatch");
                 }
 
-                PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "TEAM DEATHMATCH" : "DEATHMATCH";
+                PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
+                PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
                 PrivateRoomHandler.UpdateVersusDisplay();
             }
 
@@ -593,7 +600,8 @@ namespace RWF
             GameModeManager.SetGameMode(gameMode);
             GameModeManager.CurrentHandler.SetSettings(settings);
 
-            PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "TEAM DEATHMATCH" : "DEATHMATCH";
+            PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
+            PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
             PrivateRoomHandler.UpdateVersusDisplay();
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettingsResponse), PhotonNetwork.LocalPlayer.ActorNumber);
@@ -626,28 +634,25 @@ namespace RWF
             {
                 return;
             }
-
-            if (RWFMod.DEBUG)
-            {
-                instance.versusDisplay.gameObject.SetActive(true);
-                //instance.readyListButton.gameObject.SetActive(true);
-                instance.waiting.SetActive(false);
-                //ListMenu.instance.SelectButton(instance.readyListButton);
-            }
-
+            
+            //if (//RWFMod.DEBUG)
+            //{
+            instance.versusDisplay.gameObject.SetActive(true);
+            instance.header.gameObject.SetActive(true);
+            instance.gamemodeHeader.gameObject.SetActive(true);
+                //instance.waiting.SetActive(false);
+            //}
+            /*
             else if (PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= 2 && !instance.versusDisplay.gameObject.activeSelf)
             {
                 instance.versusDisplay.gameObject.SetActive(true);
-                //instance.readyListButton.gameObject.SetActive(true);
                 instance.waiting.SetActive(false);
-                //ListMenu.instance.SelectButton(instance.readyListButton);
             }
             else if ((PhotonNetwork.CurrentRoom == null || PhotonNetwork.CurrentRoom.PlayerCount < 2) && instance.versusDisplay.gameObject.activeSelf)
             {
                 instance.versusDisplay.gameObject.SetActive(false);
-                //instance.readyListButton.gameObject.SetActive(false);
                 instance.waiting.SetActive(true);
-            }
+            }*/
 
             if (instance.versusDisplay.gameObject.activeSelf)
             {
@@ -788,7 +793,6 @@ namespace RWF
 
             RWFMod.instance.SetSoundEnabled("PlayerAdded", false);
             LobbyCharacter lobbyCharacter = this.FindLobbyCharacter(actorID, localID);
-            UnityEngine.Debug.Log($"COLORID: {lobbyCharacter.colorID} | TEAMID: {lobbyCharacter.teamID}");
             yield return PlayerAssigner.instance.CreatePlayer(lobbyCharacter, this.devicesToUse[localID]);
             RWFMod.instance.SetSoundEnabled("PlayerAdded", true);
 
