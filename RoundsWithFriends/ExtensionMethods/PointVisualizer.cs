@@ -177,12 +177,14 @@ namespace RWF
 			SoundManager.Instance.Play(instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, instance.transform);
 			GamefeelManager.instance.AddUIGameFeelOverTime(10f, 0.2f);
 
+            // removing this fixes player skin + face desync issues
+            /*
 			for (int i = 0; i < teamCount; i++) {
 				if (i != winnerTeamID) {
 					CardChoiceVisuals.instance.Show(i, false);
 					break;
 				}
-			}
+			}*/
 
 			UIHandler.instance.roundCounterSmall.UpdateRounds(teamRounds);
 			UIHandler.instance.roundCounterSmall.UpdatePoints(teamPoints);
