@@ -13,8 +13,8 @@ namespace RWF.Algorithms
         private const float range = 2f;
         private const float maxProject = 1000f;
         private const float groundOffset = 1f;
-        private const float maxDistanceAway = 5f;
-        private const float minDistanceAway = 1f;
+        private const float maxDistanceAway = 10f;
+        private const float minDistanceAway = 3f;
         private const int maxAttempts = 1000;
         private const int numSamples = 50;
         private const int numRows = 20;
@@ -246,7 +246,7 @@ namespace RWF.Algorithms
                 // Assign spawns in random order
                 foreach (Player player in PlayerManager.instance.GetPlayersInTeam(shuffledTeamIDs[0]).OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).ToArray())
                 {
-                    spawnDictionary[player] = GetNearbyValidPosition(teamSpawn);
+                    spawnDictionary[player] = GetNearbyValidPosition(teamSpawn, true, spawnDictionary.Values.ToList());
                 }
 
                 // Now choose successive team spawns by order of maximum distance from all other team spawns
@@ -259,7 +259,7 @@ namespace RWF.Algorithms
                     // Assign spawns in random order
                     foreach (Player player in PlayerManager.instance.GetPlayersInTeam(shuffledTeamIDs[i]).OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).ToArray())
                     {
-                        spawnDictionary[player] = GetNearbyValidPosition(teamSpawn);
+                        spawnDictionary[player] = GetNearbyValidPosition(teamSpawn, true, spawnDictionary.Values.ToList());
                     }
                 }
             }
@@ -393,7 +393,7 @@ namespace RWF.Algorithms
             return IsValidPosition(position - rightVector, out RaycastHit2D _) && IsValidPosition(position + rightVector, out RaycastHit2D _);
         }
 
-        private static Vector2 GetNearbyValidPosition(Vector2 position, bool requireLOS = true)
+        private static Vector2 GetNearbyValidPosition(Vector2 position, bool requireLOS = true, List<Vector2> avoidPoints = null)
         {
             // Select a random position in the ring with inner radius minDistance and outer radius maxDistance.
             // The distribution is NOT uniform. Values with smaller radius are more likely.
@@ -409,7 +409,7 @@ namespace RWF.Algorithms
             {
                 float r = GeneralizedSpawnPositions.RandomRange(GeneralizedSpawnPositions.minDistanceAway, GeneralizedSpawnPositions.maxDistanceAway);
                 var newPosition = CastToGround(position + r * GeneralizedSpawnPositions.RandomOnUnitCircle());
-                float dist = Vector2.Distance(newPosition, position);
+                float dist = (avoidPoints == null || avoidPoints.Count() == 0) ? Vector2.Distance(newPosition, position) : avoidPoints.Select(v => Vector2.Distance(v, newPosition)).Max();
 
                 if (IsValidSpawnPosition(newPosition) && dist <= GeneralizedSpawnPositions.maxDistanceAway && dist >= GeneralizedSpawnPositions.minDistanceAway)
                 {
@@ -432,7 +432,12 @@ namespace RWF.Algorithms
             // If we required LOS and it failed, try again without
             if (requireLOS)
             {
-                return GetNearbyValidPosition(position, false);
+                return GetNearbyValidPosition(position, false, avoidPoints);
+            }
+            // If we required avoiding points, but not LOS, try it again with no requirements
+            else if (avoidPoints != null)
+            {
+                return GetNearbyValidPosition(position, false, null);
             }
 
             // If all else fails, just return a random valid position
