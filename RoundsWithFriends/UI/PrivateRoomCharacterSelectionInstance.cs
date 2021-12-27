@@ -458,42 +458,6 @@ namespace RWF.UI
                 NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdateVersusDisplay));
             }
         }
-        
-        /*
-        [PunRPC]
-        private void RPCS_SendFaces(int requestingID)
-        {
-            UnityEngine.Debug.Log("REQUEST TO SEND FACES FROM: " + requestingID.ToString());
-
-            // RPCS -> RPC(Specific) or RPC(Single)
-            // this is only sent to the player who owns this instance, but just to be sure it is checked here
-            if (!(this?.currentPlayer?.IsMine ?? false)) { return; }
-
-            // set the face for all portraits for all other players
-            this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
-
-
-            for (int i = 0; i < this.buttons.Count(); i++)
-            {
-                PlayerFace faceToSend = this.buttons[i].GetComponent<CharacterCreatorPortrait>().myFace;
-                this.view.RPC(nameof(RPCO_SetFace), PhotonNetwork.CurrentRoom.GetPlayer(requestingID), i, faceToSend.eyeID, faceToSend.eyeOffset, faceToSend.mouthID, faceToSend.mouthOffset, faceToSend.detailID, faceToSend.detailOffset, faceToSend.detail2ID, faceToSend.detail2Offset);
-            }
-            
-
-        }
-        [PunRPC]
-        public void RPCO_SetFace(int index, int eyeID, Vector2 eyeOffset, int mouthID, Vector2 mouthOffset, int detailID, Vector2 detailOffset, int detail2ID, Vector2 detail2Offset)
-        {
-            UnityEngine.Debug.Log("RECEIVED FACE FOR INDEX: " + index.ToString());
-
-            // RPCS -> RPC(Specific) or RPC(Single)
-            // this is sent to the player that requested RPCS_SendFaces
-
-            this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
-            //this.buttons[index].GetComponent<CharacterCreatorPortrait>().myFace = face;
-            //this.buttons[index].GetComponent<CharacterCreatorItemEquipper>().RPCA_SetFace(eyeID, eyeOffset, mouthID, mouthOffset, detailID, detailOffset, detail2ID, detail2Offset);
-            this.StartCoroutine(this.SetFaceCoroutine(this.buttons[index], eyeID, eyeOffset, mouthID, mouthOffset, detailID, detailOffset, detail2ID, detail2Offset));
-        }*/
 
 
         public int currentlySelectedFace;

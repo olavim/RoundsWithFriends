@@ -177,7 +177,6 @@ namespace RWF
             this.header = new GameObject("Header");
             this.header.transform.SetParent(this.grid.transform);
             this.header.transform.localScale = Vector3.one;
-            //this.header.transform.localPosition += new Vector3(0, 300, 0);
             var headerTextGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.header.transform);
             headerTextGo.transform.localScale = Vector3.one;
             headerTextGo.transform.localPosition = Vector3.zero;
@@ -213,12 +212,6 @@ namespace RWF
 
             }
 
-            /*
-            var playersGo = new GameObject("Players");
-            playersGo.transform.SetParent(this.grid.transform);
-            playersGo.transform.localScale = Vector3.one;
-            */
-            //playersGo.transform.localPosition += new Vector3(0, 300, 0);
             var playersGo = new GameObject("Players", typeof(PlayerDisplay));
             playersGo.transform.SetParent(this.grid.transform);
             playersGo.transform.localScale = Vector3.one;
@@ -237,19 +230,6 @@ namespace RWF
             divGo1.transform.SetParent(this.grid.transform);
             divGo1.transform.localScale = Vector3.one;
 
-            /*
-            var readyGo = new GameObject("Ready");
-            readyGo.transform.SetParent(this.grid.transform);
-            readyGo.transform.localScale = Vector3.one;
-
-            var readyTextGo = GetText("READY");
-            readyTextGo.transform.SetParent(readyGo.transform);
-            readyTextGo.transform.localScale = Vector3.one;
-            
-            this.readyCheckbox = new GameObject("Checkbox");
-            this.readyCheckbox.transform.SetParent(readyGo.transform);
-            this.readyCheckbox.transform.localScale = Vector3.one;
-            */
             var inviteGo = new GameObject("Invite");
             inviteGo.transform.SetParent(this.grid.transform);
             inviteGo.transform.localScale = Vector3.one;
@@ -274,11 +254,6 @@ namespace RWF
             backTextGo.transform.SetParent(backGo.transform);
             backTextGo.transform.localScale = Vector3.one;
 
-            /*
-            var playersGoLayout = playersGo.AddComponent<LayoutElement>();
-            this.versusDisplay = playersGo.AddComponent<VersusDisplay>();
-            playersGoLayout.ignoreLayout = true;
-            */
             var waitingGoRect = this.waiting.AddComponent<RectTransform>();
             var waitingGoLayout = this.waiting.AddComponent<LayoutElement>();
             var waitingText = waitingTextGo.GetComponent<TextMeshProUGUI>();
@@ -286,29 +261,6 @@ namespace RWF
             waitingText.fontSize = 80;
             waitingGoLayout.ignoreLayout = true;
             waitingGoRect.sizeDelta = new Vector2(900, 300);
-
-            /*
-            readyGo.AddComponent<RectTransform>();
-            readyGo.AddComponent<CanvasRenderer>();
-            var readyLayout = readyGo.AddComponent<LayoutElement>();
-            readyLayout.minHeight = 92;
-            this.readyButton = readyGo.AddComponent<Button>();
-            this.readyListButton = readyGo.AddComponent<ListMenuButton>();
-            this.readyListButton.setBarHeight = 92f;
-            */
-
-            //this.readyButton.onClick.AddListener(() => this.StartCoroutine(this.ToggleReady()));
-
-            /*
-            var readyBoxRect = this.readyCheckbox.AddComponent<RectTransform>();
-            var readyBoxImage = this.readyCheckbox.AddComponent<ProceduralImage>();
-            var readyBoxModifier = this.readyCheckbox.AddComponent<UniformModifier>();
-            readyBoxRect.sizeDelta = new Vector2(30, 30);
-            readyBoxImage.BorderWidth = 3;
-            readyBoxImage.color = new Color32(255, 255, 255, 222); // Slightly glowing white
-            readyBoxModifier.Radius = 3;
-            this.readyCheckbox.transform.localPosition += new Vector3(150, 0, 0);
-            */
 
             inviteGo.AddComponent<RectTransform>();
             inviteGo.AddComponent<CanvasRenderer>();
@@ -378,9 +330,6 @@ namespace RWF
             this.MainPage = mainPageGo.AddComponent<ListMenuPage>();
             this.MainPage.firstSelected = inviteListButton;
             this.MainPage.Close();
-
-            //readyGo.SetActive(false);
-            //playersGo.SetActive(false);
         }
 
         private void HandleTeamRules()
@@ -460,6 +409,9 @@ namespace RWF
 
         private void Update()
         {
+            // make sure there are no teams in a gamemode that doesn't allow them
+            if (this.IsOpen && PhotonNetwork.IsMasterClient) { this.HandleTeamRules(); }
+
             /* Ready toggle requests are handled by master client in the order they arrive. If at any point all players are ready
              * (even if there would be more toggle requests remaining), the game starts immediately.
              */
@@ -627,39 +579,7 @@ namespace RWF
                 this.waitingForToggle = false;
             
             }
-
-            /*
-            if (!ready)
-            {
-                InputDevice playerDevice = null;
-
-                var m_JoinButtonWasPressedOnDevice = typeof(PlayerAssigner).GetMethod("JoinButtonWasPressedOnDevice", BindingFlags.Instance | BindingFlags.NonPublic);
-                var m_ThereIsNoPlayerUsingDevice = typeof(PlayerAssigner).GetMethod("ThereIsNoPlayerUsingDevice", BindingFlags.Instance | BindingFlags.NonPublic);
-
-                for (int i = 0; i < InputManager.ActiveDevices.Count; i++)
-                {
-                    InputDevice device = InputManager.ActiveDevices[i];
-
-                    var joinButtonPressed = (bool) m_JoinButtonWasPressedOnDevice.Invoke(PlayerAssigner.instance, new object[] { device });
-                    var nobodyUsingDevice = (bool) m_ThereIsNoPlayerUsingDevice.Invoke(PlayerAssigner.instance, new object[] { device });
-
-                    if (joinButtonPressed && nobodyUsingDevice)
-                    {
-                        playerDevice = device;
-                        break;
-                    }
-                }
-
-                this.deviceToUse = playerDevice;
-            }*/
-
         }
-        /*
-        private void UpdateReadyBox()
-        {
-            var img = this.readyCheckbox.GetComponent<ProceduralImage>();
-            img.BorderWidth = PhotonNetwork.LocalPlayer.GetProperty<bool>("ready") ? 0 : 3;
-        }*/
 
         // Called from PlayerManager after a player has been created.
         public void PlayerJoined(Player player)

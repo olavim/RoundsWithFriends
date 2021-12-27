@@ -15,7 +15,7 @@ namespace RWF
         
         public static object Deserialize(byte[] data)
         {
-            if (PhotonNetwork.CurrentRoom == null || data == null || (int)data[6] == 1)
+            if (PhotonNetwork.CurrentRoom == null || data == null || (int)data[6] == 1 || !PhotonNetwork.CurrentRoom.Players.ContainsKey((int) data[0]))
             {
                 return null;
             }
