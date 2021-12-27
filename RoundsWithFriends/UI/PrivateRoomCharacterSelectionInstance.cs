@@ -103,18 +103,12 @@ namespace RWF.UI
         {
             base.transform.GetChild(0).gameObject.SetActive(false);
             this.currentPlayer = null;
-            //this.getReadyObj.gameObject.SetActive(false);
-            //PlayerManager.instance.RemovePlayers();
+
         }
 
         private void OnEnable()
         {
-            /*
-            if (!base.transform.GetChild(0).gameObject.activeSelf)
-            {
-                base.GetComponentInChildren<GeneralParticleSystem>(true).gameObject.SetActive(true);
-                base.GetComponentInChildren<GeneralParticleSystem>(true).Play();
-            }*/
+
         }
 
         public void StartPicking(LobbyCharacter pickingCharacter, InputDevice device)
@@ -124,8 +118,8 @@ namespace RWF.UI
             this.currentlySelectedFace = pickingCharacter.faceID;
             if (this.currentPlayer.IsMine)
             {
-                PlayerFace faceToSend = CharacterCreatorHandler.instance.GetFacePreset(this.currentlySelectedFace);
-                this.view.RPC(nameof(RPCO_SelectFace), RpcTarget.Others, this.currentlySelectedFace, faceToSend.eyeID, faceToSend.eyeOffset, faceToSend.mouthID, faceToSend.mouthOffset, faceToSend.detailID, faceToSend.detailOffset, faceToSend.detail2ID, faceToSend.detail2Offset);
+                //PlayerFace faceToSend = CharacterCreatorHandler.instance.GetFacePreset(this.currentlySelectedFace);
+                //this.view.RPC(nameof(RPCO_SelectFace), RpcTarget.Others, this.currentlySelectedFace, faceToSend.eyeID, faceToSend.eyeOffset, faceToSend.mouthID, faceToSend.mouthOffset, faceToSend.detailID, faceToSend.detailOffset, faceToSend.detail2ID, faceToSend.detail2Offset);
             }
             else
             {
@@ -140,13 +134,6 @@ namespace RWF.UI
             catch { }
 
             this.transform.GetChild(0).gameObject.SetActive(true);
-            //this.getReadyObj.gameObject.SetActive(true);
-            //this.getReadyObj.GetComponent<TextMeshProUGUI>().text = "";
-
-
-            //this.transform.GetChild(1).gameObject.SetActive(false);
-            //this.transform.GetChild(2).gameObject.SetActive(false);
-
 
             this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
             for (int i = 0; i < this.buttons.Length; i++)
