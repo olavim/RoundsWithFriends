@@ -114,7 +114,7 @@ namespace RWF.Patches
         static bool Prefix(CharacterSelectionInstance __instance, Player pickingPlayer, ref HoverEvent[] ___buttons, ref HoverEvent ___currentButton, ref float ___counter)
         {
             __instance.currentPlayer = pickingPlayer;
-            __instance.currentlySelectedFace = 0;
+            __instance.currentlySelectedFace = PlayerPrefs.GetInt("SelectedFace" + pickingPlayer.playerID);
             try
             {
                 __instance.GetComponentInChildren<GeneralParticleSystem>(true).gameObject.SetActive(false);
