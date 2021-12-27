@@ -130,6 +130,7 @@ namespace RWF.UI
             this.text.gameObject.SetActive(false);
             this.setBar.SetEnabled(true);
             this.playersAdded = true;
+            KeybindHints.CreateOnlineHints();
 
             // disable all other menu items in the same list
             foreach (ListMenuButton listMenuButton in this.transform.parent.gameObject.GetComponentsInChildren<ListMenuButton>(true).Where(lm => lm != this.menuButton && lm.GetComponent<CharacterCreatorPortrait>() == null))
@@ -178,6 +179,7 @@ namespace RWF.UI
                     // once this has been selected once, hide the text and change the bar height and offset
                     this.text.gameObject.SetActive(false);
                     this.setBar.SetEnabled(true);
+                    KeybindHints.CreateOnlineHints();
                 }
                 else
                 {

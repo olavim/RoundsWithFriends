@@ -16,6 +16,7 @@ using Photon.Pun.UtilityScripts;
 using ExitGames.Client.Photon;
 using RWF.UI;
 using On;
+using UnboundLib.Utils.UI;
 
 namespace RWF
 {
@@ -184,6 +185,9 @@ namespace RWF
             // register credits with unbound
             Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI)", "Pykess (> 4 player support, multiple players per client, additional player colors, UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://www.buymeacoffee.com/Pykess" });
 
+            // add GUI to modoptions menu
+            Unbound.RegisterMenu(RWFMod.ModName, () => { }, this.GUI, null, false);
+
             this.soundEnabled = new Dictionary<string, bool>();
             this.gmInitialized = new Dictionary<string, bool>();
 
@@ -241,6 +245,17 @@ namespace RWF
                 BetaTextHandler.AddBetaText(true);
             };
 
+        }
+
+        private void GUI(GameObject menu)
+        {
+            MenuHandler.CreateText($"{RWFMod.ModName} Options", menu, out TextMeshProUGUI _, 45);
+            MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 15);
+            void ShowKeybindsChanged(bool val)
+            {
+                PlayerPrefs.SetInt(RWFMod.GetCustomPropertyKey("ShowKeybinds"), val ? 1 : 0);
+            }
+            MenuHandler.CreateToggle(PlayerPrefs.GetInt(RWFMod.GetCustomPropertyKey("ShowKeybinds"), 1) == 1, "Show keybind hints in menus", menu, ShowKeybindsChanged, 30);
         }
 
         public void Update()
@@ -423,6 +438,7 @@ namespace RWF
 
             teamDeathmatchButton.onClick.AddListener(characterSelectPage.Open);
             teamDeathmatchButton.onClick.AddListener(() => GameModeManager.SetGameMode("Team Deathmatch"));
+            teamDeathmatchButton.onClick.AddListener(() => KeybindHints.CreateLocalHints());
 
             var deathmatchButtonGo = GameObject.Instantiate(versusGo, versusGo.transform.parent);
             deathmatchButtonGo.transform.localScale = Vector3.one;
@@ -436,6 +452,7 @@ namespace RWF
 
             deathmatchButton.onClick.AddListener(characterSelectPage.Open);
             deathmatchButton.onClick.AddListener(() => GameModeManager.SetGameMode("Deathmatch"));
+            deathmatchButton.onClick.AddListener(() => KeybindHints.CreateLocalHints());
 
             UnityEngine.GameObject.Destroy(versusGo);
 

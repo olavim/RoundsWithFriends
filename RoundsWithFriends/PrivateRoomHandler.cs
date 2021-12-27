@@ -318,6 +318,7 @@ namespace RWF
                 // return Canvas to its original position
                 this.gameObject.GetComponentInParent<Canvas>().sortingLayerName = "MostFront";
                 NetworkConnectionHandler.instance.NetworkRestart();
+                KeybindHints.ClearHints();
             });
 
             var backListButton = backGo.AddComponent<ListMenuButton>();

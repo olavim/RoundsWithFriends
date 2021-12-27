@@ -20,18 +20,18 @@ namespace RWF.UI
                 _BetaText.transform.SetParent(MainMenuHandler.instance.transform.Find("Canvas/"));
                 //UnityEngine.GameObject.DontDestroyOnLoad(_BetaText);
                 // do setup like placement and adding components
-                _BetaText.transform.position = MainCam.instance.transform.GetComponent<Camera>().ScreenToWorldPoint(new Vector3(0f, 0f, 0f));
+                _BetaText.transform.position = MainCam.instance.transform.GetComponent<Camera>().ScreenToWorldPoint(new Vector3(Screen.width, Screen.height, 0f));
                 _BetaText.transform.position += new Vector3(0f, 0f, 100f);
-                _BetaText.transform.localPosition += new Vector3(10f, 0f, 0f);
+                _BetaText.transform.localPosition += new Vector3(-505f, -45f, 0f);
                 _BetaText.transform.localScale = Vector3.one;
                 TextMeshProUGUI text = _BetaText.AddComponent<TextMeshProUGUI>();
 
-                text.text = $"RWF V{RWFMod.Version} (BETA)";
+                text.text = $"RWF v{RWFMod.Version} (BETA)";
                 text.color = new Color32(230, 230, 230, 64);
                 text.font = RoundsResources.MenuFont;
                 text.fontSize = 30;
                 text.fontWeight = FontWeight.Regular;
-                text.alignment = TextAlignmentOptions.Left;
+                text.alignment = TextAlignmentOptions.Right;
                 text.gameObject.GetOrAddComponent<RectTransform>().pivot = Vector2.zero;
                 text.gameObject.GetOrAddComponent<RectTransform>().sizeDelta = new Vector2(500, 50);
 
