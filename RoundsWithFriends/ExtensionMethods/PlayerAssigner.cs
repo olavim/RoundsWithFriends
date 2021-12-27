@@ -7,6 +7,8 @@ using Photon.Pun;
 using SoundImplementation;
 using UnityEngine;
 using UnboundLib.Networking;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace RWF
 {
@@ -66,8 +68,7 @@ namespace RWF
                 PlayerManager.RegisterPlayer(component.player);
                 component.player.AssignCharacter(character, (int)instance.GetFieldValue("playerIDToSet"));
                 // assign character
-                NetworkingManager.RPC_Others(typeof(PlayerAssignerExtensions), nameof(PlayerAssignerExtensions.RPCO_AssignCharacter), component.view.ViewID, character, (int)instance.GetFieldValue("playerIDToSet"));
-
+                yield return SyncMethodStatic.SyncMethod(typeof(PlayerAssignerExtensions), nameof(PlayerAssignerExtensions.RPCO_AssignCharacter), null, component.view.ViewID, character, (int) instance.GetFieldValue("playerIDToSet"));
 
                 yield break;
             }
@@ -87,7 +88,17 @@ namespace RWF
 
             PhotonView.Find(viewID).GetComponent<Player>().AssignCharacter(character, playerID);
 
-            yield break;
+            NetworkingManager.RPC(typeof(PlayerAssignerExtensions), nameof(PlayerAssignerExtensions.CreatePlayerResponse), PhotonNetwork.LocalPlayer.ActorNumber, character);
         }
+
+        [UnboundRPC]
+        public static void CreatePlayerResponse(int respondingPlayer, LobbyCharacter targetedCharacter)
+        {
+            if (targetedCharacter.IsMine)
+            {
+                SyncMethodStatic.RemovePendingRequest(typeof(PlayerAssignerExtensions), respondingPlayer, nameof(PlayerAssignerExtensions.RPCO_AssignCharacter));
+            }
+        }
+        
     }
 }
