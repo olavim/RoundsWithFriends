@@ -53,10 +53,12 @@ namespace RWF
         public bool showSpawns = false;
     }
 
-    [BepInDependency("com.willis.rounds.unbound", "2.1.3")]
+    [BepInDependency("com.willis.rounds.unbound", "2.8.2")]
     [BepInPlugin(ModId, "RoundsWithFriends", Version)]
     public class RWFMod : BaseUnityPlugin
     {
+        private const string ModName = "Rounds With Friends";
+        private static string CompatibilityModName => RWFMod.ModName.Replace(" ", "");
         private const string ModId = "io.olavim.rounds.rwf";
         public const string Version = "2.0.0";
 
@@ -179,6 +181,9 @@ namespace RWF
 
         public void Start()
         {
+            // register credits with unbound
+            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI)", "Pykess (> 4 player support, multiple players per client, additional player colors, UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://www.buymeacoffee.com/Pykess" });
+
             this.soundEnabled = new Dictionary<string, bool>();
             this.gmInitialized = new Dictionary<string, bool>();
 
