@@ -31,9 +31,12 @@ namespace RWF.UI
                 if (PlayerSpotlight._Cam != null) { return PlayerSpotlight._Cam; }
 
                 PlayerSpotlight._Cam = new GameObject("SpotlightCam", typeof(Camera));
+                PlayerSpotlight._Cam.transform.SetParent(UnityEngine.GameObject.Find("/Game/Visual/Rendering ").transform);
                 PlayerSpotlight._Cam.GetComponent<Camera>().CopyFrom(MainCam.instance.cam);
                 PlayerSpotlight._Cam.GetComponent<Camera>().depth = 4;
                 PlayerSpotlight._Cam.GetComponent<Camera>().cullingMask = (1 << PlayerSpotlight.layer);
+
+                UnityEngine.GameObject.Find("/Game/Visual/Rendering ").gameObject.GetComponent<CameraZoomHandler>().InvokeMethod("Start");
 
                 return PlayerSpotlight._Cam;
             }
