@@ -42,6 +42,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="UnboundLib" Version="2.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>..\Assemblies\0Harmony.dll</HintPath>
     </Reference>
@@ -74,9 +78,6 @@
     </Reference>
     <Reference Include="SonigonAudioEngine.Runtime">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\SonigonAudioEngine.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="UnboundLib">
-      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\BepInEx\plugins\UnboundLib\UnboundLib.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\Unity.TextMeshPro.dll</HintPath>
