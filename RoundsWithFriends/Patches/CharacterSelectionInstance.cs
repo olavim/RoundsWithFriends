@@ -7,6 +7,8 @@ using RWF.UI;
 using UnboundLib;
 using System.Collections.Generic;
 using System.Linq;
+using UnboundLib.Extensions;
+using UnboundLib.Utils;
 
 namespace RWF.Patches
 {

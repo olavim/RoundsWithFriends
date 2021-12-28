@@ -8,6 +8,8 @@ using Sonigon;
 using UnityEngine.UI;
 using RWF.Patches;
 using UnboundLib.GameModes;
+using UnboundLib.Extensions;
+using UnboundLib.Utils;
 
 namespace RWF
 {

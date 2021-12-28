@@ -2,6 +2,7 @@
 using UnityEngine.UI.ProceduralImage;
 using UnboundLib;
 using System.Collections.Generic;
+using UnboundLib.Extensions;
 
 namespace RWF
 {

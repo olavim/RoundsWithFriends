@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnboundLib;
+using UnboundLib.Extensions;
 
 namespace RWF.Patches
 {

@@ -12,6 +12,7 @@ using TMPro;
 using RWF.UI;
 using UnboundLib.GameModes;
 using Photon.Pun;
+using UnboundLib.Extensions;
 
 namespace RWF.Patches
 {
