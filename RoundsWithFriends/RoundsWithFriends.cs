@@ -114,7 +114,7 @@ namespace RWF
         }
 
         public const int MaxPlayersHardLimit = 32;
-        public const int MaxColorsHardLimit = 32;
+        public static int MaxColorsHardLimit => UnboundLib.Utils.ExtraPlayerSkins.numberOfSkins;
         public const int MaxCharactersPerClientHardLimit = 2;
 
         public int MaxClients
