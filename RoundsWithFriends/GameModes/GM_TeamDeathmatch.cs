@@ -104,6 +104,8 @@ namespace RWF.GameModes
             {
                 this.PlayerJoined(player);
             }
+            // set up pick order
+            PlayerManager.instance.ResetPickOrder();
 
             GameManager.instance.isPlaying = true;
 			this.StartCoroutine(this.DoStartGame());
@@ -130,14 +132,16 @@ namespace RWF.GameModes
 			yield return new WaitForSecondsRealtime(1f);
 
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPickStart);
+            List<Player> pickOrder = PlayerManager.instance.GetPickOrder(null);
 
-			for (int i = 0; i < PlayerManager.instance.players.Count; i++) {
-				yield return this.WaitForSyncUp();
+            foreach (Player player in pickOrder)
+            {
+                yield return this.WaitForSyncUp();
 
 				yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
 
-				CardChoiceVisuals.instance.Show(i, true);
-				yield return CardChoice.instance.DoPick(1, PlayerManager.instance.players[i].playerID, PickerType.Player);
+				CardChoiceVisuals.instance.Show(player.playerID, true);
+				yield return CardChoice.instance.DoPick(1, player.playerID, PickerType.Player);
 
 				yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickEnd);
 
@@ -183,16 +187,18 @@ namespace RWF.GameModes
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPickStart);
 
 			PlayerManager.instance.InvokeMethod("SetPlayersVisible", false);
-			var players = PlayerManager.instance.players;
 
-			for (int i = 0; i < players.Count; i++) {
-				if (players[i].teamID != winningTeamID) {
+            List<Player> pickOrder = PlayerManager.instance.GetPickOrder(winningTeamID);
+
+            foreach (Player player in pickOrder)
+            {
+                if (player.teamID != winningTeamID) {
 					yield return base.StartCoroutine(this.WaitForSyncUp());
 
 					yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
 
-					CardChoiceVisuals.instance.Show(i, true);
-					yield return CardChoice.instance.DoPick(1, players[i].playerID, PickerType.Player);
+					CardChoiceVisuals.instance.Show(player.playerID, true);
+					yield return CardChoice.instance.DoPick(1, player.playerID, PickerType.Player);
 
 					yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickEnd);
 
