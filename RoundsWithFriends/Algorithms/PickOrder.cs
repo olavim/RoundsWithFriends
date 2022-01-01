@@ -87,6 +87,8 @@ namespace RWF.Algorithms
             var list = new List<Player>(); // List of players
             int maxTeamPlayers = this.teams.Select(kv => kv.Value.Count()).Max();
 
+            var filteredPriorities = this.priorities.Where(p => p.teamId != winningTeam).ToList();
+
             for (int teamIndex = 0; teamIndex < this.priorities.Count; teamIndex++)
             {
                 if (this.priorities[teamIndex].teamId != winningTeam)
@@ -97,30 +99,18 @@ namespace RWF.Algorithms
 
             for (int playerIndex = 0; playerIndex < maxTeamPlayers; playerIndex++)
             {
-                for (int teamIndex = 0; teamIndex < this.priorities.Count; teamIndex++)
+                for (int teamIndex = 0; teamIndex < filteredPriorities.Count; teamIndex++)
                 {
-                    if (playerIndex >= this.priorities[teamIndex].players.Count || this.priorities[teamIndex].teamId == winningTeam)
+                    if (playerIndex >= filteredPriorities[teamIndex].players.Count)
                     {
                         continue;
                     }
 
-                    list.Add(this.priorities[teamIndex].GetNextPlayer());
+                    list.Add(filteredPriorities[teamIndex].GetNextPlayer());
                 }
             }
 
-            int firstTeamIndex = winningTeam == this.priorities[0].teamId ? 1 : 0;
-
-            for (int teamIndex = 0; teamIndex < this.priorities.Count; teamIndex++)
-            {
-                if (teamIndex == firstTeamIndex)
-                {
-                    this.priorities[teamIndex].NextCycle();
-                }
-                else if (this.priorities[teamIndex].teamId != winningTeam)
-                {
-                    this.priorities[teamIndex].ResetCycle();
-                }
-            }
+            filteredPriorities[0].NextCycle();
 
             this.Reprioritize();
             return list;
