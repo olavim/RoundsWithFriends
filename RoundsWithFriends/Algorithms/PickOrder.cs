@@ -5,115 +5,121 @@ namespace RWF.Algorithms
 {
     public class PickOrder
     {
-        class TeamPriority
+        class PrioritizedPlayer
+        {
+            public Player player;
+            public int priority;
+
+            public PrioritizedPlayer(Player player)
+            {
+                this.player = player;
+                this.priority = 0;
+            }
+        }
+
+        class PrioritizedTeam
         {
             public int teamId;
             public int priority;
-            public List<Player> players;
+            public List<PrioritizedPlayer> players;
 
-            private int cycleBaseIndex;
-            private int cycleRunningIndex;
-
-            public TeamPriority(int teamId)
+            public PrioritizedTeam(int teamId)
             {
                 this.teamId = teamId;
                 this.priority = 0;
-
-                this.players = new List<Player>();
-                this.cycleBaseIndex = 0;
-                this.cycleRunningIndex = 0;
+                this.players = new List<PrioritizedPlayer>();
             }
 
             public void AddPlayer(Player player)
             {
-                this.players.Add(player);
+                this.players.Add(new PrioritizedPlayer(player));
             }
 
-            public void NextCycle()
+            public void Reprioritize()
             {
-                this.cycleBaseIndex++;
-                this.cycleRunningIndex = 0;
-            }
-
-            public void ResetCycle()
-            {
-                this.cycleRunningIndex = 0;
-            }
-
-            public Player GetNextPlayer()
-            {
-                Player player = this.players[(this.cycleBaseIndex + this.cycleRunningIndex) % this.players.Count];
-                this.cycleRunningIndex++;
-                return player;
+                this.players.Sort((a, b) => b.priority - a.priority);
             }
         }
 
-        private List<TeamPriority> priorities; // list of team priorities, order is NOT linked to teamID
-        private Dictionary<int, List<Player>> teams; // players in teams keyed by teamID
+        private List<PrioritizedTeam> teams;
         public PickOrder(List<Player> players)
         {
-            this.teams = new Dictionary<int, List<Player>>() { };
-
-            this.priorities = new List<TeamPriority>();
-            foreach (Player player in players) 
+            Dictionary<int, PrioritizedTeam> teamDict = new Dictionary<int, PrioritizedTeam>() { };
+            
+            foreach (Player player in players)
             {
-                if (!this.teams.ContainsKey(player.teamID)) { this.teams[player.teamID] = new List<Player>() { }; }
+                if (!teamDict.ContainsKey(player.teamID)) { teamDict[player.teamID] = new PrioritizedTeam(player.teamID); }
 
-                this.teams[player.teamID].Add(player);
+                teamDict[player.teamID].AddPlayer(player);
             }
 
-            foreach (int teamID in this.teams.Keys)
-            {
-                TeamPriority team = new TeamPriority(teamID);
-                this.priorities.Add(team);
-
-                foreach (Player player in this.teams[teamID])
-                {
-                    team.AddPlayer(player);
-                }
-            }
+            this.teams = teamDict.Values.ToList();
 
             this.Reprioritize();
         }
 
         private void Reprioritize()
         {
+            for (int i = 0; i < this.teams.Count; i++)
+            {
+                this.teams[i].Reprioritize();
+            }
+
             // Sort teams based on the most prioritized player of each team
-            this.priorities.Sort((a, b) => b.priority - a.priority);
+            this.teams.Sort((a, b) => b.priority - a.priority);
         }
 
         public List<Player> GetPickOrder(int winningTeam)
         {
-            var list = new List<Player>(); // List of players
-            int maxTeamPlayers = this.teams.Select(kv => kv.Value.Count()).Max();
-
-            var filteredPriorities = this.priorities.Where(p => p.teamId != winningTeam).ToList();
-
-            for (int teamIndex = 0; teamIndex < this.priorities.Count; teamIndex++)
+            for (int teamIndex = 0; teamIndex < this.teams.Count; teamIndex++)
             {
-                if (this.priorities[teamIndex].teamId != winningTeam)
+                if (this.teams[teamIndex].teamId != winningTeam)
                 {
-                    this.priorities[teamIndex].priority += teamIndex * teamIndex;
+                    this.teams[teamIndex].priority += teamIndex * teamIndex;
                 }
             }
+
+            var list = new List<Player>();
+            int pickOrder = 0;
+
+            foreach (var prioritizedPlayer in this.GetPlayers(winningTeam))
+            {
+                list.Add(prioritizedPlayer.player);
+                prioritizedPlayer.priority += pickOrder * pickOrder;
+                pickOrder++;
+            }
+
+            this.Reprioritize();
+            return list;
+        }
+
+        private IEnumerable<PrioritizedPlayer> GetPlayers(int winningTeam)
+        {
+            int maxTeamPlayers = this.teams.Select(t => t.players.Count()).Max();
+            var filteredPriorities = this.teams.Where(p => p.teamId != winningTeam).ToList();
 
             for (int playerIndex = 0; playerIndex < maxTeamPlayers; playerIndex++)
             {
                 for (int teamIndex = 0; teamIndex < filteredPriorities.Count; teamIndex++)
                 {
-                    if (playerIndex >= filteredPriorities[teamIndex].players.Count)
+                    if (playerIndex < filteredPriorities[teamIndex].players.Count)
                     {
-                        continue;
+                        yield return filteredPriorities[teamIndex].players[playerIndex];
                     }
-
-                    list.Add(filteredPriorities[teamIndex].GetNextPlayer());
                 }
             }
+        }
 
-            filteredPriorities[0].NextCycle();
+        public void HandlePlayerLeft(Player leftPlayer)
+        {
+            // remove any teams that are now empty
+            this.teams = this.teams.Where(t => t.players.Where(p => p.player != leftPlayer).Any()).ToList();
 
-            this.Reprioritize();
-            return list;
+            foreach (PrioritizedTeam team in this.teams)
+            {
+                team.players = team.players.Where(p => p.player != leftPlayer).ToList();
+                team.teamId = team.players.First().player.teamID; // we are guaranteed to have a non-empty player list from the logic above
+            }
         }
     }
 }
