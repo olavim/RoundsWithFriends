@@ -66,16 +66,16 @@ namespace RWF
                 
                 instance.players.Add(component);
                 PlayerManager.RegisterPlayer(component.player);
-                component.player.AssignCharacter(character, (int)instance.GetFieldValue("playerIDToSet"));
+                //component.player.AssignCharacter(character, (int)instance.GetFieldValue("playerIDToSet"));
                 // assign character
-                yield return SyncMethodStatic.SyncMethod(typeof(PlayerAssignerExtensions), nameof(PlayerAssignerExtensions.RPCO_AssignCharacter), null, component.view.ViewID, character, (int) instance.GetFieldValue("playerIDToSet"));
+                yield return SyncMethodStatic.SyncMethod(typeof(PlayerAssignerExtensions), nameof(PlayerAssignerExtensions.RPCA_AssignCharacter), null, component.view.ViewID, character, (int) instance.GetFieldValue("playerIDToSet"));
 
                 yield break;
             }
             yield break;
         }
         [UnboundRPC]
-        private static void RPCO_AssignCharacter(int viewID, LobbyCharacter character, int playerID)
+        private static void RPCA_AssignCharacter(int viewID, LobbyCharacter character, int playerID)
         {
             PlayerAssigner.instance.StartCoroutine(PlayerAssignerExtensions.AssignCharacterCoroutine(viewID, character, playerID));
         }
@@ -86,6 +86,8 @@ namespace RWF
                 return (PhotonView.Find(viewID) != null && PhotonView.Find(viewID).GetComponent<Player>() != null);
             });
 
+            // only assign on all other clients
+            //if (!PhotonView.Find(viewID).IsMine) { PhotonView.Find(viewID).GetComponent<Player>().AssignCharacter(character, playerID); }
             PhotonView.Find(viewID).GetComponent<Player>().AssignCharacter(character, playerID);
 
             NetworkingManager.RPC(typeof(PlayerAssignerExtensions), nameof(PlayerAssignerExtensions.CreatePlayerResponse), PhotonNetwork.LocalPlayer.ActorNumber, character);
@@ -96,7 +98,7 @@ namespace RWF
         {
             if (targetedCharacter.IsMine)
             {
-                SyncMethodStatic.RemovePendingRequest(typeof(PlayerAssignerExtensions), respondingPlayer, nameof(PlayerAssignerExtensions.RPCO_AssignCharacter));
+                SyncMethodStatic.RemovePendingRequest(typeof(PlayerAssignerExtensions), respondingPlayer, nameof(PlayerAssignerExtensions.RPCA_AssignCharacter));
             }
         }
         

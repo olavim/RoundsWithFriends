@@ -52,6 +52,8 @@ namespace RWF
             instance.AssignColorID(character.colorID);
             instance.AssignTeamID(character.teamID);
             instance.AssignPlayerID(playerID);
+
+            PlayerManager.instance.PlayerJoined(instance);
         }
 
         public static void AssignUniqueID(this Player instance, int uniqueID)

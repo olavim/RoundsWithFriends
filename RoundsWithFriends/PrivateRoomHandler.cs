@@ -417,7 +417,13 @@ namespace RWF
         private void Update()
         {
             // make sure there are no teams in a gamemode that doesn't allow them
-            if (this.IsOpen && PhotonNetwork.IsMasterClient) { this.HandleTeamRules(); }
+            // don't try to do this right as the game is starting
+            if (this.IsOpen && PhotonNetwork.IsMasterClient && !this.lockReadyRequests)
+            {
+                // for the first 2-3 frames when a player joins, HandleTeamRules throws a NullReference, so we catch it
+                try { this.HandleTeamRules(); }
+                catch { }
+            }
 
             /* Ready toggle requests are handled by master client in the order they arrive. If at any point all players are ready
              * (even if there would be more toggle requests remaining), the game starts immediately.
@@ -768,33 +774,34 @@ namespace RWF
                 PhotonNetwork.CurrentRoom.GetPlayer(actorID).SetProperty("players", this.PrivateRoomCharacters.Where(p => p.actorID == actorID).OrderBy(p => p.localID).ToArray());
             }
 
+            yield return this.WaitForSyncUp();
+
             foreach (var player in this.PrivateRoomCharacters.OrderBy(p => p.teamID).ThenBy(_ => UnityEngine.Random.Range(0f,1f)))
             {
-                yield return this.SyncMethod(nameof(PrivateRoomHandler.CreatePlayer), player.actorID, player.actorID, player.localID);
+                yield return this.SyncMethod(nameof(PrivateRoomHandler.CreatePlayer), player.actorID, player);
             }
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.StartGame));
         }
 
         [UnboundRPC]
-        public static void CreatePlayer(int actorID, int localID)
+        public static void CreatePlayer(LobbyCharacter player)
         {
-            if (PhotonNetwork.LocalPlayer.ActorNumber == actorID)
+            if (player.IsMine)
             {
                 var instance = PrivateRoomHandler.instance;
-                instance.StartCoroutine(instance.CreatePlayerCoroutine(actorID, localID));
+                instance.StartCoroutine(instance.CreatePlayerCoroutine(player));
             }
         }
 
-        private IEnumerator CreatePlayerCoroutine(int actorID, int localID)
+        private IEnumerator CreatePlayerCoroutine(LobbyCharacter lobbyCharacter)
         {
             this.MainPage.Close();
             MainMenuHandler.instance.Close();
             UIHandler.instance.ShowJoinGameText("LETS GOO!", PlayerSkinBank.GetPlayerSkinColors(1).winText);
 
             RWFMod.instance.SetSoundEnabled("PlayerAdded", false);
-            LobbyCharacter lobbyCharacter = this.FindLobbyCharacter(actorID, localID);
-            yield return PlayerAssigner.instance.CreatePlayer(lobbyCharacter, this.devicesToUse[localID]);
+            yield return PlayerAssigner.instance.CreatePlayer(lobbyCharacter, this.devicesToUse[lobbyCharacter.localID]);
             RWFMod.instance.SetSoundEnabled("PlayerAdded", true);
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.CreatePlayerResponse), PhotonNetwork.LocalPlayer.ActorNumber);
@@ -826,6 +833,31 @@ namespace RWF
                 PrivateRoomHandler.SaveSettings();
             }
 
+        }
+
+        [UnboundRPC]
+        public static void RPC_RequestSync(int requestingPlayer)
+        {
+            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RPC_SyncResponse), requestingPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
+        }
+
+        [UnboundRPC]
+        public static void RPC_SyncResponse(int requestingPlayer, int readyPlayer)
+        {
+            if (PhotonNetwork.LocalPlayer.ActorNumber == requestingPlayer)
+            {
+                PrivateRoomHandler.instance.RemovePendingRequest(readyPlayer, nameof(PrivateRoomHandler.RPC_RequestSync));
+            }
+        }
+
+        private IEnumerator WaitForSyncUp()
+        {
+            if (PhotonNetwork.OfflineMode)
+            {
+                yield break;
+            }
+
+            yield return this.SyncMethod(nameof(PrivateRoomHandler.RPC_RequestSync), null, PhotonNetwork.LocalPlayer.ActorNumber);
         }
 
         public void Open()
