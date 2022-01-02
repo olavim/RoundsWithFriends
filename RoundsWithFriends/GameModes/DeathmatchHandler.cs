@@ -57,16 +57,16 @@ namespace RWF.GameModes
             {
                 if (!newTeamPoints.Keys.Contains(newTeamIDs[player]))
                 {
-                    newTeamPoints[newTeamIDs[player]] = GM_TeamDeathmatch.instance.teamPoints[oldTeamIDs[player]];
+                    newTeamPoints[newTeamIDs[player]] = GM_Deathmatch.instance.teamPoints[oldTeamIDs[player]];
                 }
                 if (!newTeamRounds.Keys.Contains(newTeamIDs[player]))
                 {
-                    newTeamRounds[newTeamIDs[player]] = GM_TeamDeathmatch.instance.teamRounds[oldTeamIDs[player]];
+                    newTeamRounds[newTeamIDs[player]] = GM_Deathmatch.instance.teamRounds[oldTeamIDs[player]];
                 }
             }
 
-            GM_TeamDeathmatch.instance.teamPoints = newTeamPoints;
-            GM_TeamDeathmatch.instance.teamRounds = newTeamRounds;
+            GM_Deathmatch.instance.teamPoints = newTeamPoints;
+            GM_Deathmatch.instance.teamRounds = newTeamRounds;
 
             // fix score counter
             UIHandler.instance.roundCounter.GetData().teamPoints = newTeamPoints;
