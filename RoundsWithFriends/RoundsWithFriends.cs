@@ -54,14 +54,14 @@ namespace RWF
         public bool showSpawns = false;
     }
 
-    [BepInDependency("com.willis.rounds.unbound", "2.9.0")]
+    [BepInDependency("com.willis.rounds.unbound", "2.10.0")]
     [BepInPlugin(ModId, "RoundsWithFriends", Version)]
     public class RWFMod : BaseUnityPlugin
     {
         private const string ModName = "Rounds With Friends";
         private static string CompatibilityModName => RWFMod.ModName.Replace(" ", "");
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "2.0.0";
+        public const string Version = "2.1.0";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
