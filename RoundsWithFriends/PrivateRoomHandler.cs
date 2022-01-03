@@ -72,19 +72,21 @@ namespace RWF
         private const int ReadyStartGameCountdown = 3;
         private const string DefaultHeaderText = "ROUNDS WITH FRIENDS";
 
+        private static readonly Color disabledTextColor = new Color32(150, 150, 150, 16);
+        private static readonly Color enabledTextColor = new Color32(230, 230, 230, 255);
+
         public static PrivateRoomHandler instance;
         private static string PrevHandlerID;
         private static GameSettings PrevSettings;
 
-        //private Button readyButton;
-        //private ListMenuButton readyListButton;
-        private TextMeshProUGUI gameModeText;
         private GameObject grid;
-        //private GameObject waiting;
         private GameObject header;
         private GameObject gamemodeHeader;
+        private GameObject gameModeListObject;
         private TextMeshProUGUI headerText;
         private TextMeshProUGUI gamemodeHeaderText;
+        private TextMeshProUGUI inviteText;
+        private TextMeshProUGUI gameModeText;
         private VersusDisplay versusDisplay;
         private bool waitingForToggle;
         private bool lockReadyRequests;
@@ -105,6 +107,13 @@ namespace RWF
         public LobbyCharacter FindLobbyCharacter(int uniqueID)
         {
             return this.PrivateRoomCharacters.Where(p => p.uniqueID == uniqueID).FirstOrDefault();
+        }
+        public LobbyCharacter FindLobbyCharacter(InputDevice device)
+        {
+            if (!this.devicesToUse.Values.Contains(device)) { return null; }
+            int localID = this.devicesToUse.Where(kv => kv.Value == device).Select(kv => kv.Key).FirstOrDefault();
+            int actorID = PhotonNetwork.LocalPlayer.ActorNumber;
+            return this.FindLobbyCharacter(actorID, localID);
         }
 
         public bool IsOpen
@@ -204,7 +213,7 @@ namespace RWF
             var gamemodeGoRect = this.gamemodeHeader.AddComponent<RectTransform>();
             var gamemodeGoLayout = this.gamemodeHeader.AddComponent<LayoutElement>();
             this.gamemodeHeaderText = gamemodeTextGo.GetComponent<TextMeshProUGUI>();
-            this.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
+            this.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "CONNECTING...";
             this.gamemodeHeaderText.fontSize = 60;
             this.gamemodeHeaderText.fontStyle = FontStyles.Bold;
             this.gamemodeHeaderText.enableWordWrapping = false;
@@ -219,15 +228,38 @@ namespace RWF
             playersGo.transform.SetParent(this.grid.transform);
             playersGo.transform.localScale = Vector3.one;
             this.versusDisplay = playersGo.GetOrAddComponent<VersusDisplay>();
-            /*
-            this.waiting = new GameObject("Waiting");
-            this.waiting.transform.SetParent(this.grid.transform);
-            this.waiting.transform.localScale = Vector3.one;
-            this.waiting.transform.localPosition += new Vector3(0, 300, 0);
 
-            var waitingTextGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab, this.waiting.transform);
-            waitingTextGo.transform.localScale = Vector3.one;
-            waitingTextGo.transform.localPosition = Vector3.zero;*/
+            var keybindGo = new GameObject("Keybinds");
+            keybindGo.transform.SetParent(this.grid.transform);
+            keybindGo.transform.localScale = Vector3.one;
+            //keybindGo.gameObject.AddComponent<KeybindHints.DisableIfSet>();
+            var keybindHints1 = GameObject.Instantiate(KeybindHints.KeybindPrefab, keybindGo.transform).AddComponent<KeybindHints.ControllerBasedHints>();
+            keybindHints1.hints = new string[] { "[A/D]", "[LEFT STICK]" };
+            keybindHints1.action = "TO CHANGE TEAM";
+            keybindHints1.gameObject.SetActive(true);
+            keybindHints1.gameObject.AddComponent<KeybindHints.DisableIfSet>();
+            var keybindHints2 = GameObject.Instantiate(KeybindHints.KeybindPrefab, keybindGo.transform).AddComponent<KeybindHints.ControllerBasedHints>();
+            keybindHints2.hints = new string[] { "[SPACE]", "[START]" };
+            keybindHints2.action = "TO JOIN/READY";
+            keybindHints2.gameObject.SetActive(true);
+            keybindHints2.gameObject.AddComponent<KeybindHints.DisableIfSet>();
+            var keybindHints3 = GameObject.Instantiate(KeybindHints.KeybindPrefab, keybindGo.transform).AddComponent<KeybindHints.ControllerBasedHints>();
+            keybindHints3.hints = new string[] { "[ESC]", "[B]" };
+            keybindHints3.action = "TO UNREADY/LEAVE";
+            keybindHints3.gameObject.SetActive(true);
+            keybindHints3.gameObject.AddComponent<KeybindHints.DisableIfSet>();
+            var keybindHints4 = GameObject.Instantiate(KeybindHints.KeybindPrefab, keybindGo.transform).AddComponent<KeybindHints.ControllerBasedHints>();
+            keybindHints4.hints = new string[] { "[Q/E]", "[LB/RB]" };
+            keybindHints4.action = "TO CHANGE FACE";
+            keybindHints4.gameObject.SetActive(true);
+            keybindHints4.gameObject.AddComponent<KeybindHints.DisableIfSet>();
+            var keybindRect = keybindGo.AddComponent<RectTransform>();
+            var keybindLayout = keybindGo.AddComponent<LayoutElement>();
+            var keybindGroup = keybindGo.AddComponent<HorizontalLayoutGroup>();
+            keybindGroup.childAlignment = TextAnchor.MiddleCenter;
+            keybindGroup.spacing = 450f;
+            keybindLayout.ignoreLayout = false;
+            keybindLayout.minHeight = 50f;
 
             var divGo1 = new GameObject("Divider1");
             divGo1.transform.SetParent(this.grid.transform);
@@ -240,13 +272,15 @@ namespace RWF
             var inviteTextGo = GetText("INVITE");
             inviteTextGo.transform.SetParent(inviteGo.transform);
             inviteTextGo.transform.localScale = Vector3.one;
+            this.inviteText = inviteTextGo.GetComponent<TextMeshProUGUI>();
+            this.inviteText.color = PhotonNetwork.IsConnected ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
 
-            var gameModeGo = new GameObject("GameMode");
-            gameModeGo.transform.SetParent(this.grid.transform);
-            gameModeGo.transform.localScale = Vector3.one;
+            this.gameModeListObject = new GameObject("GameMode");
+            this.gameModeListObject.transform.SetParent(this.grid.transform);
+            this.gameModeListObject.transform.localScale = Vector3.one;
 
-            var gameModeTextGo = GetText(GameModeManager.CurrentHandlerID?.ToUpper() ?? "");
-            gameModeTextGo.transform.SetParent(gameModeGo.transform);
+            var gameModeTextGo = GetText(GameModeManager.CurrentHandlerID?.ToUpper() ?? "GAMEMODE");
+            gameModeTextGo.transform.SetParent(this.gameModeListObject.transform);
             gameModeTextGo.transform.localScale = Vector3.one;
 
             var backGo = new GameObject("Back");
@@ -257,15 +291,6 @@ namespace RWF
             backTextGo.transform.SetParent(backGo.transform);
             backTextGo.transform.localScale = Vector3.one;
 
-            /*
-            var waitingGoRect = this.waiting.AddComponent<RectTransform>();
-            var waitingGoLayout = this.waiting.AddComponent<LayoutElement>();
-            var waitingText = waitingTextGo.GetComponent<TextMeshProUGUI>();
-            waitingText.text = "WAITING FOR PLAYERS...";
-            waitingText.fontSize = 80;
-            waitingGoLayout.ignoreLayout = true;
-            waitingGoRect.sizeDelta = new Vector2(900, 300);
-            */
             inviteGo.AddComponent<RectTransform>();
             inviteGo.AddComponent<CanvasRenderer>();
             var inviteLayout = inviteGo.AddComponent<LayoutElement>();
@@ -276,21 +301,23 @@ namespace RWF
 
             inviteButton.onClick.AddListener(() =>
             {
+                if (!PhotonNetwork.IsConnected) { return; }
                 var field = typeof(NetworkConnectionHandler).GetField("m_SteamLobby", BindingFlags.Static | BindingFlags.NonPublic);
                 var lobby = (ClientSteamLobby) field.GetValue(null);
                 lobby.ShowInviteScreenWhenConnected();
             });
 
-            gameModeGo.AddComponent<RectTransform>();
-            gameModeGo.AddComponent<CanvasRenderer>();
-            var gameModeLayout = gameModeGo.AddComponent<LayoutElement>();
+            this.gameModeListObject.AddComponent<RectTransform>();
+            this.gameModeListObject.AddComponent<CanvasRenderer>();
+            var gameModeLayout = this.gameModeListObject.AddComponent<LayoutElement>();
             gameModeLayout.minHeight = 92;
-            var gameModeButton = gameModeGo.AddComponent<Button>();
-            var gameModeListButton = gameModeGo.AddComponent<ListMenuButton>();
+            var gameModeButton = this.gameModeListObject.AddComponent<Button>();
+            var gameModeListButton = this.gameModeListObject.AddComponent<ListMenuButton>();
             gameModeListButton.setBarHeight = 92f;
 
             gameModeButton.onClick.AddListener(() =>
             {
+                if (!PhotonNetwork.IsConnected) { return; }
                 if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
                 {
                     string nextGameMode = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "Deathmatch" : "Team Deathmatch";
@@ -304,6 +331,7 @@ namespace RWF
             });
 
             this.gameModeText = gameModeTextGo.GetComponent<TextMeshProUGUI>();
+            this.gameModeText.color = PhotonNetwork.IsConnected ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
 
             divGo1.AddComponent<RectTransform>();
 
@@ -440,6 +468,14 @@ namespace RWF
             if (!this.IsOpen)
             {
                 return;
+            }
+
+            // set text colors to enabled, hide gamemode button if this player is not host
+            this.inviteText.color = PrivateRoomHandler.enabledTextColor;
+            this.gameModeText.color = PrivateRoomHandler.enabledTextColor;
+            if (!PhotonNetwork.IsMasterClient)
+            {
+                this.gameModeListObject.SetActive(false);
             }
 
             // necessary for VersusDisplay characters to render in the correct order
@@ -642,24 +678,9 @@ namespace RWF
                 return;
             }
             
-            //if (//RWFMod.DEBUG)
-            //{
             instance.versusDisplay.gameObject.SetActive(true);
             instance.header.gameObject.SetActive(true);
             instance.gamemodeHeader.gameObject.SetActive(true);
-                //instance.waiting.SetActive(false);
-            //}
-            /*
-            else if (PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount >= 2 && !instance.versusDisplay.gameObject.activeSelf)
-            {
-                instance.versusDisplay.gameObject.SetActive(true);
-                instance.waiting.SetActive(false);
-            }
-            else if ((PhotonNetwork.CurrentRoom == null || PhotonNetwork.CurrentRoom.PlayerCount < 2) && instance.versusDisplay.gameObject.activeSelf)
-            {
-                instance.versusDisplay.gameObject.SetActive(false);
-                instance.waiting.SetActive(true);
-            }*/
 
             if (instance.versusDisplay.gameObject.activeSelf)
             {

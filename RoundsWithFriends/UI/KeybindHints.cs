@@ -143,6 +143,45 @@ namespace RWF.UI
                 if (PlayerPrefs.GetInt(RWFMod.GetCustomPropertyKey("ShowKeybinds"), 1) == 0 && this.gameObject != null) { UnityEngine.GameObject.Destroy(this.gameObject); }
             }
         }
+        internal class DisableIfSet : MonoBehaviour
+        {
+            void Start()
+            {
+                if (PlayerPrefs.GetInt(RWFMod.GetCustomPropertyKey("ShowKeybinds"), 1) == 0 && this.gameObject != null) { this.gameObject.SetActive(false); }
+            }
+            void Update()
+            {
+                if (PlayerPrefs.GetInt(RWFMod.GetCustomPropertyKey("ShowKeybinds"), 1) == 0 && this.gameObject != null) { this.gameObject.SetActive(false); }
+            }
+        }
+        internal class ControllerBasedHints : MonoBehaviour
+        {
+            internal string[] hints;
+            internal string action;
+            private const float timeToWait = 1f;
+            private float time = 0f;
+            void Start()
+            {
+                if (this.hints == null || this.action == null || this.hints.Length == 1)
+                {
+                    UnityEngine.GameObject.Destroy(this);
+                }
+            }
+            void Update()
+            {
+                this.time -= Time.deltaTime;
+                if (this.time < 0f)
+                {
+                    this.time = ControllerBasedHints.timeToWait;
+                    int i = MenuControllerHandler.menuControl == MenuControllerHandler.MenuControl.Controller ? 1 : 0;
+                    this.gameObject.GetOrAddComponent<TextMeshProUGUI>().text = $"{this.hints[i]} TO {this.action}".ToUpper();
+                    if (this.gameObject?.transform?.parent?.GetComponent<LayoutGroup>() != null)
+                    {
+                        LayoutRebuilder.ForceRebuildLayoutImmediate(this.gameObject.GetComponent<RectTransform>());
+                    }
+                }
+            }
+        }
         class CycleHints : MonoBehaviour
         {
             internal string[] hints;

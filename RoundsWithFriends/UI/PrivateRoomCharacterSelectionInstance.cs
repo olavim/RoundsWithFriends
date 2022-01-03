@@ -266,7 +266,7 @@ namespace RWF.UI
             /*
             if (this.device == null)
             {
-                if (Input.GetKeyDown(KeyCode.Space))
+                if (Input.GetKeyDown(KeyCode.Apace))
                 {
                     this.ReadyUp();
                 }
@@ -302,26 +302,26 @@ namespace RWF.UI
             }
             this.counter += Time.deltaTime;
             int previouslySelectedFace = this.currentlySelectedFace;
-            if (((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && (Mathf.Abs(this.device.LeftStickX.Value) > 0.5f || this.device.DPadLeft.WasPressed || this.device.DPadRight.WasPressed)) || (this.device == null && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.DownArrow)))) && this.counter > 0.2f)
+            if (((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && (Mathf.Abs(this.device.LeftStickX.Value) > 0.5f || this.device.DPadLeft.WasPressed || this.device.DPadRight.WasPressed|| this.device.RightBumper.WasPressed || this.device.LeftBumper.WasPressed)) || (this.device == null && (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.LeftArrow)))) && this.counter > 0.2f)
             {
                 // change face
-                if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.LeftStickX.Value > 0.5f) || (this.device == null && (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))))
+                if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.RightBumper.WasPressed) || (this.device == null && (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.UpArrow))))
                 {
                     this.currentlySelectedFace++;
                 }
-                else if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.LeftStickX.Value < -0.5f) || (this.device == null && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))))
+                else if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.LeftBumper.WasPressed) || (this.device == null && (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.DownArrow))))
                 {
                     this.currentlySelectedFace--;
                 }
                 bool colorChanged = false;
                 int colorIDDelta = 0;
                 // change team
-                if ((this.device != null && this.device.DPadRight.WasPressed) || ((this.device == null) && (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))))
+                if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.LeftStickX.Value > 0.5f || this.device.DPadRight.WasPressed)) || ((this.device == null) && (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))))
                 {
                     colorIDDelta = +1;
                     colorChanged = true;
                 }
-                else if ((this.device != null && this.device.DPadLeft.WasPressed) || ((this.device == null) && (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))))
+                else if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.LeftStickX.Value < -0.5f || this.device.DPadLeft.WasPressed)) || ((this.device == null) && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))))
                 {
                     colorIDDelta = -1;
                     colorChanged = true;

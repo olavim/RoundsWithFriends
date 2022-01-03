@@ -41,11 +41,11 @@ namespace RWF
                 teamGroupGO.transform.SetSiblingIndex(teamID);
                 teamGroupGO.transform.localScale = Vector3.one;
 
-                teamGroupGO.AddComponent<RectTransform>();
+                teamGroupGO.AddComponent<RectTransform>().pivot = new Vector2(0.5f, 0.1f);
                 var layoutGroup = teamGroupGO.AddComponent<VerticalLayoutGroup>();
                 var sizer = teamGroupGO.AddComponent<ContentSizeFitter>();
                 var layout0 = teamGroupGO.AddComponent<LayoutElement>();
-                sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                sizer.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
                 sizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 layoutGroup.childAlignment = TextAnchor.MiddleCenter;
                 layoutGroup.spacing = 50f;
@@ -175,14 +175,11 @@ namespace RWF
             VersusDisplay.instance = this;
         }
 
-        private void Start() {
+        private void Start()
+        {
             this.gameObject.GetOrAddComponent<CanvasRenderer>();
             var fitter = this.gameObject.GetOrAddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            var horizLayout = this.gameObject.GetOrAddComponent<HorizontalLayoutGroup>();
-            horizLayout.childAlignment = TextAnchor.MiddleCenter;
-            horizLayout.spacing = 25;
 
             this.UpdatePlayers();
         }
