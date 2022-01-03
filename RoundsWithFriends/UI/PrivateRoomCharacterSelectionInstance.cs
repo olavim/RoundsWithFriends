@@ -59,7 +59,6 @@ namespace RWF.UI
 
             this.gameObject.name += " " + name;
 
-            if (!PrivateRoomHandler.instance.devicesToUse.ContainsKey(localID)) { yield break; }
             InputDevice inputDevice = lobbyCharacter.IsMine ? PrivateRoomHandler.instance.devicesToUse[localID] : null;
 
             VersusDisplay.instance.SetPlayerSelectorGO(lobbyCharacter.uniqueID, this.gameObject);
@@ -266,19 +265,6 @@ namespace RWF.UI
             {
                 return;
             }
-            /*
-            if (this.device == null)
-            {
-                if (Input.GetKeyDown(KeyCode.Apace))
-                {
-                    this.ReadyUp();
-                }
-            }*/
-            /*
-            else if ((this.device != null) && (this.device.CommandWasPressed || this.device.Action1.WasPressed) && this.counter > 0f)
-            {
-                this.ReadyUp();
-            }*/
             HoverEvent component = this.buttons[this.currentlySelectedFace].GetComponent<HoverEvent>();
             if (this.currentButton != component)
             {
@@ -431,6 +417,7 @@ namespace RWF.UI
         [PunRPC]
         private void RPCA_ChangeTeam(int newColorID)
         {
+            if (this.currentPlayer == null || !this.transform.GetComponentsInChildren<HoverEvent>(true).Any()) { return; }
             // RPCA -> RPC(All)
             // this is sent to all players
 
