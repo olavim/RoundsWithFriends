@@ -61,7 +61,7 @@ namespace RWF
         private const string ModName = "Rounds With Friends";
         private static string CompatibilityModName => RWFMod.ModName.Replace(" ", "");
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "2.1.0";
+        public const string Version = "2.1.1";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
@@ -183,7 +183,7 @@ namespace RWF
         public void Start()
         {
             // register credits with unbound
-            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI)", "Pykess (> 4 player support, multiple players per client, additional player colors, UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://www.buymeacoffee.com/Pykess" });
+            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI)", "Pykess (> 4 player support, multiple players per client, additional player colors, disconnect handling, UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://www.buymeacoffee.com/Pykess" });
 
             // add GUI to modoptions menu
             Unbound.RegisterMenu(RWFMod.ModName, () => { }, this.GUI, null, false);
