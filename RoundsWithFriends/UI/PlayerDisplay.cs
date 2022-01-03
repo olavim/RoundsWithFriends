@@ -102,12 +102,20 @@ namespace RWF.UI
                 {
                     this.playersAdded = true;
                     this.setBar.SetEnabled(true);
-                    this.ExecuteAfterFrames(1, () => ListMenu.instance.SelectButton(ListMenu.instance.selectedButton));
+                    this.ExecuteAfterFrames(1, () => ListMenu.instance.InvokeMethod("DeselectButton"));
                 }
                 else
                 {
+                    this.layout.minHeight = 0f;
                     return;
                 }
+            }
+            else if (!VersusDisplay.instance.PlayersHaveBeenAdded)
+            {
+                this.playersAdded = false;
+                this.setBar.SetEnabled(false);
+                this.ExecuteAfterFrames(1, () => ListMenu.instance.InvokeMethod("DeselectButton"));
+                return;
             }
             try
             {
@@ -132,7 +140,8 @@ namespace RWF.UI
                 }
                 else
                 {
-                    // TODO remove players
+                    // remove player
+                    this.PrivateRoom.StartCoroutine(this.PrivateRoom.RemovePlayer(this.PrivateRoom.FindLobbyCharacter(null)));
                 }
                 return;
             }
@@ -179,7 +188,8 @@ namespace RWF.UI
                     }
                     else
                     {
-                        // TODO remove players
+                        // remove player
+                        this.PrivateRoom.StartCoroutine(this.PrivateRoom.RemovePlayer(this.PrivateRoom.FindLobbyCharacter(device)));
                     }
                     return;
                 }
@@ -211,7 +221,7 @@ namespace RWF.UI
         public void SetEnabled(bool enabled)
         {
             this.apply = enabled;
-            this.playerDisplay?.Bar.SetActive(true);
+            this.playerDisplay?.Bar.SetActive(enabled);
         }
     }
 }

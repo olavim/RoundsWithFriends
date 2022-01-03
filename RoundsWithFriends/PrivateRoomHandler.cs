@@ -232,7 +232,6 @@ namespace RWF
             var keybindGo = new GameObject("Keybinds");
             keybindGo.transform.SetParent(this.grid.transform);
             keybindGo.transform.localScale = Vector3.one;
-            //keybindGo.gameObject.AddComponent<KeybindHints.DisableIfSet>();
             var keybindHints1 = GameObject.Instantiate(KeybindHints.KeybindPrefab, keybindGo.transform).AddComponent<KeybindHints.ControllerBasedHints>();
             keybindHints1.hints = new string[] { "[A/D]", "[LEFT STICK]" };
             keybindHints1.action = "TO CHANGE TEAM";
@@ -550,6 +549,24 @@ namespace RWF
             PrivateRoomHandler.UpdateVersusDisplay();
             base.OnPlayerLeftRoom(otherPlayer);
         }
+        
+        internal IEnumerator RemovePlayer(LobbyCharacter character)
+        {
+
+            LobbyCharacter[] localCharacters = PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players");
+
+            localCharacters[character.localID] = null;
+
+            PhotonNetwork.LocalPlayer.SetProperty("players", localCharacters);
+
+            this.devicesToUse.Remove(character.localID);
+
+            SoundPlayerStatic.Instance.PlayPlayerBallDisappear();
+
+            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdateVersusDisplay));
+
+            yield break;
+        }
 
         internal IEnumerator ToggleReady(InputDevice deviceReadied, bool doNotReady = false)
         {
@@ -617,12 +634,16 @@ namespace RWF
                  */
                 NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RequestReady), PhotonNetwork.LocalPlayer.ActorNumber, playerReadied.localID, !ready);
 
-                while (PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players")[playerReadied.localID].ready != !ready)
+                while (PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players")[playerReadied.localID] != null && PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players")[playerReadied.localID].ready != !ready)
                 {
                     yield return null;
                 }
+                if (PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players")[playerReadied.localID] == null)
+                {
+                    this.waitingForToggle = false;
+                    yield break;
+                }
 
-                //this.UpdateReadyBox();
                 SoundPlayerStatic.Instance.PlayPlayerAdded();
 
                 yield return new WaitForSeconds(0.1f);
@@ -711,6 +732,10 @@ namespace RWF
             }
 
             LobbyCharacter character = this.FindLobbyCharacter(actorID, localID);
+            if (character == null)
+            {
+                return;
+            }
             character.SetReady(ready);
             LobbyCharacter[] characters = PhotonNetwork.CurrentRoom.Players[actorID].GetProperty<LobbyCharacter[]>("players");
             characters[localID] = character;

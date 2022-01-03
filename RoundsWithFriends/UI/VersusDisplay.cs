@@ -228,6 +228,7 @@ namespace RWF
                     this.PlayerGO(player.uniqueID).transform.SetAsLastSibling();
 
                 }
+                this.HideEmptyPlayers(players.Select(p => p.uniqueID).ToArray());
                 this.HideEmptyTeams(players.Select(p => p.teamID).ToArray());
                 this.ResizeObjects(players);
             }
@@ -238,6 +239,30 @@ namespace RWF
             }
             
             yield break;
+        }
+        private void HideEmptyPlayers(int[] uniqueIDs)
+        {
+            List<int> keysToRemove = new List<int> { };
+            foreach (int i in this._playerGOs.Keys.Where(k => !uniqueIDs.Contains(k)))
+            {
+                if (this._playerGOs.TryGetValue(i, out GameObject playerGO))
+                {
+                    playerGO?.SetActive(false);
+                    if (playerGO != null) { GameObject.Destroy(playerGO); }
+                }
+                if (this._playerSelectorGOs.TryGetValue(i, out GameObject playerSelectorGO))
+                {
+                    playerSelectorGO?.SetActive(false);
+                    if (playerSelectorGO != null) { GameObject.Destroy(playerSelectorGO); }
+                }
+                keysToRemove.Add(i);
+            }
+            foreach (int i in keysToRemove)
+            {
+                if (this._playerGOs.ContainsKey(i)) { this._playerGOs.Remove(i); }
+                if (this._playerSelectorGOs.ContainsKey(i)) { this._playerSelectorGOs.Remove(i); }
+                if (this._playerSelectorGOsCreated.Contains(i)) { this._playerSelectorGOsCreated.Remove(i); }
+            }
         }
 
         private void HideEmptyTeams(int[] teamIDs)

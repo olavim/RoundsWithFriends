@@ -55,8 +55,11 @@ namespace RWF.UI
 
             LobbyCharacter lobbyCharacter = PhotonNetwork.CurrentRoom.GetPlayer(actorID).GetProperty<LobbyCharacter[]>("players")[localID];
 
+            if (lobbyCharacter == null) { yield break; }
+
             this.gameObject.name += " " + name;
 
+            if (!PrivateRoomHandler.instance.devicesToUse.ContainsKey(localID)) { yield break; }
             InputDevice inputDevice = lobbyCharacter.IsMine ? PrivateRoomHandler.instance.devicesToUse[localID] : null;
 
             VersusDisplay.instance.SetPlayerSelectorGO(lobbyCharacter.uniqueID, this.gameObject);
