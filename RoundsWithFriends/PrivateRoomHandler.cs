@@ -272,7 +272,7 @@ namespace RWF
             inviteTextGo.transform.SetParent(inviteGo.transform);
             inviteTextGo.transform.localScale = Vector3.one;
             this.inviteText = inviteTextGo.GetComponent<TextMeshProUGUI>();
-            this.inviteText.color = PhotonNetwork.IsConnected ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
+            this.inviteText.color = (PhotonNetwork.CurrentRoom != null) ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
 
             this.gameModeListObject = new GameObject("GameMode");
             this.gameModeListObject.transform.SetParent(this.grid.transform);
@@ -300,7 +300,7 @@ namespace RWF
 
             inviteButton.onClick.AddListener(() =>
             {
-                if (!PhotonNetwork.IsConnected) { return; }
+                if (PhotonNetwork.CurrentRoom == null) { return; }
                 var field = typeof(NetworkConnectionHandler).GetField("m_SteamLobby", BindingFlags.Static | BindingFlags.NonPublic);
                 var lobby = (ClientSteamLobby) field.GetValue(null);
                 lobby.ShowInviteScreenWhenConnected();
@@ -316,8 +316,8 @@ namespace RWF
 
             gameModeButton.onClick.AddListener(() =>
             {
-                if (!PhotonNetwork.IsConnected) { return; }
-                if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
+                if (PhotonNetwork.CurrentRoom == null) { return; }
+                if (PhotonNetwork.IsMasterClient)
                 {
                     string nextGameMode = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "Deathmatch" : "Team Deathmatch";
                     GameModeManager.SetGameMode(nextGameMode);
@@ -330,7 +330,7 @@ namespace RWF
             });
 
             this.gameModeText = gameModeTextGo.GetComponent<TextMeshProUGUI>();
-            this.gameModeText.color = PhotonNetwork.IsConnected ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
+            this.gameModeText.color = (PhotonNetwork.CurrentRoom != null) ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
 
             divGo1.AddComponent<RectTransform>();
 
