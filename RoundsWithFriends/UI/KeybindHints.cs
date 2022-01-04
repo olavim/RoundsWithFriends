@@ -42,8 +42,7 @@ namespace RWF.UI
             {
                 if (KeybindHints._KeybindPrefab != null) { return KeybindHints._KeybindPrefab; }
 
-                KeybindHints._KeybindPrefab = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab);
-                KeybindHints._KeybindPrefab.name = "Hint";
+                KeybindHints._KeybindPrefab = new GameObject("Hint");
                 UnityEngine.GameObject.DontDestroyOnLoad(KeybindHints._KeybindPrefab);
                 KeybindHints._KeybindPrefab.transform.localScale = Vector3.one;
 
@@ -59,13 +58,10 @@ namespace RWF.UI
                 text.alignment = TextAlignmentOptions.Left;
                 text.overflowMode = TextOverflowModes.Overflow;
                 text.enableWordWrapping = true;
-                text.color = new Color32(85, 90, 98, 255);
+                text.color = new Color32(150, 150, 150, 255);
                 text.text = "";
                 text.fontStyle = FontStyles.Normal;
                 text.autoSizeTextContainer = false;
-
-                var particleSystem = text.GetComponentInChildren<GeneralParticleSystem>();
-                particleSystem.particleSettings.size = 5;
 
                 KeybindHints._KeybindPrefab.SetActive(false);
 

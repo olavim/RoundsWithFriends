@@ -423,7 +423,14 @@ namespace RWF.UI
 
             // host has approved the team change, update across all clients
             this.currentPlayer.colorID = newColorID;
-            PrivateRoomHandler.instance.FindLobbyCharacter(this.currentPlayer.actorID, this.currentPlayer.localID).colorID = newColorID;
+            LobbyCharacter character = PrivateRoomHandler.instance.FindLobbyCharacter(this.currentPlayer.actorID, this.currentPlayer.localID);
+            if (character.IsMine)
+            {
+                character.colorID = newColorID;
+                LobbyCharacter[] characters = PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players");
+                characters[character.localID] = character;
+                PhotonNetwork.LocalPlayer.SetProperty("players", characters);
+            }
             this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
             for (int i = 0; i < this.buttons.Length; i++)
             {

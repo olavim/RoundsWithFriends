@@ -61,7 +61,7 @@ namespace RWF
         private const string ModName = "Rounds With Friends";
         private static string CompatibilityModName => RWFMod.ModName.Replace(" ", "");
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "2.1.2";
+        public const string Version = "2.1.3";
 
 #if DEBUG
         public static readonly bool DEBUG = true;

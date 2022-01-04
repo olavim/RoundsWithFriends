@@ -384,7 +384,7 @@ namespace RWF
                             break;
                         }
                     }
-                    this.versusDisplay.PlayerSelectorGO(character.uniqueID).GetComponent<PhotonView>().RPC("RPCA_ChangeTeam", RpcTarget.All, newColorID);
+                    if (orig != newColorID) { this.versusDisplay.PlayerSelectorGO(character.uniqueID).GetComponent<PhotonView>().RPC("RPCA_ChangeTeam", RpcTarget.All, newColorID); }
                 }
 
             }

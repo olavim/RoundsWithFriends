@@ -28,13 +28,13 @@ namespace RWF
         private Dictionary<int, GameObject> _playerGOs = new Dictionary<int, GameObject>() { };
         private Dictionary<int, GameObject> _playerSelectorGOs = new Dictionary<int, GameObject>() { };
         private List<int> _playerSelectorGOsCreated = new List<int>() { };
-        private Coroutine updatePlayersCO = null;
 
         public bool PlayersHaveBeenAdded => this._playerGOs.Keys.Any();
 
-        internal GameObject TeamGroupGO(int teamID, int colorID)
+        internal GameObject TeamGroupGO(int teamID, int colorID, bool force_update = false)
         {
-            if (!this._teamGroupGOs.TryGetValue(teamID, out GameObject teamGroupGO))
+            bool exists = this._teamGroupGOs.TryGetValue(teamID, out GameObject teamGroupGO);
+            if (!exists)
             {
                 teamGroupGO = new GameObject($"Team {teamID}");
                 teamGroupGO.transform.SetParent(this.transform);
@@ -61,7 +61,7 @@ namespace RWF
                 sizer1.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                 sizer1.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-                GameObject teamNameGo = GameObject.Instantiate(RoundsResources.FlickeringTextPrefab);
+                GameObject teamNameGo = GameObject.Instantiate(RoundsResources.StaticTextPrefab);
                 teamNameGo.GetComponent<RectTransform>().sizeDelta = new Vector2(400, 92);
 
                 var nameText = teamNameGo.GetComponent<TextMeshProUGUI>();
@@ -101,7 +101,7 @@ namespace RWF
 
                 var particleSystem = teamNameGo.GetComponentInChildren<GeneralParticleSystem>();
 
-                particleSystem.particleSettings.size = 4;
+                particleSystem.particleSettings.size = 3;
                 particleSystem.particleSettings.color = PlayerSkinBank.GetPlayerSkinColors(colorID).winText;
                 particleSystem.particleSettings.randomAddedColor = PlayerSkinBank.GetPlayerSkinColors(colorID).backgroundColor;
                 particleSystem.particleSettings.randomColor = PlayerSkinBank.GetPlayerSkinColors(colorID).color;
@@ -113,8 +113,9 @@ namespace RWF
                 this._teamGroupGOs[teamID] = teamGroupGO;
             }
 
-            if (teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.color != PlayerSkinBank.GetPlayerSkinColors(colorID).winText)
+            if (force_update || !exists || teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().particleSettings.color != PlayerSkinBank.GetPlayerSkinColors(colorID).winText)
             {
+                
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().Stop();
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().StopAllCoroutines();
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = ExtraPlayerSkins.GetTeamColorName(colorID).ToUpper().Replace(" ", "\n");
@@ -124,9 +125,12 @@ namespace RWF
                 ((ObjectPool) teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().GetFieldValue("particlePool")).ClearPool();
                 if (teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().gameObject.activeSelf)
                 {
-                    teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().Play();
+                    teamGroupGO.transform.GetChild(0).GetChild(0).GetComponentInChildren<GeneralParticleSystem>().GetComponent<RoundsResources.InitStaticText>().InvokeMethod("OnEnable", new object[] { });
                 }
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().enabled = true;
+                teamGroupGO.transform.GetChild(0).GetChild(0).GetComponent<UnityEngine.UI.Mask>().InvokeMethod("OnEnable", new object[] { });
             }
+
             return teamGroupGO;
         }
 
@@ -185,8 +189,7 @@ namespace RWF
         }
         public void UpdatePlayers() 
         {
-            if (this.updatePlayersCO != null) { this.StopCoroutine(this.updatePlayersCO); }
-            this.updatePlayersCO = this.StartCoroutine(this.UpdatePlayersCoroutine());
+            this.StartCoroutine(this.UpdatePlayersCoroutine());
         }
 
         private IEnumerator UpdatePlayersCoroutine() 
@@ -205,6 +208,8 @@ namespace RWF
                     yield return null;
                 }
 
+                yield return this.WaitForSyncUp();
+
                 List<LobbyCharacter> players = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null).ToList();
                 // assign teamIDs according to colorIDs
                 int nextTeamID = 0;
@@ -221,7 +226,7 @@ namespace RWF
                         nextTeamID++;
                     }
 
-                    GameObject teamGroupGO = this.TeamGroupGO(player.teamID, player.colorID);
+                    GameObject teamGroupGO = this.TeamGroupGO(player.teamID, player.colorID, true);
                     teamGroupGO.SetActive(true);
                     this.PlayerGO(player.uniqueID).SetActive(true);
                     this.PlayerGO(player.uniqueID).transform.SetParent(teamGroupGO.transform.GetChild(1));
