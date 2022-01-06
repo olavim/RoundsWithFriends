@@ -14,13 +14,16 @@ namespace RWF.UI
         internal static float SpotlightSizeMult = 1f;
 
         private static bool fadeInProgress = false;
+        public static bool FadeInProgress => PlayerSpotlight.fadeInProgress;
+        private static Coroutine FadeCoroutine;
 
         private const int layer = 31;
 
         private const float MaxShadowOpacity = 1f;
-        private const float DefaultFadeInTime = 0.25f;
+        private const float DefaultFadeInTime = 0.5f;
+        private const float DefaultFadeInDelay = 1f;
         private const float DefaultFadeOutTime = 1f;
-        private const float DefaultFadeOutDelay = 1f;
+        private const float DefaultFadeOutDelay = 0f;//1f;
 
         private static GameObject _Cam = null;
 
@@ -117,22 +120,22 @@ namespace RWF.UI
             PlayerSpotlight.BG.GetComponent<SpriteRenderer>().color = new Color(color.r, color.g, color.b, a);
         }
 
-        public static void FadeIn(float time = PlayerSpotlight.DefaultFadeInTime)
+        public static void FadeIn(float time = PlayerSpotlight.DefaultFadeInTime, float delay = PlayerSpotlight.DefaultFadeInDelay)
         {
-            if (PlayerSpotlight.fadeInProgress) { return; }
+            PlayerSpotlight.CancelFade(false);
 
-            PlayerSpotlight.SetShadowOpacity(0f);
+            //PlayerSpotlight.SetShadowOpacity(0f);
             PlayerSpotlight.BG.SetActive(true);
-            RWFMod.instance.StartCoroutine(PlayerSpotlight.FadeToCoroutine(PlayerSpotlight.MaxShadowOpacity, time));
+            PlayerSpotlight.FadeCoroutine = RWFMod.instance.StartCoroutine(PlayerSpotlight.FadeToCoroutine(PlayerSpotlight.MaxShadowOpacity, time, delay));
         }
 
         public static void FadeOut(float time = PlayerSpotlight.DefaultFadeOutTime, float delay = PlayerSpotlight.DefaultFadeOutDelay)
         {
-            if (PlayerSpotlight.fadeInProgress) { return; }
+            PlayerSpotlight.CancelFade(false);
 
-            PlayerSpotlight.SetShadowOpacity(PlayerSpotlight.MaxShadowOpacity);
-            PlayerSpotlight.BG.SetActive(true);
-            RWFMod.instance.StartCoroutine(PlayerSpotlight.FadeToCoroutine(0f, time, delay, true));
+            //PlayerSpotlight.SetShadowOpacity(PlayerSpotlight.MaxShadowOpacity);
+            //PlayerSpotlight.BG.SetActive(true);
+            PlayerSpotlight.FadeCoroutine = RWFMod.instance.StartCoroutine(PlayerSpotlight.FadeToCoroutine(0f, time, delay, true));
         }
         private static IEnumerator FadeToCoroutine(float a, float time, float delay = 0f, bool disableWhenComplete = false)
         {
@@ -169,13 +172,40 @@ namespace RWF.UI
             spotlight.SetActive(true);
             spotlight.transform.localScale = 25f * Vector3.one;
         }
-
-        public static IEnumerator BattleStartFailsafe(IGameModeHandler gm)
+        public static IEnumerator FadeInHook(float extraDelay = 0f)
         {
-            PlayerSpotlight.SetShadowOpacity(0f);
-            PlayerSpotlight.BG.SetActive(false);
+            PlayerSpotlight.FadeIn(delay: PlayerSpotlight.DefaultFadeInDelay + extraDelay);
             yield break;
         }
+        public static IEnumerator FadeOutHook()
+        {
+            PlayerSpotlight.FadeOut();
+            yield break;
+        }
+        public static IEnumerator BattleStartFailsafe()
+        {
+            PlayerSpotlight.CancelFade(true);
+            yield break;
+        }
+        public static void CancelFade(bool disable_shadow = false)
+        {
+            if (PlayerSpotlight.FadeCoroutine != null)
+            {
+                RWFMod.instance.StopCoroutine(PlayerSpotlight.FadeCoroutine);
+            }
+            PlayerSpotlight.fadeInProgress = false;
+            if (disable_shadow)
+            {
+                PlayerSpotlight.SetShadowOpacity(0f);
+                PlayerSpotlight.BG.SetActive(false);
+            }
+        }
+        public static IEnumerator CancelFadeHook(bool disable_shadow = false)
+        {
+            PlayerSpotlight.CancelFade(disable_shadow);
+            yield break;
+        }
+
     }
     public class FollowPlayer : MonoBehaviour
     {

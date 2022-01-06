@@ -99,9 +99,7 @@ namespace RWF.Patches
     class PlayerManager_Patch_Move
     {
         /*
-         * This patch serves two purposes:
-         * Primary: to disable players' various colliders while they are being moved so that they do not interact with map objects
-         * Secondary: to fade in and out the PlayerSpotlight at the correct times
+         * disable players' various colliders while they are being moved so that they do not interact with map objects
          */
         static Type GetNestedMoveType()
         {
@@ -166,6 +164,7 @@ namespace RWF.Patches
 
         static void FadeInOut(bool fadeIn)
         {
+            if (PlayerSpotlight.FadeInProgress) { UnityEngine.Debug.Log("IN PROGRESS"); return; }
             if (fadeIn)
             {
                 PlayerSpotlight.FadeIn();
@@ -180,8 +179,6 @@ namespace RWF.Patches
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             List<CodeInstruction> codes = instructions.ToList();
-
-            // [Start primary task: disable players' object colliders during the move]
 
             var f_simulated = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "simulated");
             var f_isKinematic = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "isKinematic");
@@ -218,36 +215,6 @@ namespace RWF.Patches
                 codes.Insert(enable_index + 2, new CodeInstruction(OpCodes.Ldc_I4_1)); // Load 1 onto the stack [1, PlayerManager.<Move>d__40::player, ...]
                 codes.Insert(enable_index + 3, new CodeInstruction(OpCodes.Call, m_setCollidersActive)); // Calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
             }
-
-            // [End primary task]
-
-            // [Start secondary task: fade in and out the PlayerSpotlight]
-
-            var f_isPlaying = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(CharacterData), "isPlaying");
-            var m_FadeInOut = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerManager_Patch_Move), nameof(PlayerManager_Patch_Move.FadeInOut));
-
-            int fadeIn_index = disable_index + 4;
-            int fadeOut_index = -1;
-
-            for (int i = 1; i < codes.Count - 5; i++)
-            {
-                if (codes[i].opcode == OpCodes.Blt && codes[i+1].opcode == OpCodes.Ldarg_0 && codes[i+2].opcode == OpCodes.Ldc_I4_0 && codes[i+3].opcode == OpCodes.Stfld && codes[i+4].opcode == OpCodes.Br)
-                {
-                    fadeOut_index = i + 1;
-                }
-            }
-
-            if (fadeIn_index == -1 || fadeOut_index == -1)
-            {
-                throw new Exception("[PlayerManager.Move PATCH] INSTRUCTIONS FOR FADING SPOTLIGHT NOT FOUND");
-            }
-
-            codes.Insert(fadeIn_index, new CodeInstruction(OpCodes.Ldc_I4_1)); // load the constant 1 (true) onto the stack [1, ...]
-            codes.Insert(fadeIn_index + 1, new CodeInstruction(OpCodes.Call, m_FadeInOut)); // call the FadeInOut function, pulling the constant 1 (true) off the stack as the argument [...]
-            codes.Insert(fadeOut_index, new CodeInstruction(OpCodes.Ldc_I4_0)); // load the constant 0 (false) onto the stack [0, ...]
-            codes.Insert(fadeOut_index + 1, new CodeInstruction(OpCodes.Call, m_FadeInOut)); // call the FadeInOut function, pulling the constant 0 (false) off the stack as the argument [...]
-
-            // [End secondary task]
 
             return codes.AsEnumerable();
         }
