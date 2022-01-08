@@ -183,7 +183,7 @@ namespace RWF
         public void Start()
         {
             // register credits with unbound
-            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI)", "Pykess (> 4 player support, multiple players per client, additional player colors, disconnect handling, UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://www.buymeacoffee.com/Pykess" });
+            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI, Fair pick orders)", "Pykess (> 4 player support, multiple players per client, additional player colors, disconnect handling, UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://www.buymeacoffee.com/Pykess" });
 
             // add GUI to modoptions menu
             Unbound.RegisterMenu(RWFMod.ModName, () => { }, this.GUI, null, false);
@@ -220,10 +220,10 @@ namespace RWF
             GameModeManager.AddHook(GameModeHooks.HookPickStart, this.SetPlayerFaces);
             GameModeManager.AddHook(GameModeHooks.HookGameStart, gm => PlayerSpotlight.CancelFadeHook(true));
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, gm => PlayerSpotlight.BattleStartFailsafe());
-            GameModeManager.AddHook(GameModeHooks.HookPickEnd, gm => PlayerSpotlight.FadeInHook(0f));
-            GameModeManager.AddHook(GameModeHooks.HookPointEnd, gm => PlayerSpotlight.FadeInHook(1f));
-            GameModeManager.AddHook(GameModeHooks.HookRoundEnd, gm => PlayerSpotlight.CancelFadeHook(true));
-            GameModeManager.AddHook(GameModeHooks.HookPointStart, gm => PlayerSpotlight.FadeOutHook());
+            //GameModeManager.AddHook(GameModeHooks.HookPickEnd, gm => PlayerSpotlight.FadeInHook(0f));
+            //GameModeManager.AddHook(GameModeHooks.HookPointEnd, gm => PlayerSpotlight.FadeInHook(1f));
+            //GameModeManager.AddHook(GameModeHooks.HookRoundEnd, gm => PlayerSpotlight.CancelFadeHook(true));
+            //GameModeManager.AddHook(GameModeHooks.HookPointStart, gm => PlayerSpotlight.FadeOutHook());
 
             this.gameObject.AddComponent<RoundEndHandler>();
 

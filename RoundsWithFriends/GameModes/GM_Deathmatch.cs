@@ -8,6 +8,7 @@ using UnboundLib;
 using UnboundLib.Networking;
 using UnboundLib.GameModes;
 using Sonigon;
+using RWF.UI;
 
 namespace RWF.GameModes
 {
@@ -124,6 +125,8 @@ namespace RWF.GameModes
 			yield return new WaitForSeconds(0.25f);
 			UIHandler.instance.HideJoinGameText();
 
+            PlayerSpotlight.CancelFade(true);
+
 			PlayerManager.instance.SetPlayersSimulated(false);
 			PlayerManager.instance.InvokeMethod("SetPlayersVisible", false);
 			MapManager.instance.LoadNextLevel(false, false);
@@ -153,6 +156,7 @@ namespace RWF.GameModes
 
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPickEnd);
 
+            PlayerSpotlight.FadeIn();
 			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
 			TimeHandler.instance.DoSpeedUp();
 			TimeHandler.instance.StartGame();
@@ -175,8 +179,8 @@ namespace RWF.GameModes
 			}
 
 			this.StartCoroutine(PointVisualizer.instance.DoWinSequence(this.teamPoints, this.teamRounds, winningTeamID));
-
 			yield return new WaitForSecondsRealtime(1f);
+
 			MapManager.instance.LoadNextLevel(false, false);
 
 			yield return new WaitForSecondsRealtime(1.3f);
@@ -210,6 +214,7 @@ namespace RWF.GameModes
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPickEnd);
 
 			yield return this.StartCoroutine(this.WaitForSyncUp());
+            PlayerSpotlight.FadeIn();
 
 			TimeHandler.instance.DoSlowDown();
 			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
@@ -236,6 +241,7 @@ namespace RWF.GameModes
 
 			yield return new WaitForSecondsRealtime(0.5f);
 			yield return base.StartCoroutine(this.WaitForSyncUp());
+            PlayerSpotlight.FadeIn();
 
 			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
 			PlayerManager.instance.RevivePlayers();
@@ -257,13 +263,14 @@ namespace RWF.GameModes
 			}
 
 			//PlayerManager.instance.SetPlayersSimulated(false);
+            yield return this.WaitForSyncUp();
+            PlayerSpotlight.FadeOut();
 
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookRoundStart);
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
 
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
-            yield return this.WaitForSyncUp();
 			for (int i = 3; i >= 1; i--) {
 				UIHandler.instance.DisplayRoundStartText($"{i}");
 				SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_A_Ball_Shrink_Go_To_Left_Corner, this.transform);
@@ -289,12 +296,13 @@ namespace RWF.GameModes
 			}
 
 			//PlayerManager.instance.SetPlayersSimulated(false);
+            yield return this.WaitForSyncUp();
+            PlayerSpotlight.FadeOut();
 
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
 
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
-            yield return this.WaitForSyncUp();
 			for (int i = 3; i >= 1; i--)
 			{
 				UIHandler.instance.DisplayRoundStartText($"{i}");

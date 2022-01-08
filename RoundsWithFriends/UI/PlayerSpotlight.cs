@@ -20,10 +20,10 @@ namespace RWF.UI
         private const int layer = 31;
 
         private const float MaxShadowOpacity = 1f;
-        private const float DefaultFadeInTime = 0.5f;
-        private const float DefaultFadeInDelay = 1f;
-        private const float DefaultFadeOutTime = 1f;
-        private const float DefaultFadeOutDelay = 0f;//1f;
+        public const float DefaultFadeInTime = 0.5f;
+        public const float DefaultFadeInDelay = 0f;
+        public const float DefaultFadeOutTime = 1f;
+        public const float DefaultFadeOutDelay = 0f;
 
         private static GameObject _Cam = null;
 
@@ -123,8 +123,6 @@ namespace RWF.UI
         public static void FadeIn(float time = PlayerSpotlight.DefaultFadeInTime, float delay = PlayerSpotlight.DefaultFadeInDelay)
         {
             PlayerSpotlight.CancelFade(false);
-
-            //PlayerSpotlight.SetShadowOpacity(0f);
             PlayerSpotlight.BG.SetActive(true);
             PlayerSpotlight.FadeCoroutine = RWFMod.instance.StartCoroutine(PlayerSpotlight.FadeToCoroutine(PlayerSpotlight.MaxShadowOpacity, time, delay));
         }
@@ -132,9 +130,6 @@ namespace RWF.UI
         public static void FadeOut(float time = PlayerSpotlight.DefaultFadeOutTime, float delay = PlayerSpotlight.DefaultFadeOutDelay)
         {
             PlayerSpotlight.CancelFade(false);
-
-            //PlayerSpotlight.SetShadowOpacity(PlayerSpotlight.MaxShadowOpacity);
-            //PlayerSpotlight.BG.SetActive(true);
             PlayerSpotlight.FadeCoroutine = RWFMod.instance.StartCoroutine(PlayerSpotlight.FadeToCoroutine(0f, time, delay, true));
         }
         private static IEnumerator FadeToCoroutine(float a, float time, float delay = 0f, bool disableWhenComplete = false)
@@ -172,14 +167,14 @@ namespace RWF.UI
             spotlight.SetActive(true);
             spotlight.transform.localScale = 25f * Vector3.one;
         }
-        public static IEnumerator FadeInHook(float extraDelay = 0f)
+        public static IEnumerator FadeInHook(float time = PlayerSpotlight.DefaultFadeInTime, float delay = PlayerSpotlight.DefaultFadeInDelay)
         {
-            PlayerSpotlight.FadeIn(delay: PlayerSpotlight.DefaultFadeInDelay + extraDelay);
+            PlayerSpotlight.FadeIn(time, delay);
             yield break;
         }
-        public static IEnumerator FadeOutHook()
+        public static IEnumerator FadeOutHook(float time = PlayerSpotlight.DefaultFadeOutTime, float delay = PlayerSpotlight.DefaultFadeOutDelay)
         {
-            PlayerSpotlight.FadeOut();
+            PlayerSpotlight.FadeOut(time, delay);
             yield break;
         }
         public static IEnumerator BattleStartFailsafe()

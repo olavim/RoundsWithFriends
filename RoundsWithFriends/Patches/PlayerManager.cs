@@ -165,7 +165,6 @@ namespace RWF.Patches
                     }
                 }
             }
-            UnityEngine.Debug.Log($"IN MOVE ({active}): {player.GetFieldValue("isKinematic")}");
         }
 
         static void FadeInOut(bool fadeIn)
