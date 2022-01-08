@@ -121,7 +121,7 @@ namespace RWF
         {
             get
             {
-                return 8;
+                return 16;
             }
         }
 

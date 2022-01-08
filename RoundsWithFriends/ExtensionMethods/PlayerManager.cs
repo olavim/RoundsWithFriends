@@ -36,6 +36,14 @@ namespace RWF
             catch (Exception) { }
         }
 
+        public static void SetPlayersKinematic(this PlayerManager playerManager, bool kinematic)
+        {
+            foreach (Player player in playerManager.players)
+            {
+                player.data.playerVel.SetFieldValue("isKinematic", kinematic);
+            }
+        }
+
         public static void ResetPickOrder(this PlayerManager playerManager)
         {
             playerManager.GetAdditionalData().pickOrder = new PickOrder(playerManager.players);

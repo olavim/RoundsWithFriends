@@ -252,12 +252,12 @@ namespace RWF.GameModes
 		}
 
 		private IEnumerator DoRoundStart() {
-			// Wait for MapManager to set all players to simulated after map transition
-			while (PlayerManager.instance.players.ToList().Any(p => !(bool) p.data.playerVel.GetFieldValue("simulated"))) {
+            // Wait for MapManager to set all players to playing after map transition
+			while (PlayerManager.instance.players.ToList().Any(p => !(bool) p.data.isPlaying)) {
 				yield return null;
 			}
 
-			PlayerManager.instance.SetPlayersSimulated(false);
+			//PlayerManager.instance.SetPlayersSimulated(false);
 
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookRoundStart);
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
@@ -284,13 +284,12 @@ namespace RWF.GameModes
 
 		private IEnumerator DoPointStart()
 		{
-			// Wait for MapManager to set all players to simulated after map transition
-			while (PlayerManager.instance.players.ToList().Any(p => !(bool) p.data.playerVel.GetFieldValue("simulated")))
-			{
+            // Wait for MapManager to set all players to playing after map transition
+			while (PlayerManager.instance.players.ToList().Any(p => !(bool) p.data.isPlaying)) {
 				yield return null;
 			}
 
-			PlayerManager.instance.SetPlayersSimulated(false);
+			//PlayerManager.instance.SetPlayersSimulated(false);
 
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookPointStart);
 

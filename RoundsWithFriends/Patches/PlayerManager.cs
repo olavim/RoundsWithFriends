@@ -100,6 +100,11 @@ namespace RWF.Patches
     {
         /*
          * disable players' various colliders while they are being moved so that they do not interact with map objects
+         * 
+         * AND
+         * 
+         * do not set PlayerVelocity.simulated to true after the move, since this results in some players being active before others
+         * 
          */
         static Type GetNestedMoveType()
         {
@@ -160,11 +165,11 @@ namespace RWF.Patches
                     }
                 }
             }
+            UnityEngine.Debug.Log($"IN MOVE ({active}): {player.GetFieldValue("isKinematic")}");
         }
 
         static void FadeInOut(bool fadeIn)
         {
-            if (PlayerSpotlight.FadeInProgress) { UnityEngine.Debug.Log("IN PROGRESS"); return; }
             if (fadeIn)
             {
                 PlayerSpotlight.FadeIn();
@@ -175,7 +180,6 @@ namespace RWF.Patches
             }
         }
 
-        // Patch to disable player's ObjectCollider for the entirety of the move
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             List<CodeInstruction> codes = instructions.ToList();
@@ -186,17 +190,18 @@ namespace RWF.Patches
 
             var m_setCollidersActive = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(PlayerManager_Patch_Move), nameof(PlayerManager_Patch_Move.SetCollidersActive));
 
+            // Patch to disable player's ObjectCollider for the entirety of the move
             int disable_index = -1;
             int enable_index = -1;
             for (int i = 1; i < codes.Count; i++)
             {
                 if (codes[i].opcode == OpCodes.Ldarg_0 && codes[i + 1].opcode == OpCodes.Ldfld && codes[i + 1].LoadsField(f_player) && codes[i + 2].opcode == OpCodes.Ldc_I4_0 && codes[i + 3].opcode == OpCodes.Stfld && codes[i + 3].StoresField(f_simulated) && codes[i + 4].opcode == OpCodes.Ldarg_0 && codes[i + 5].opcode == OpCodes.Ldfld && codes[i + 6].opcode == OpCodes.Ldc_I4_1 && codes[i + 7].opcode == OpCodes.Stfld && codes[i + 7].StoresField(f_isKinematic))
                 {
-                    disable_index = i - 1;
+                    disable_index = i;
                 }
                 else if (codes[i].opcode == OpCodes.Ldarg_0 && codes[i + 1].opcode == OpCodes.Ldfld && codes[i + 1].LoadsField(f_player) && codes[i + 2].opcode == OpCodes.Ldc_I4_1 && codes[i + 3].opcode == OpCodes.Stfld && codes[i + 3].StoresField(f_simulated) && codes[i + 4].opcode == OpCodes.Ldarg_0 && codes[i + 5].opcode == OpCodes.Ldfld && codes[i + 6].opcode == OpCodes.Ldc_I4_0 && codes[i + 7].opcode == OpCodes.Stfld && codes[i + 7].StoresField(f_isKinematic))
                 {
-                    enable_index = i - 1;
+                    enable_index = i;
                 }
             }
             if (disable_index == -1 || enable_index == -1)
@@ -216,6 +221,17 @@ namespace RWF.Patches
                 codes.Insert(enable_index + 3, new CodeInstruction(OpCodes.Call, m_setCollidersActive)); // Calls SetObjectColliderActive, taking the parameters off the top of the stack, leaving it how we found it [ ... ]
             }
 
+            // Patch to remove PlayerVelocity.simulated = true
+            int remove_idx = -1;
+            for (int i = 1; i < codes.Count; i++)
+            {
+                if (codes[i].opcode == OpCodes.Ldarg_0 && codes[i + 1].LoadsField(f_player) && codes[i + 2].opcode == OpCodes.Ldc_I4_1 && codes[i + 3].StoresField(f_simulated))
+                {
+                    remove_idx = i;
+                }
+            }
+            codes.RemoveRange(remove_idx, 4);
+
             return codes.AsEnumerable();
         }
     }
@@ -226,7 +242,7 @@ namespace RWF.Patches
         static bool Prefix(PlayerManager __instance, SpawnPoint[] spawnPoints)
         {
             // only calculate spawn positions on the host
-            if (PhotonNetwork.IsMasterClient)
+            if (PhotonNetwork.IsMasterClient || PhotonNetwork.OfflineMode)
             {
                 __instance.StartCoroutine(PlayerManager_Patch_MovePlayers.WaitForMapToLoad(__instance, spawnPoints));
             }
