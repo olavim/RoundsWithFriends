@@ -15,7 +15,7 @@ namespace RWF.Patches
         {
             // we only want to call PlayerJoined when offline here to prevent double-registering of players online
             // when online, PlayerJoined will be called in Player.AssignCharacter
-            if (PhotonNetwork.OfflineMode)
+            if (PhotonNetwork.OfflineMode || PhotonNetwork.CurrentRoom == null)
             {
                 playerManager.PlayerJoined(player);
             }

@@ -61,7 +61,7 @@ namespace RWF
         private const string ModName = "Rounds With Friends";
         private static string CompatibilityModName => RWFMod.ModName.Replace(" ", "");
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "2.1.4";
+        public const string Version = "2.1.5";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
@@ -220,10 +220,6 @@ namespace RWF
             GameModeManager.AddHook(GameModeHooks.HookPickStart, this.SetPlayerFaces);
             GameModeManager.AddHook(GameModeHooks.HookGameStart, gm => PlayerSpotlight.CancelFadeHook(true));
             GameModeManager.AddHook(GameModeHooks.HookBattleStart, gm => PlayerSpotlight.BattleStartFailsafe());
-            //GameModeManager.AddHook(GameModeHooks.HookPickEnd, gm => PlayerSpotlight.FadeInHook(0f));
-            //GameModeManager.AddHook(GameModeHooks.HookPointEnd, gm => PlayerSpotlight.FadeInHook(1f));
-            //GameModeManager.AddHook(GameModeHooks.HookRoundEnd, gm => PlayerSpotlight.CancelFadeHook(true));
-            //GameModeManager.AddHook(GameModeHooks.HookPointStart, gm => PlayerSpotlight.FadeOutHook());
 
             this.gameObject.AddComponent<RoundEndHandler>();
 

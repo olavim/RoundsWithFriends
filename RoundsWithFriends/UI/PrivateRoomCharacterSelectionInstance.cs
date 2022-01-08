@@ -22,7 +22,7 @@ namespace RWF.UI
             return new Color(color.r, color.g, color.b, a);
         }
         public static Color readycolor = new Color(0.2f, 0.8f, 0.1f, 1f);
-        public static Color editcolor = new Color(0.9f, 0f, 0.1f, 1f);
+        public static Color createdColor = new Color(0.9f, 0f, 0.1f, 1f);
         public static Color joinedcolor = new Color(0.566f, 0.566f, 0.566f, 1f);
     }
     [RequireComponent(typeof(PhotonView))]
@@ -235,7 +235,7 @@ namespace RWF.UI
         }
         public void ReadyUp(bool ready)
         {
-            if (PhotonNetwork.IsMasterClient) { this.view.RPC(nameof(this.RPCA_ReadyUp), RpcTarget.All, ready); }
+            if (this.currentPlayer.IsMine) { this.view.RPC(nameof(this.RPCA_ReadyUp), RpcTarget.All, ready); }
         }
         [PunRPC]
         public void RPCA_ReadyUp(bool ready)
@@ -258,7 +258,30 @@ namespace RWF.UI
                 this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = this.isReady ? Colors.readycolor : Colors.joinedcolor;
             }
         }
-
+        public void Created()
+        {
+            if (this.currentPlayer.IsMine) { this.view.RPC(nameof(this.RPCA_Created), RpcTarget.All); }
+        }
+        [PunRPC]
+        public void RPCA_Created()
+        {
+            for (int i = 0; i < this.buttons.Length; i++)
+            {
+                this.buttons[i].transform.GetChild(4).gameObject.SetActive(true);
+                this.buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(true);
+                this.buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(true);
+                foreach (Graphic graphic in this.buttons[i].transform.GetChild(4).GetChild(0).GetComponentsInChildren<Graphic>(true))
+                {
+                    graphic.color = Colors.createdColor;
+                }
+                foreach (Graphic graphic in this.buttons[i].transform.GetChild(4).GetChild(1).GetComponentsInChildren<Graphic>(true))
+                {
+                    graphic.color = Colors.createdColor;
+                }
+                this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = "IN GAME";
+                this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.createdColor;
+            }
+        }
         private void Update()
         {
             if (this.currentPlayer == null || !this.currentPlayer.IsMine || !this.enableInput || this.isReady)

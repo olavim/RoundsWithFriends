@@ -133,7 +133,10 @@ namespace RWF.UI
                 // if the player is ready, toggle their ready status
                 // if they are not ready, remove them
                 bool? ready = this.PrivateRoom.FindLobbyCharacter(null)?.ready;
-                if (ready == null) { return; }
+                if (ready == null) 
+                {
+                    return; 
+                }
                 else if ((bool)ready)
                 {
                     this.PrivateRoom.StartCoroutine(this.PrivateRoom.ToggleReady(null, false));
@@ -152,7 +155,7 @@ namespace RWF.UI
                 // if they don't exist, let them join
                 bool? ready = this.PrivateRoom.FindLobbyCharacter(null)?.ready;
                 if (ready == null || !(bool)ready)
-                { 
+                {
                     this.PrivateRoom.StartCoroutine(this.PrivateRoom.ToggleReady(null, false));
                 }
                 return;
