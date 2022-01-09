@@ -52,6 +52,34 @@ namespace RWF.GameModes
 		}
 
 		[UnboundRPC]
+		public static void RPC_SyncBattleStart(int requestingPlayer) {
+			NetworkingManager.RPC(typeof(GM_TeamDeathmatch), nameof(GM_TeamDeathmatch.RPC_SyncBattleStartResponse), requestingPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
+		}
+
+		[UnboundRPC]
+		public static void RPC_SyncBattleStartResponse(int requestingPlayer, int readyPlayer) {
+			if (PhotonNetwork.LocalPlayer.ActorNumber == requestingPlayer)
+			{
+				GM_TeamDeathmatch.instance.RemovePendingRequest(readyPlayer, nameof(GM_TeamDeathmatch.RPC_SyncBattleStart));
+			}
+		}
+
+		private IEnumerator SyncBattleStart() {
+			if (PhotonNetwork.OfflineMode) {
+				yield break;
+			}
+
+			yield return this.SyncMethod(nameof(GM_TeamDeathmatch.RPC_SyncBattleStart), null, PhotonNetwork.LocalPlayer.ActorNumber);
+
+            // wait an extra time equivalent to the maximum ping in the lobby minus this client's ping
+            float maxPing = PhotonNetwork.CurrentRoom.Players.Select(kv => (float)(int) kv.Value.CustomProperties["Ping"]).Max() * 0.001f;
+            float myPing = (float)(int)PhotonNetwork.LocalPlayer.CustomProperties["Ping"] * 0.001f;
+            float wait = UnityEngine.Mathf.Abs(maxPing - myPing) < 0.001f ? 0f : maxPing - myPing;
+
+            if (wait > 0f) { yield return new WaitForSecondsRealtime(wait); }
+		}
+
+		[UnboundRPC]
 		public static void RPC_RequestSync(int requestingPlayer) {
 			NetworkingManager.RPC(typeof(GM_TeamDeathmatch), nameof(GM_TeamDeathmatch.RPC_SyncResponse), requestingPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
 		}
@@ -122,7 +150,7 @@ namespace RWF.GameModes
 			GameManager.instance.battleOngoing = false;
 
 			UIHandler.instance.ShowJoinGameText("LETS GOO!", PlayerSkinBank.GetPlayerSkinColors(1).winText);
-			yield return new WaitForSeconds(0.25f);
+			yield return new WaitForSecondsRealtime(0.25f);
 			UIHandler.instance.HideJoinGameText();
 
             PlayerSpotlight.CancelFade(true);
@@ -197,7 +225,7 @@ namespace RWF.GameModes
             foreach (Player player in pickOrder)
             {
                 if (player.teamID != winningTeamID) {
-					yield return base.StartCoroutine(this.WaitForSyncUp());
+					yield return this.WaitForSyncUp();
 
 					yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
 
@@ -241,7 +269,7 @@ namespace RWF.GameModes
 			MapManager.instance.LoadNextLevel(false, false);
 
 			yield return new WaitForSecondsRealtime(0.5f);
-			yield return base.StartCoroutine(this.WaitForSyncUp());
+			yield return this.WaitForSyncUp();
             PlayerSpotlight.FadeIn();
 
 			MapManager.instance.CallInNewMapAndMovePlayers(MapManager.instance.currentLevelID);
@@ -272,10 +300,12 @@ namespace RWF.GameModes
 
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
+            yield return this.SyncBattleStart();
+
 			for (int i = 3; i >= 1; i--) {
 				UIHandler.instance.DisplayRoundStartText($"{i}");
 				SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_A_Ball_Shrink_Go_To_Left_Corner, this.transform);
-				yield return new WaitForSeconds(0.5f);
+				yield return new WaitForSecondsRealtime(0.5f);
 			}
 
 			SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
@@ -304,12 +334,13 @@ namespace RWF.GameModes
 
 			var sounds = GameObject.Find("/SonigonSoundEventPool");
 
-            
+            yield return this.SyncBattleStart();
+
 			for (int i = 3; i >= 1; i--)
 			{
 				UIHandler.instance.DisplayRoundStartText($"{i}");
 				SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_A_Ball_Shrink_Go_To_Left_Corner, this.transform);
-				yield return new WaitForSeconds(0.5f);
+				yield return new WaitForSecondsRealtime(0.5f);
 			}
 
 			SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
