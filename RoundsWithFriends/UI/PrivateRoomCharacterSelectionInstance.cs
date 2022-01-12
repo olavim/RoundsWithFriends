@@ -55,10 +55,18 @@ namespace RWF.UI
 
             LobbyCharacter lobbyCharacter = PhotonNetwork.CurrentRoom.GetPlayer(actorID).GetProperty<LobbyCharacter[]>("players")[localID];
 
-            if (lobbyCharacter == null) { yield break; }
+            if (lobbyCharacter == null)
+            {
+                yield break;
+            }
 
             this.gameObject.name += " " + name;
 
+            if (lobbyCharacter.IsMine && !PrivateRoomHandler.instance.devicesToUse.ContainsKey(localID))
+            {
+                PhotonNetwork.Destroy(this.gameObject);
+                yield break;
+            }
             InputDevice inputDevice = lobbyCharacter.IsMine ? PrivateRoomHandler.instance.devicesToUse[localID] : null;
 
             VersusDisplay.instance.SetPlayerSelectorGO(lobbyCharacter.uniqueID, this.gameObject);
@@ -82,7 +90,7 @@ namespace RWF.UI
 
             this.transform.GetChild(1).gameObject.GetComponent<TextMeshProUGUI>().text = name;
 
-            this.StartPicking(lobbyCharacter, inputDevice);
+            this.StartPicking(lobbyCharacter.uniqueID, inputDevice);
 
             yield break;
         }
@@ -105,7 +113,8 @@ namespace RWF.UI
         public void ResetMenu()
         {
             base.transform.GetChild(0).gameObject.SetActive(false);
-            this.currentPlayer = null;
+            //this.currentPlayer = null;
+            this.uniqueID = 1;
 
         }
 
@@ -114,11 +123,12 @@ namespace RWF.UI
 
         }
 
-        public void StartPicking(LobbyCharacter pickingCharacter, InputDevice device)
+        public void StartPicking(int uniqueID, InputDevice device)
         {
-            this.currentPlayer = pickingCharacter;
+            this.uniqueID = uniqueID;
+            this.colorID = this.currentPlayer.colorID;
             this.device = device;
-            this.currentlySelectedFace = pickingCharacter.faceID;
+            this.currentlySelectedFace = this.currentPlayer.faceID;
             if (this.currentPlayer.IsMine)
             {
                 //PlayerFace faceToSend = CharacterCreatorHandler.instance.GetFacePreset(this.currentlySelectedFace);
@@ -221,8 +231,12 @@ namespace RWF.UI
         }
         private IEnumerator FinishSetup()
         {
-            yield return new WaitUntil(() => this.buttons[this.currentlySelectedFace].gameObject.activeInHierarchy);
+            yield return new WaitUntil(() => this?.buttons == null || this.buttons[this.currentlySelectedFace]?.gameObject == null || this.buttons[this.currentlySelectedFace].gameObject.activeInHierarchy);
             yield return new WaitForSecondsRealtime(0.1f);
+            if (this?.buttons == null || this.buttons[this.currentlySelectedFace]?.gameObject == null || this.currentPlayer == null)
+            {
+                yield break;
+            }
             this.buttons[this.currentlySelectedFace].GetComponent<PrivateRoomSimulatedSelection>().Select();
             if (this.currentPlayer.IsMine) { this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke(); }
             this.buttons[this.currentlySelectedFace].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
@@ -282,12 +296,39 @@ namespace RWF.UI
                 this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.createdColor;
             }
         }
+        int previousColorID = -1;
+        private const float updateDelay = 0.5f;
+        private float delay = updateDelay;
         private void Update()
         {
-            if (this.currentPlayer == null || !this.currentPlayer.IsMine || !this.enableInput || this.isReady)
+            if (PrivateRoomHandler.instance == null || PhotonNetwork.CurrentRoom == null || this.currentPlayer == null)
             {
                 return;
             }
+            if (!this.currentPlayer.IsMine)
+            {
+                this.colorID = this.currentPlayer.colorID;
+                if (this.previousColorID != this.colorID)
+                {
+                    this.UpdateFaceColors();
+                    this.previousColorID = this.colorID;
+                }
+                return;
+            }
+            else if (this.delay <= 0f)
+            {
+                this.delay = updateDelay;
+                if (this.colorID != this.currentPlayer.colorID)
+                {
+                    this.ChangeToTeam(this.colorID);
+                }
+            }
+            else
+            {
+                this.delay -= Time.deltaTime;
+            }
+            if (!this.currentPlayer.IsMine || !this.enableInput || this.isReady) { return; }
+
             HoverEvent component = this.buttons[this.currentlySelectedFace].GetComponent<HoverEvent>();
             if (this.currentButton != component)
             {
@@ -314,26 +355,26 @@ namespace RWF.UI
             }
             this.counter += Time.deltaTime;
             int previouslySelectedFace = this.currentlySelectedFace;
-            if (((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && (Mathf.Abs(this.device.LeftStickX.Value) > 0.5f || this.device.DPadLeft.WasPressed || this.device.DPadRight.WasPressed|| this.device.RightBumper.WasPressed || this.device.LeftBumper.WasPressed)) || (this.device == null && (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.LeftArrow)))) && this.counter > 0.2f)
+            if (((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && (Mathf.Abs(this.device.LeftStickX.Value) > 0.5f || this.device.DPadLeft.WasPressed || this.device.DPadRight.WasPressed|| this.device.RightBumper.WasPressed || this.device.LeftBumper.WasPressed)) || (this.device == null && (Input.GetKey(KeyCode.Q) || Input.GetKey(KeyCode.E) || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.LeftArrow)))) && this.counter > 0.2f)
             {
                 // change face
-                if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.RightBumper.WasPressed) || (this.device == null && (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.UpArrow))))
+                if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.RightBumper.WasPressed) || (this.device == null && (Input.GetKey(KeyCode.E) || Input.GetKey(KeyCode.UpArrow))))
                 {
                     this.currentlySelectedFace++;
                 }
-                else if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.LeftBumper.WasPressed) || (this.device == null && (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.DownArrow))))
+                else if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.LeftBumper.WasPressed) || (this.device == null && (Input.GetKey(KeyCode.Q) || Input.GetKey(KeyCode.DownArrow))))
                 {
                     this.currentlySelectedFace--;
                 }
                 bool colorChanged = false;
                 int colorIDDelta = 0;
                 // change team
-                if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.LeftStickX.Value > 0.5f || this.device.DPadRight.WasPressed)) || ((this.device == null) && (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))))
+                if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.LeftStickX.Value > 0.5f || this.device.DPadRight.WasPressed)) || ((this.device == null) && (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))))
                 {
                     colorIDDelta = +1;
                     colorChanged = true;
                 }
-                else if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.LeftStickX.Value < -0.5f || this.device.DPadLeft.WasPressed)) || ((this.device == null) && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))))
+                else if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.LeftStickX.Value < -0.5f || this.device.DPadLeft.WasPressed)) || ((this.device == null) && (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))))
                 {
                     colorIDDelta = -1;
                     colorChanged = true;
@@ -342,7 +383,8 @@ namespace RWF.UI
                 if (colorChanged)
                 {
                     // ask the host client for permission to change team
-                    this.view.RPC(nameof(this.RPCH_RequestChangeTeam), RpcTarget.MasterClient, colorIDDelta);
+                    //this.view.RPC(nameof(this.RPCH_RequestChangeTeam), RpcTarget.MasterClient, colorIDDelta);
+                    this.ChangeTeam(colorIDDelta);
                 }
 
                 this.counter = 0f;
@@ -362,6 +404,7 @@ namespace RWF.UI
         {
             this.enableInput = enabled;
         }
+        
         [PunRPC]
         private void RPCS_RequestSelectedFace(int askerID)
         {
@@ -401,23 +444,16 @@ namespace RWF.UI
             yield break;
         }
 
-        [PunRPC]
-        private void RPCH_RequestChangeTeam(int colorIDDelta)
+        private void ChangeTeam(int colorIDDelta)
         {
-            if (colorIDDelta == 0) { return; }
-
-            // RPCH -> RPC(Host)
-            // this is only sent to the host client
-
-            // ask the host if the team can be changed in the direction specified
-            int newColorID = Math.mod((this.currentPlayer.colorID + colorIDDelta), RWFMod.MaxColorsHardLimit);
-            int orig = this.currentPlayer.colorID;
+            int newColorID = Math.mod((this.colorID + colorIDDelta), RWFMod.MaxColorsHardLimit);
+            int orig = this.colorID;
 
             // wow this syntax is concerning
             if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
             {
                 // teams not allowed, continue to next colorID
-                while (PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && p.uniqueID != this.currentPlayer.uniqueID && p.colorID == newColorID).Any() && newColorID < RWFMod.MaxColorsHardLimit && newColorID >= 0)
+                while (PrivateRoomHandler.instance.PrivateRoomCharacters.Where(p => p != null && p.uniqueID != this.currentPlayer.uniqueID && p.colorID == newColorID).Any() && newColorID < RWFMod.MaxColorsHardLimit && newColorID >= 0)
                 {
                     newColorID = Math.mod((newColorID + colorIDDelta), RWFMod.MaxColorsHardLimit);
                     if (newColorID == orig)
@@ -433,42 +469,68 @@ namespace RWF.UI
 
             if (!fail)
             {
-                // approve the request and send it to all clients
-                this.view.RPC(nameof(this.RPCA_ChangeTeam), RpcTarget.All, newColorID);
+                this.ChangeToTeam(newColorID);
             }
         }
+
+        private void ChangeToTeam(int newColorID)
+        {
+            // send the team change to all clients
+            if (!this.currentPlayer.IsMine) { return; }
+
+            this.colorID = newColorID;
+
+            LobbyCharacter character = PrivateRoomHandler.instance.FindLobbyCharacter(this.currentPlayer.uniqueID);
+            character.colorID = newColorID;
+            LobbyCharacter[] characters = PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players");
+            characters[character.localID] = character;
+            PhotonNetwork.LocalPlayer.SetProperty("players", characters);
+
+            this.UpdateFaceColors();
+
+        }
+
+        public void UpdateFaceColors()
+        {
+            // set player color
+            if (this.transform.GetComponentsInChildren<HoverEvent>(true).Any())
+            {
+                this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
+                for (int i = 0; i < this.buttons.Length; i++)
+                {
+                    this.buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = ExtraPlayerSkins.GetPlayerSkinColors(this.colorID).color;
+                }
+            }
+
+            VersusDisplay.instance.UpdatePlayers();
+        }
+
         [PunRPC]
         private void RPCA_ChangeTeam(int newColorID)
         {
-            if (this.currentPlayer == null || !this.transform.GetComponentsInChildren<HoverEvent>(true).Any()) { return; }
-            // RPCA -> RPC(All)
-            // this is sent to all players
+            if (this.currentPlayer.IsMine) { this.ChangeToTeam(newColorID); }
 
-            // host has approved the team change, update across all clients
-            this.currentPlayer.colorID = newColorID;
-            LobbyCharacter character = PrivateRoomHandler.instance.FindLobbyCharacter(this.currentPlayer.actorID, this.currentPlayer.localID);
-            if (character.IsMine)
-            {
-                character.colorID = newColorID;
-                LobbyCharacter[] characters = PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players");
-                characters[character.localID] = character;
-                PhotonNetwork.LocalPlayer.SetProperty("players", characters);
-            }
-            this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
-            for (int i = 0; i < this.buttons.Length; i++)
-            {
-                this.buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = ExtraPlayerSkins.GetPlayerSkinColors(this.currentPlayer.colorID).color;
-            }
-            if (PhotonNetwork.IsMasterClient)
-            {
-                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.UpdateVersusDisplay));
-            }
+            return;
+
         }
-
 
         public int currentlySelectedFace;
 
-        public LobbyCharacter currentPlayer = null;
+        public LobbyCharacter currentPlayer => PrivateRoomHandler.instance.FindLobbyCharacter(this.uniqueID);
+
+        public int uniqueID = 1;
+        private int _colorID = -1;
+        public int colorID
+        {
+            get
+            {
+                return this._colorID;
+            }
+            private set
+            {
+                this._colorID = value;
+            }
+        }
 
         public InputDevice device;
 

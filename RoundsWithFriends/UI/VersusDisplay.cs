@@ -28,8 +28,23 @@ namespace RWF
         private Dictionary<int, GameObject> _playerGOs = new Dictionary<int, GameObject>() { };
         private Dictionary<int, GameObject> _playerSelectorGOs = new Dictionary<int, GameObject>() { };
         private List<int> _playerSelectorGOsCreated = new List<int>() { };
+        private Dictionary<int, int> _uniqueToTeam = new Dictionary<int, int>() { };
 
         public bool PlayersHaveBeenAdded => this._playerGOs.Keys.Any();
+
+        private int UniqueIDToTeamID(int uniqueID)
+        {
+            bool exists = this._uniqueToTeam.TryGetValue(uniqueID, out int teamID);
+            if (!exists)
+            {
+                this._uniqueToTeam[uniqueID] = PrivateRoomHandler.instance.FindLobbyCharacter(uniqueID).colorID;
+            }
+            return this._uniqueToTeam[uniqueID];
+        }
+        private void SetUniqueIDToTeamID(int uniqueID, int teamID)
+        {
+            this._uniqueToTeam[uniqueID] = teamID;
+        }
 
         internal GameObject TeamGroupGO(int teamID, int colorID, bool force_update = false)
         {
@@ -129,6 +144,7 @@ namespace RWF
                 }
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().enabled = true;
                 teamGroupGO.transform.GetChild(0).GetChild(0).GetComponent<UnityEngine.UI.Mask>().InvokeMethod("OnEnable", new object[] { });
+                teamGroupGO.GetOrAddComponent<PublicInt>().theInt = colorID;
             }
 
             return teamGroupGO;
@@ -140,7 +156,7 @@ namespace RWF
             {
                 playerGO = new GameObject($"LobbyPlayer {uniqueID}");
                 LobbyCharacter lobbyCharacter = LobbyCharacter.GetLobbyCharacter(uniqueID);
-                GameObject teamGroupGO = this.TeamGroupGO(lobbyCharacter.teamID, lobbyCharacter.colorID);
+                GameObject teamGroupGO = this.TeamGroupGO(this.UniqueIDToTeamID(lobbyCharacter.uniqueID), lobbyCharacter.colorID);
                 teamGroupGO.SetActive(true);
                 playerGO.transform.SetParent(teamGroupGO.transform.GetChild(1));
                 playerGO.transform.localScale = Vector3.one;
@@ -170,8 +186,6 @@ namespace RWF
             this._playerSelectorGOs[uniqueID] = playerSelectorGO;
         }
 
-
-
         public static VersusDisplay instance;
 
         private void Awake()
@@ -185,7 +199,38 @@ namespace RWF
             var fitter = this.gameObject.GetOrAddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            this.UpdatePlayers();
+            //this.UpdatePlayers();
+        }
+
+        private void Update()
+        {
+            if (PhotonNetwork.OfflineMode || PhotonNetwork.CurrentRoom == null || PrivateRoomHandler.instance == null)
+            {
+                return;
+            }
+            // check for any issues and fix them
+            bool update = false;
+            foreach (GameObject teamGroupGO in this._teamGroupGOs.Values)
+            {
+                if (teamGroupGO.GetComponent<PublicInt>() == null)
+                {
+                    continue;
+                }
+                int currentColorID = teamGroupGO.GetComponent<PublicInt>().theInt;
+                foreach (PrivateRoomCharacterSelectionInstance sel in teamGroupGO?.GetComponentsInChildren<PrivateRoomCharacterSelectionInstance>(true))
+                {
+                   if (sel.colorID != currentColorID)
+                   {
+                       update = true;
+                       break;
+                   }
+                }
+            }
+            if (update)
+            {
+                this.UpdatePlayers();
+            }
+
         }
         public void UpdatePlayers() 
         {
@@ -201,14 +246,22 @@ namespace RWF
             {
                 // wait until all character creator instances exist
                 bool wait = true;
-                while (wait)
+                float timeWaiting = 0f;
+                while (wait && timeWaiting <= 10f)
                 { 
                     wait = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && this.PlayerSelectorGO(p.uniqueID) == null).Any();
+                    timeWaiting += Time.deltaTime;
 
                     yield return null;
                 }
+                if (wait)
+                {
+                    this.HideEmptyPlayers(new int[] { });
+                    this.HideEmptyTeams(new int[] { });
+                    Unbound.Instance.StartCoroutine((IEnumerator) NetworkConnectionHandler.instance.InvokeMethod("DoDisconnect", "DISCONNECTED", "RWF ENCOUNTERED AN UNRECOVERABLE ERROR"));
+                    yield break;
+                }
 
-                yield return this.WaitForSyncUp();
 
                 List<LobbyCharacter> players = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null).ToList();
                 // assign teamIDs according to colorIDs
@@ -216,26 +269,25 @@ namespace RWF
                 foreach (LobbyCharacter player in players.OrderBy(p => p.colorID)) {
                     if (this.colorToTeam.TryGetValue(player.colorID, out int teamID))
                     {
-                        player.teamID = teamID;
+                        this.SetUniqueIDToTeamID(player.uniqueID, teamID);
                     }
                     else
                     {
-                        player.teamID = nextTeamID;
+                        this.SetUniqueIDToTeamID(player.uniqueID, nextTeamID);
                         this.colorToTeam[player.colorID] = nextTeamID;
-                        this.teamToColor[player.teamID] = player.colorID;
+                        this.teamToColor[nextTeamID] = player.colorID;
                         nextTeamID++;
                     }
 
-                    GameObject teamGroupGO = this.TeamGroupGO(player.teamID, player.colorID, true);
+                    GameObject teamGroupGO = this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), player.colorID, true);
                     teamGroupGO.SetActive(true);
                     this.PlayerGO(player.uniqueID).SetActive(true);
                     this.PlayerGO(player.uniqueID).transform.SetParent(teamGroupGO.transform.GetChild(1));
                     this.PlayerGO(player.uniqueID).transform.SetAsLastSibling();
-
                 }
-                this.HideEmptyPlayers(players.Select(p => p.uniqueID).ToArray());
-                this.HideEmptyTeams(players.Select(p => p.teamID).ToArray());
-                this.ResizeObjects(players);
+                this.HideEmptyPlayers(players.Where(p => p != null).Select(p => p.uniqueID).ToArray());
+                this.HideEmptyTeams(players.Where(p => p != null).Select(p => this.UniqueIDToTeamID(p.uniqueID)).ToArray());
+                this.ResizeObjects(players.Where(p => p != null).ToList());
             }
 
             if (this?.gameObject?.GetComponent<RectTransform>() != null)
@@ -281,17 +333,17 @@ namespace RWF
         {
             foreach (LobbyCharacter player in players)
             {
-                if (players.Where(p => p.uniqueID != player.uniqueID).Select(p => p.teamID).Contains(player.teamID))
+                if (players.Where(p => p.uniqueID != player.uniqueID).Select(p => this.UniqueIDToTeamID(p.uniqueID)).Contains(this.UniqueIDToTeamID(player.uniqueID)))
                 {
                     // player is on a team
                     this.PlayerGO(player.uniqueID).transform.localScale = VersusDisplay.SizeOnTeam * Vector3.one;
-                    this.TeamGroupGO(player.teamID, player.colorID).GetComponent<LayoutElement>().minWidth = 300;
+                    this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), player.colorID).GetComponent<LayoutElement>().minWidth = 300;
                 }
                 else
                 {
                     // player is alone
                     this.PlayerGO(player.uniqueID).transform.localScale = Vector3.one;
-                    this.TeamGroupGO(player.teamID, player.colorID).GetComponent<LayoutElement>().minWidth = -1;
+                    this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), player.colorID).GetComponent<LayoutElement>().minWidth = -1;
                 }
             }
         }
@@ -330,7 +382,7 @@ namespace RWF
             if (!character.IsMine || this._playerSelectorGOsCreated.Contains(character.uniqueID)) { return; }
             this._playerSelectorGOsCreated.Add(character.uniqueID);
             parent.gameObject.SetActive(true);
-            this.TeamGroupGO(character.teamID, character.colorID).SetActive(true);
+            this.TeamGroupGO(this.UniqueIDToTeamID(character.uniqueID), character.colorID).SetActive(true);
             PhotonNetwork.Instantiate(
                 PrivateRoomPrefabs.PrivateRoomCharacterSelectionInstance.name,
                 parent.position,
