@@ -322,6 +322,16 @@ namespace RWF.UI
                 {
                     this.ChangeToTeam(this.colorID);
                 }
+                if (this.isReady != this.currentPlayer.ready)
+                {
+                    LobbyCharacter[] localCharacters = PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players");
+                    this.currentPlayer.SetReady(this.isReady);
+                    localCharacters[this.currentPlayer.localID] = this.currentPlayer;
+
+                    PhotonNetwork.LocalPlayer.SetProperty("players", localCharacters);
+
+                    VersusDisplay.instance.ReadyPlayer(this.currentPlayer, this.isReady);
+                }
             }
             else
             {
