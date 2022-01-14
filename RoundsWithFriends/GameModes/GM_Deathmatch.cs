@@ -312,7 +312,7 @@ namespace RWF.GameModes
 
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
 
-			this.ExecuteAfterSeconds(1f, () => {
+			this.ExecuteAfterSeconds(0.5f, () => {
 				UIHandler.instance.HideRoundStartText();
 			});
 		}
@@ -347,7 +347,7 @@ namespace RWF.GameModes
 
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
 
-			this.ExecuteAfterSeconds(1f, () => {
+			this.ExecuteAfterSeconds(0.5f, () => {
 				UIHandler.instance.HideRoundStartText();
 			});
 		}
