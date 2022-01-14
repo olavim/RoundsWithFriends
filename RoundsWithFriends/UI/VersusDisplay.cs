@@ -46,6 +46,33 @@ namespace RWF
             this._uniqueToTeam[uniqueID] = teamID;
         }
 
+        internal int PlayerVisualColorID(int uniqueID)
+        {
+            // it is entirely possible, and happens often, that the local players' networked LobbyCharacter has
+            // not yet updated even though the UI has
+
+            // this method always returns the colorID of the UI, so that the text and the face always match
+
+            bool exists = this._playerSelectorGOs.TryGetValue(uniqueID, out GameObject playerSelectorGO);
+
+            if (!exists)
+            {
+                return PrivateRoomHandler.instance.FindLobbyCharacter(uniqueID).colorID;
+            }
+
+            int? nullableColorID = playerSelectorGO?.GetComponent<PrivateRoomCharacterSelectionInstance>()?.colorID;
+
+            if (nullableColorID == null || (int)nullableColorID == -1)
+            {
+                return PrivateRoomHandler.instance.FindLobbyCharacter(uniqueID).colorID;
+            }
+            else
+            {
+                return (int) nullableColorID;
+            }
+
+        }
+
         internal GameObject TeamGroupGO(int teamID, int colorID, bool force_update = false)
         {
             bool exists = this._teamGroupGOs.TryGetValue(teamID, out GameObject teamGroupGO);
@@ -198,8 +225,6 @@ namespace RWF
             this.gameObject.GetOrAddComponent<CanvasRenderer>();
             var fitter = this.gameObject.GetOrAddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            //this.UpdatePlayers();
         }
 
         private void Update()
@@ -208,98 +233,48 @@ namespace RWF
             {
                 return;
             }
-            // check for any issues and fix them
-            bool update = false;
-            foreach (GameObject teamGroupGO in this._teamGroupGOs.Values)
-            {
-                if (teamGroupGO.GetComponent<PublicInt>() == null)
-                {
-                    continue;
-                }
-                int currentColorID = teamGroupGO.GetComponent<PublicInt>().theInt;
-                foreach (PrivateRoomCharacterSelectionInstance sel in teamGroupGO?.GetComponentsInChildren<PrivateRoomCharacterSelectionInstance>(true))
-                {
-                   if (sel.colorID != currentColorID)
-                   {
-                       update = true;
-                       break;
-                   }
-                }
-            }
-            if (update)
-            {
-                this.UpdatePlayers();
-            }
 
-        }
-        public void UpdatePlayers() 
-        {
-            this.StartCoroutine(this.UpdatePlayersCoroutine());
-        }
-
-        private IEnumerator UpdatePlayersCoroutine() 
-        {
             this.colorToTeam.Clear();
             this.teamToColor.Clear();
 
-            if (PhotonNetwork.CurrentRoom != null)
+            List<LobbyCharacter> players = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && this.PlayerSelectorGO(p.uniqueID) != null).ToList();
+
+            // assign teamIDs according to colorIDs
+            int nextTeamID = 0;
+            foreach (LobbyCharacter player in players.OrderBy(p => this.PlayerVisualColorID(p.uniqueID))) 
             {
-                // wait until all character creator instances exist
-                bool wait = true;
-                float timeWaiting = 0f;
-                while (wait && timeWaiting <= 10f)
-                { 
-                    wait = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && this.PlayerSelectorGO(p.uniqueID) == null).Any();
-                    timeWaiting += Time.deltaTime;
-
-                    yield return null;
-                }
-                if (wait)
+                int colorID = this.PlayerVisualColorID(player.uniqueID);
+                if (this.colorToTeam.TryGetValue(colorID, out int teamID))
                 {
-                    this.HideEmptyPlayers(new int[] { });
-                    this.HideEmptyTeams(new int[] { });
-                    Unbound.Instance.StartCoroutine((IEnumerator) NetworkConnectionHandler.instance.InvokeMethod("DoDisconnect", "DISCONNECTED", "RWF ENCOUNTERED AN UNRECOVERABLE ERROR"));
-                    yield break;
+                    this.SetUniqueIDToTeamID(player.uniqueID, teamID);
+                }
+                else
+                {
+                    this.SetUniqueIDToTeamID(player.uniqueID, nextTeamID);
+                    this.colorToTeam[colorID] = nextTeamID;
+                    this.teamToColor[nextTeamID] = colorID;
+                    nextTeamID++;
                 }
 
-
-                List<LobbyCharacter> players = PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null).ToList();
-                // assign teamIDs according to colorIDs
-                int nextTeamID = 0;
-                foreach (LobbyCharacter player in players.OrderBy(p => p.colorID)) {
-                    if (this.colorToTeam.TryGetValue(player.colorID, out int teamID))
-                    {
-                        this.SetUniqueIDToTeamID(player.uniqueID, teamID);
-                    }
-                    else
-                    {
-                        this.SetUniqueIDToTeamID(player.uniqueID, nextTeamID);
-                        this.colorToTeam[player.colorID] = nextTeamID;
-                        this.teamToColor[nextTeamID] = player.colorID;
-                        nextTeamID++;
-                    }
-
-                    GameObject teamGroupGO = this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), player.colorID, true);
-                    teamGroupGO.SetActive(true);
-                    this.PlayerGO(player.uniqueID).SetActive(true);
-                    this.PlayerGO(player.uniqueID).transform.SetParent(teamGroupGO.transform.GetChild(1));
-                    this.PlayerGO(player.uniqueID).transform.SetAsLastSibling();
-                }
-                this.HideEmptyPlayers(players.Where(p => p != null).Select(p => p.uniqueID).ToArray());
-                this.HideEmptyTeams(players.Where(p => p != null).Select(p => this.UniqueIDToTeamID(p.uniqueID)).ToArray());
-                this.ResizeObjects(players.Where(p => p != null).ToList());
+                GameObject teamGroupGO = this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), colorID, false);
+                teamGroupGO.SetActive(true);
+                this.PlayerGO(player.uniqueID).SetActive(true);
+                this.PlayerGO(player.uniqueID).transform.SetParent(teamGroupGO.transform.GetChild(1));
+                this.PlayerGO(player.uniqueID).transform.SetAsLastSibling();
             }
+            this.HideEmptyPlayers(players.Where(p => p != null).Select(p => p.uniqueID).ToArray());
+            this.HideEmptyTeams(players.Where(p => p != null).Select(p => this.UniqueIDToTeamID(p.uniqueID)).ToArray());
+            this.ResizeObjects(players.Where(p => p != null).ToList());
 
             if (this?.gameObject?.GetComponent<RectTransform>() != null)
             {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(this.gameObject.GetComponent<RectTransform>());
             }
-            
-            yield break;
         }
         private void HideEmptyPlayers(int[] uniqueIDs)
         {
-            List<int> keysToRemove = new List<int> { };
+            List<int> playerGOKeysToRemove = new List<int> { };
+            List<int> selectorGOKeysToRemove = new List<int> { };
             foreach (int i in this._playerGOs.Keys.Where(k => !uniqueIDs.Contains(k)))
             {
                 if (this._playerGOs.TryGetValue(i, out GameObject playerGO))
@@ -307,16 +282,23 @@ namespace RWF
                     playerGO?.SetActive(false);
                     if (playerGO != null) { GameObject.Destroy(playerGO); }
                 }
+                playerGOKeysToRemove.Add(i);
+            }
+            foreach (int i in this._playerSelectorGOs.Keys.Where(k => !uniqueIDs.Contains(k)))
+            {
                 if (this._playerSelectorGOs.TryGetValue(i, out GameObject playerSelectorGO))
                 {
                     playerSelectorGO?.SetActive(false);
                     if (playerSelectorGO != null) { GameObject.Destroy(playerSelectorGO); }
                 }
-                keysToRemove.Add(i);
+                selectorGOKeysToRemove.Add(i);
             }
-            foreach (int i in keysToRemove)
+            foreach (int i in playerGOKeysToRemove)
             {
                 if (this._playerGOs.ContainsKey(i)) { this._playerGOs.Remove(i); }
+            }
+            foreach (int i in selectorGOKeysToRemove)
+            {
                 if (this._playerSelectorGOs.ContainsKey(i)) { this._playerSelectorGOs.Remove(i); }
                 if (this._playerSelectorGOsCreated.Contains(i)) { this._playerSelectorGOsCreated.Remove(i); }
             }
@@ -337,13 +319,13 @@ namespace RWF
                 {
                     // player is on a team
                     this.PlayerGO(player.uniqueID).transform.localScale = VersusDisplay.SizeOnTeam * Vector3.one;
-                    this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), player.colorID).GetComponent<LayoutElement>().minWidth = 300;
+                    this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), this.PlayerVisualColorID(player.uniqueID)).GetComponent<LayoutElement>().minWidth = 300;
                 }
                 else
                 {
                     // player is alone
                     this.PlayerGO(player.uniqueID).transform.localScale = Vector3.one;
-                    this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), player.colorID).GetComponent<LayoutElement>().minWidth = -1;
+                    this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), this.PlayerVisualColorID(player.uniqueID)).GetComponent<LayoutElement>().minWidth = -1;
                 }
             }
         }
@@ -356,25 +338,6 @@ namespace RWF
                 selector?.GetComponent<PrivateRoomCharacterSelectionInstance>()?.SetInputEnabled(enabled);
 
             }
-        }
-
-        public void ReadyPlayer(LobbyCharacter character, bool ready)
-        {
-            this.StartCoroutine(this.ReadyPlayerCoroutine(character, ready));
-        }
-        private IEnumerator ReadyPlayerCoroutine(LobbyCharacter character, bool ready)
-        {
-            bool wait = true;
-            while (wait)
-            {
-                wait = !this._playerSelectorGOs.Keys.Contains(character.uniqueID);
-
-                yield return null;
-            }
-
-            this._playerSelectorGOs[character.uniqueID].GetComponent<PrivateRoomCharacterSelectionInstance>().ReadyUp(ready);
-
-            yield break;
         }
 
         private void CreatePlayerSelector(string name, LobbyCharacter character, Transform parent)

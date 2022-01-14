@@ -98,7 +98,7 @@ namespace RWF.UI
         {
 
             this.transform.GetChild(0).localPosition = Vector2.zero;
-            
+
             this.buttons = this.transform.GetComponentsInChildren<HoverEvent>(true);
             for (int i = 0; i < this.buttons.Length; i++)
             {
@@ -113,7 +113,6 @@ namespace RWF.UI
         public void ResetMenu()
         {
             base.transform.GetChild(0).gameObject.SetActive(false);
-            //this.currentPlayer = null;
             this.uniqueID = 1;
 
         }
@@ -129,15 +128,9 @@ namespace RWF.UI
             this.colorID = this.currentPlayer.colorID;
             this.device = device;
             this.currentlySelectedFace = this.currentPlayer.faceID;
-            if (this.currentPlayer.IsMine)
-            {
-                //PlayerFace faceToSend = CharacterCreatorHandler.instance.GetFacePreset(this.currentlySelectedFace);
-                //this.view.RPC(nameof(RPCO_SelectFace), RpcTarget.Others, this.currentlySelectedFace, faceToSend.eyeID, faceToSend.eyeOffset, faceToSend.mouthID, faceToSend.mouthOffset, faceToSend.detailID, faceToSend.detailOffset, faceToSend.detail2ID, faceToSend.detail2Offset);
-            }
-            else
+            if (!this.currentPlayer.IsMine)
             {
                 this.view.RPC(nameof(RPCS_RequestSelectedFace), this.currentPlayer.networkPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
-                this.RPCA_ReadyUp(this.currentPlayer.ready);
             }
             try
             {
@@ -241,101 +234,59 @@ namespace RWF.UI
             if (this.currentPlayer.IsMine) { this.buttons[this.currentlySelectedFace].GetComponent<Button>().onClick.Invoke(); }
             this.buttons[this.currentlySelectedFace].transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
 
-            if (this.currentPlayer.ready)
-            {
-                this.RPCA_ReadyUp(this.currentPlayer.ready);
-            }
             yield break;
         }
-        public void ReadyUp(bool ready)
+        public void UpdateReadyVisuals()
         {
-            if (this.currentPlayer.IsMine) { this.view.RPC(nameof(this.RPCA_ReadyUp), RpcTarget.All, ready); }
-        }
-        [PunRPC]
-        public void RPCA_ReadyUp(bool ready)
-        {
-            this.isReady = ready;
             for (int i = 0; i < this.buttons.Length; i++)
             {
                 this.buttons[i].transform.GetChild(4).gameObject.SetActive(true);
-                this.buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(this.isReady);
-                this.buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(this.isReady);
+                this.buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(this.isReady || this.created);
+                this.buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(this.isReady || this.created);
                 foreach (Graphic graphic in this.buttons[i].transform.GetChild(4).GetChild(0).GetComponentsInChildren<Graphic>(true))
                 {
-                    graphic.color = this.isReady ? Colors.Transparent(Colors.readycolor) : Color.clear;
+                    graphic.color = this.created ? Colors.Transparent(Colors.createdColor) : this.isReady ? Colors.Transparent(Colors.readycolor) : Color.clear;
                 }
                 foreach (Graphic graphic in this.buttons[i].transform.GetChild(4).GetChild(1).GetComponentsInChildren<Graphic>(true))
                 {
-                    graphic.color = this.isReady ? Colors.Transparent(Colors.readycolor) : Color.clear;
+                    graphic.color = this.created ? Colors.Transparent(Colors.createdColor) : this.isReady ? Colors.Transparent(Colors.readycolor) : Color.clear;
                 }
-                this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = this.isReady ? "READY" : "";
-                this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = this.isReady ? Colors.readycolor : Colors.joinedcolor;
+                this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = this.created ? "IN GAME" : this.isReady ? "READY" : "";
+                this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = this.created ? Colors.createdColor : this.isReady ? Colors.readycolor : Colors.joinedcolor;
             }
         }
         public void Created()
         {
+            this.created = true;
             if (this.currentPlayer.IsMine) { this.view.RPC(nameof(this.RPCA_Created), RpcTarget.All); }
         }
+
         [PunRPC]
         public void RPCA_Created()
         {
-            for (int i = 0; i < this.buttons.Length; i++)
-            {
-                this.buttons[i].transform.GetChild(4).gameObject.SetActive(true);
-                this.buttons[i].transform.GetChild(4).GetChild(0).gameObject.SetActive(true);
-                this.buttons[i].transform.GetChild(4).GetChild(1).gameObject.SetActive(true);
-                foreach (Graphic graphic in this.buttons[i].transform.GetChild(4).GetChild(0).GetComponentsInChildren<Graphic>(true))
-                {
-                    graphic.color = Colors.createdColor;
-                }
-                foreach (Graphic graphic in this.buttons[i].transform.GetChild(4).GetChild(1).GetComponentsInChildren<Graphic>(true))
-                {
-                    graphic.color = Colors.createdColor;
-                }
-                this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().text = "IN GAME";
-                this.buttons[i].transform.GetChild(4).GetChild(2).GetComponent<TextMeshProUGUI>().color = Colors.createdColor;
-            }
+            this.created = true;
         }
-        int previousColorID = -1;
-        private const float updateDelay = 0.5f;
-        private float delay = updateDelay;
         private void Update()
         {
             if (PrivateRoomHandler.instance == null || PhotonNetwork.CurrentRoom == null || this.currentPlayer == null)
             {
                 return;
             }
+
+            this.UpdateReadyVisuals();
+
             if (!this.currentPlayer.IsMine)
             {
                 this.colorID = this.currentPlayer.colorID;
-                if (this.previousColorID != this.colorID)
-                {
-                    this.UpdateFaceColors();
-                    this.previousColorID = this.colorID;
-                }
+                this.UpdateFaceColors();
                 return;
             }
-            else if (this.delay <= 0f)
+            else if (this.lastChangedTeams > 0f && Time.realtimeSinceStartup - this.lastChangedTeams >= 2f * PhotonNetwork.GetPing()*0.001f)
             {
-                this.delay = updateDelay;
                 if (this.colorID != this.currentPlayer.colorID)
                 {
                     this.ChangeToTeam(this.colorID);
                 }
-                if (this.isReady != this.currentPlayer.ready)
-                {
-                    LobbyCharacter[] localCharacters = PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players");
-                    this.currentPlayer.SetReady(this.isReady);
-                    localCharacters[this.currentPlayer.localID] = this.currentPlayer;
-
-                    PhotonNetwork.LocalPlayer.SetProperty("players", localCharacters);
-
-                    VersusDisplay.instance.ReadyPlayer(this.currentPlayer, this.isReady);
-                }
-            }
-            else
-            {
-                this.delay -= Time.deltaTime;
             }
             if (!this.currentPlayer.IsMine || !this.enableInput || this.isReady) { return; }
 
@@ -363,28 +314,27 @@ namespace RWF.UI
                 if (this.currentPlayer.IsMine) { this.currentButton.GetComponent<Button>().onClick.Invoke(); }
                 this.currentButton.transform.GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().Rebuild(CanvasUpdate.Prelayout);
             }
-            this.counter += Time.deltaTime;
             int previouslySelectedFace = this.currentlySelectedFace;
-            if (((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && (Mathf.Abs(this.device.LeftStickX.Value) > 0.5f || this.device.DPadLeft.WasPressed || this.device.DPadRight.WasPressed|| this.device.RightBumper.WasPressed || this.device.LeftBumper.WasPressed)) || (this.device == null && (Input.GetKey(KeyCode.Q) || Input.GetKey(KeyCode.E) || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.LeftArrow)))) && this.counter > 0.2f)
+            if (((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.Direction.Left.WasPressed || this.device.Direction.Right.WasPressed || this.device.DPadLeft.WasPressed || this.device.DPadRight.WasPressed|| this.device.RightBumper.WasPressed || this.device.LeftBumper.WasPressed)) || (this.device == null && (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.LeftArrow)))))
             {
                 // change face
-                if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.RightBumper.WasPressed) || (this.device == null && (Input.GetKey(KeyCode.E) || Input.GetKey(KeyCode.UpArrow))))
+                if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.RightBumper.WasPressed) || (this.device == null && (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.UpArrow))))
                 {
                     this.currentlySelectedFace++;
                 }
-                else if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.LeftBumper.WasPressed) || (this.device == null && (Input.GetKey(KeyCode.Q) || Input.GetKey(KeyCode.DownArrow))))
+                else if ((this.device != null && (this.device.DeviceClass == InputDeviceClass.Controller) && this.device.LeftBumper.WasPressed) || (this.device == null && (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.DownArrow))))
                 {
                     this.currentlySelectedFace--;
                 }
                 bool colorChanged = false;
                 int colorIDDelta = 0;
                 // change team
-                if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.LeftStickX.Value > 0.5f || this.device.DPadRight.WasPressed)) || ((this.device == null) && (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))))
+                if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.Direction.Right.WasPressed || this.device.DPadRight.WasPressed)) || ((this.device == null) && (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))))
                 {
                     colorIDDelta = +1;
                     colorChanged = true;
                 }
-                else if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.LeftStickX.Value < -0.5f || this.device.DPadLeft.WasPressed)) || ((this.device == null) && (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))))
+                else if (this.device != null && ((this.device.DeviceClass == InputDeviceClass.Controller) && (this.device.Direction.Left.WasPressed || this.device.DPadLeft.WasPressed)) || ((this.device == null) && (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))))
                 {
                     colorIDDelta = -1;
                     colorChanged = true;
@@ -397,7 +347,6 @@ namespace RWF.UI
                     this.ChangeTeam(colorIDDelta);
                 }
 
-                this.counter = 0f;
             }
             this.currentlySelectedFace = Math.mod(this.currentlySelectedFace, this.buttons.Length);
             if (this.currentlySelectedFace != previouslySelectedFace)
@@ -456,7 +405,7 @@ namespace RWF.UI
 
         private void ChangeTeam(int colorIDDelta)
         {
-            int newColorID = Math.mod((this.colorID + colorIDDelta), RWFMod.MaxColorsHardLimit);
+            int newColorID = this.colorID + colorIDDelta;
             int orig = this.colorID;
 
             // wow this syntax is concerning
@@ -465,10 +414,10 @@ namespace RWF.UI
                 // teams not allowed, continue to next colorID
                 while (PrivateRoomHandler.instance.PrivateRoomCharacters.Where(p => p != null && p.uniqueID != this.currentPlayer.uniqueID && p.colorID == newColorID).Any() && newColorID < RWFMod.MaxColorsHardLimit && newColorID >= 0)
                 {
-                    newColorID = Math.mod((newColorID + colorIDDelta), RWFMod.MaxColorsHardLimit);
-                    if (newColorID == orig)
+                    newColorID = newColorID + colorIDDelta;
+                    if (newColorID == orig || newColorID >= RWFMod.MaxColorsHardLimit || newColorID < 0)
                     {
-                        // make sure its impossible to get stuck in an infinite loop here,
+                        // make sure it's impossible to get stuck in an infinite loop here,
                         // even though prior logic limiting the number of players should prevent this
                         break;
                     }
@@ -487,6 +436,8 @@ namespace RWF.UI
         {
             // send the team change to all clients
             if (!this.currentPlayer.IsMine) { return; }
+
+            this.lastChangedTeams = Time.realtimeSinceStartup;
 
             this.colorID = newColorID;
 
@@ -511,8 +462,6 @@ namespace RWF.UI
                     this.buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = ExtraPlayerSkins.GetPlayerSkinColors(this.colorID).color;
                 }
             }
-
-            VersusDisplay.instance.UpdatePlayers();
         }
 
         [PunRPC]
@@ -550,9 +499,24 @@ namespace RWF.UI
 
         private HoverEvent[] buttons;
 
-        public bool isReady;
+        public bool isReady
+        {
+            get
+            {
+                if (this.currentPlayer != null)
+                {
+                    return this.currentPlayer.ready;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
 
-        private float counter;
+        private bool created = false;
+
+        private float lastChangedTeams = -1f;
 
         private bool enableInput = true;
     }

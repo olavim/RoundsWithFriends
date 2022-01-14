@@ -40,10 +40,10 @@ namespace RWF
                 selector.name = "PrivateRoomCharacterSelector";
                 selector.GetOrAddComponent<RectTransform>();
                 selector.GetOrAddComponent<PhotonView>();
-                var sizer = selector.AddComponent<ContentSizeFitter>();
+                var sizer = selector.GetOrAddComponent<ContentSizeFitter>();
                 sizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                 UnityEngine.GameObject.Destroy(selector.GetComponent<CharacterSelectionInstance>());
-                PrivateRoomCharacterSelectionInstance charSelect = selector.AddComponent<PrivateRoomCharacterSelectionInstance>();
+                PrivateRoomCharacterSelectionInstance charSelect = selector.GetOrAddComponent<PrivateRoomCharacterSelectionInstance>();
                 UnityEngine.GameObject.Destroy(charSelect.transform.GetChild(2).gameObject);
                 UnityEngine.GameObject.Destroy(charSelect.transform.GetChild(1).gameObject);
 
@@ -88,7 +88,6 @@ namespace RWF
         private TextMeshProUGUI inviteText;
         private TextMeshProUGUI gameModeText;
         private VersusDisplay versusDisplay;
-        private bool playersHaveChanged = false;
         private bool _lockReadies;
         private bool lockReadies
         {
@@ -477,11 +476,6 @@ namespace RWF
                     NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.RPCA_DisplayCountdown), PrivateRoomHandler.DefaultHeaderText);
                 }
             }
-            if (this.IsOpen && this.playersHaveChanged)
-            {
-                PrivateRoomHandler.UpdateVersusDisplay();
-                this.playersHaveChanged = false;
-            }
         }
 
         override public void OnJoinedRoom()
@@ -519,7 +513,6 @@ namespace RWF
 
                 PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
                 PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
-                PrivateRoomHandler.PlayersHaveChanged();
             }
 
             /* The local player's nickname is also set in NetworkConnectionHandler::OnJoinedRoom, but we'll do it here too so we don't
@@ -535,7 +528,6 @@ namespace RWF
             }
 
             // If we handled this from OnPlayerEnteredRoom handler for other clients, the joined client's nickname might not have been set yet
-            PrivateRoomHandler.PlayersHaveChanged();
             base.OnJoinedRoom();
         }
 
@@ -560,18 +552,12 @@ namespace RWF
 
             }
 
-            this.ExecuteAfterSeconds(0.1f, () =>
-            {
-                PrivateRoomHandler.PlayersHaveChanged();
-            });
-
             base.OnPlayerEnteredRoom(newPlayer);
         }
 
         override public void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
         {
             this.ClearPendingRequests(otherPlayer.ActorNumber);
-            PrivateRoomHandler.PlayersHaveChanged();
             base.OnPlayerLeftRoom(otherPlayer);
         }
         
@@ -587,8 +573,6 @@ namespace RWF
             this.devicesToUse.Remove(character.localID);
 
             SoundPlayerStatic.Instance.PlayPlayerBallDisappear();
-
-            PrivateRoomHandler.PlayersHaveChanged();
 
             yield break;
         }
@@ -645,8 +629,6 @@ namespace RWF
 
                 SoundPlayerStatic.Instance.PlayPlayerAdded();
 
-                PrivateRoomHandler.PlayersHaveChanged();
-
                 yield break;
             }
             else if (!doNotReady)
@@ -657,7 +639,6 @@ namespace RWF
                 if (playerReadied == null)
                 {
                     this.devicesToUse.Remove(this.devicesToUse.Keys.Where(i => this.devicesToUse[i] == deviceReadied).First());
-                    UpdateVersusDisplay();
                     yield break;
                 }
                 // update this character's ready and save it to the Photon player's properties to update on all clients
@@ -668,8 +649,6 @@ namespace RWF
 
                 SoundPlayerStatic.Instance.PlayPlayerAdded();
             
-                VersusDisplay.instance.ReadyPlayer(playerReadied, playerReadied.ready);
-
                 yield return new WaitForSeconds(0.1f);
             
             }
@@ -689,7 +668,6 @@ namespace RWF
 
             PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
             PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
-            PrivateRoomHandler.PlayersHaveChanged();
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettingsResponse), PhotonNetwork.LocalPlayer.ActorNumber);
         }
@@ -700,26 +678,6 @@ namespace RWF
             if (PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null)
             {
                 PrivateRoomHandler.instance.RemovePendingRequest(respondingPlayer, nameof(PrivateRoomHandler.SetGameSettings));
-            }
-        }
-
-        [UnboundRPC]
-        public static void UpdateVersusDisplay()
-        {
-            var instance = PrivateRoomHandler.instance;
-
-            if (instance == null)
-            {
-                return;
-            }
-            
-            instance.versusDisplay.gameObject.SetActive(true);
-            instance.header.gameObject.SetActive(true);
-            instance.gamemodeHeader.gameObject.SetActive(true);
-
-            if (instance.versusDisplay.gameObject.activeSelf)
-            {
-                instance.versusDisplay.UpdatePlayers();
             }
         }
         private IEnumerator StartGameCountdown()
@@ -749,15 +707,6 @@ namespace RWF
         {
             SoundPlayerStatic.Instance.PlayButtonClick();
             PrivateRoomHandler.instance.SetHeaderText(text);
-        }
-        private static void PlayersHaveChanged()
-        {
-            NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(RPCA_PlayersHaveChanged), new object[] { });
-        }
-        [UnboundRPC]
-        private static void RPCA_PlayersHaveChanged()
-        {
-            PrivateRoomHandler.instance.playersHaveChanged = true;
         }
         [UnboundRPC]
         private static void RPCA_LockReadies(bool lockReady)
@@ -916,7 +865,6 @@ namespace RWF
                 ListMenu.instance.OpenPage(this.MainPage);
                 this.MainPage.Open();
                 ArtHandler.instance.NextArt();
-                PrivateRoomHandler.PlayersHaveChanged();
             });
         }
     }
