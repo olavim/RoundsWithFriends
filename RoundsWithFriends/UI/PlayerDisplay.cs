@@ -11,7 +11,7 @@ namespace RWF.UI
     {
         public static PlayerDisplay instance;
 
-        private const float barPad = -35f;
+        private const float barPad = -25f;//-35f;
         private const float layoutPad = 50f;
 
         private static readonly Color disabledTextColor = new Color32(150, 150, 150, 16);
@@ -83,9 +83,9 @@ namespace RWF.UI
             // set up the horizontal group
             this.group.childAlignment = TextAnchor.MiddleCenter;
             this.group.spacing = new Vector2(100, 60);
-            this.group.cellSize = new Vector2(150, 200);
+            this.group.cellSize = new Vector2(140, 200);
             this.group.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            this.group.constraintCount = 7;
+            this.group.constraintCount = 8;
 
             // set up the menu bar
             this.setBar.heightMult = 1f;

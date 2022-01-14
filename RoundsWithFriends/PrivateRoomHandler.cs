@@ -334,6 +334,7 @@ namespace RWF
                 {
                     string nextGameMode = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "Deathmatch" : "Team Deathmatch";
                     GameModeManager.SetGameMode(nextGameMode);
+                    this.UnreadyAllPlayers();
                     this.ExecuteAfterGameModeInitialized(nextGameMode, () =>
                     {
                         this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
@@ -382,6 +383,7 @@ namespace RWF
             // prevent players from being on the same team if the new gamemode prohibits it
             if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
             {
+                int sgn = +1;
                 // teams not allowed, search through players for any players on the same team and assign them the next available colorID
                 foreach (LobbyCharacter character in PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null))
                 {
@@ -389,7 +391,7 @@ namespace RWF
                     int newColorID = character.colorID;
                     while (PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && p.uniqueID != character.uniqueID && p.colorID == newColorID).Any())
                     {
-                        newColorID = Math.mod((newColorID + 1), RWFMod.MaxColorsHardLimit);
+                        newColorID = Math.mod((newColorID + sgn), RWFMod.MaxColorsHardLimit);
                         if (newColorID == orig)
                         {
                             // make sure its impossible to get stuck in an infinite loop here,
@@ -397,7 +399,8 @@ namespace RWF
                             break;
                         }
                     }
-                    if (orig != newColorID) { this.versusDisplay.PlayerSelectorGO(character.uniqueID).GetComponent<PhotonView>().RPC("RPCA_ChangeTeam", RpcTarget.All, newColorID); }
+                    sgn *= -1;
+                    if (orig != newColorID) { this.versusDisplay.PlayerSelectorGO(character.uniqueID).GetComponent<PhotonView>().RPC(nameof(PrivateRoomCharacterSelectionInstance.RPCA_ChangeTeam), RpcTarget.All, newColorID); }
                 }
 
             }
@@ -652,6 +655,27 @@ namespace RWF
                 yield return new WaitForSeconds(0.1f);
             
             }
+        }
+
+        private void UnreadyAllPlayers()
+        {
+            if (!PhotonNetwork.IsMasterClient) { return; }
+            foreach (int actorID in this.PrivateRoomCharacters.Select(p => p.actorID))
+            {
+                NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(RPCS_UnreadyAllPlayers), actorID);
+            }
+        }
+        [UnboundRPC]
+        private static void RPCS_UnreadyAllPlayers(int actorID)
+        {
+            if (PhotonNetwork.LocalPlayer.ActorNumber != actorID) { return; }
+
+            LobbyCharacter[] localCharacters = PhotonNetwork.LocalPlayer.GetProperty<LobbyCharacter[]>("players");
+            for (int i = 0; i < localCharacters.Count(); i++)
+            {
+                localCharacters[i].SetReady(false);
+            }
+            PhotonNetwork.LocalPlayer.SetProperty("players", localCharacters);
         }
 
         // Called from PlayerManager after a player has been created.

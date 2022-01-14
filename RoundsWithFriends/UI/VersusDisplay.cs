@@ -279,8 +279,12 @@ namespace RWF
             {
                 if (this._playerGOs.TryGetValue(i, out GameObject playerGO))
                 {
-                    playerGO?.SetActive(false);
-                    if (playerGO != null) { GameObject.Destroy(playerGO); }
+                    // CANNOT use playerGO?.SetActive here due to Unity weirdness
+                    if (playerGO != null)
+                    {
+                        playerGO.SetActive(false);
+                        GameObject.Destroy(playerGO);
+                    }
                 }
                 playerGOKeysToRemove.Add(i);
             }
@@ -288,8 +292,12 @@ namespace RWF
             {
                 if (this._playerSelectorGOs.TryGetValue(i, out GameObject playerSelectorGO))
                 {
-                    playerSelectorGO?.SetActive(false);
-                    if (playerSelectorGO != null) { GameObject.Destroy(playerSelectorGO); }
+                    // CANNOT use playerSelectorGO?.SetActive here due to Unity weirdness
+                    if (playerSelectorGO != null)
+                    {
+                        playerSelectorGO.SetActive(false);
+                        GameObject.Destroy(playerSelectorGO);
+                    }
                 }
                 selectorGOKeysToRemove.Add(i);
             }

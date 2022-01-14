@@ -8,6 +8,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 using UnboundLib;
 
+/*
 namespace RWF.UI
 {
     class PrivateRoomCharacterSelectButton : MonoBehaviour//, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
@@ -65,7 +66,7 @@ namespace RWF.UI
                 }
             }
 
-            if (this.currentlySelectedFace == this.characterSelectionInstance.currentlySelectedFace) { return; }
+            if (this.currentlySelectedFace == this.characterSelectionInstance.currentlySelectedFace) { return; }*/
             /*
             if (this.characterSelectionInstance.currentlySelectedFace == 0 && this.direction == PrivateRoomCharacterSelectButton.LeftRight.Left)
             {
@@ -78,7 +79,7 @@ namespace RWF.UI
             else
             {
                 this.text.color = PrivateRoomCharacterSelectButton.enabledColor;
-            }*/
+            }*//*
             this.text.color = PrivateRoomCharacterSelectButton.enabledColor;
 
 
@@ -163,4 +164,4 @@ namespace RWF.UI
         }
         
     }
-}
+}*/

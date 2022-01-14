@@ -188,6 +188,7 @@ namespace RWF.UI
                 UnityEngine.GameObject.Destroy(go1);
             }
 
+            /*
             GameObject characterSelectButtons = new GameObject("CharacterSelectButtons");
             characterSelectButtons.transform.SetParent(this.transform.GetChild(0));
             GameObject leftarrow = new GameObject("LeftArrow", typeof(PrivateRoomCharacterSelectButton));
@@ -206,6 +207,7 @@ namespace RWF.UI
             rightarrow.transform.localPosition = new Vector3(60f, 0f, 0f);
             rightarrow.GetComponent<PrivateRoomCharacterSelectButton>().SetCharacterSelectionInstance(this);
             rightarrow.GetComponent<PrivateRoomCharacterSelectButton>().SetDirection(PrivateRoomCharacterSelectButton.LeftRight.Right);
+            */
 
 
             // disable all the buttons, except for the currently selected one
@@ -465,7 +467,7 @@ namespace RWF.UI
         }
 
         [PunRPC]
-        private void RPCA_ChangeTeam(int newColorID)
+        internal void RPCA_ChangeTeam(int newColorID)
         {
             if (this.currentPlayer.IsMine) { this.ChangeToTeam(newColorID); }
 
