@@ -11,6 +11,8 @@ namespace RWF.UI
     {
         public static PlayerDisplay instance;
 
+        internal float disableCountdown = 3f;
+
         private const float barPad = -25f;//-35f;
         private const float layoutPad = 50f;
 
@@ -127,6 +129,11 @@ namespace RWF.UI
 
         void LateUpdate()
         {
+            if (this.disableCountdown >= 0f)
+            {
+                this.disableCountdown -= Time.deltaTime;
+                return;
+            }
             // check for exit, ready, or join
             if (Input.GetKeyDown(KeyCode.Escape)) // exit with Esc
             {

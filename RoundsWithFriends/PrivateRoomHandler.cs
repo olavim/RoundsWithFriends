@@ -383,13 +383,18 @@ namespace RWF
             // prevent players from being on the same team if the new gamemode prohibits it
             if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
             {
+                if (this.PrivateRoomCharacters.Select(p => p.colorID).Distinct().Count() == this.NumCharacters)
+                {
+                    return;
+                }
                 int sgn = +1;
                 // teams not allowed, search through players for any players on the same team and assign them the next available colorID
-                foreach (LobbyCharacter character in PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null))
+                // order by ascending uniqueID to favor players who joined earlier getting their preffered color
+                foreach (LobbyCharacter character in this.PrivateRoomCharacters.OrderBy(p => p.uniqueID))
                 {
                     int orig = character.colorID;
                     int newColorID = character.colorID;
-                    while (PhotonNetwork.CurrentRoom.Players.Select(kv => kv.Value.GetProperty<LobbyCharacter[]>("players")).SelectMany(p => p).Where(p => p != null && p.uniqueID != character.uniqueID && p.colorID == newColorID).Any())
+                    while (this.PrivateRoomCharacters.Where(p => p.uniqueID != character.uniqueID && p.colorID == newColorID).Any())
                     {
                         newColorID = Math.mod((newColorID + sgn), RWFMod.MaxColorsHardLimit);
                         if (newColorID == orig)
@@ -530,6 +535,9 @@ namespace RWF
                 PhotonNetwork.LocalPlayer.NickName = $"Player {PhotonNetwork.LocalPlayer.ActorNumber}";
             }
 
+            // disable the ability to join the player queue for a few seconds to allow it to initialize
+            PlayerDisplay.instance.disableCountdown = 2f;
+
             // If we handled this from OnPlayerEnteredRoom handler for other clients, the joined client's nickname might not have been set yet
             base.OnJoinedRoom();
         }
@@ -616,14 +624,13 @@ namespace RWF
             {
                 int localPlayerNumber = Enumerable.Range(0, RWFMod.instance.MaxCharactersPerClient).Where(i => localCharacters[i] == null).First();
                 
-                // add a new local player to the first available slot with either their preferred color if its available or the next unused colorID
+                // add a new local player to the first available slot with either their preferred color if its available, if it is not, pick the nearest valid color
                 // preferred colors are NOT set in the online lobby, but instead in the local lobby - that way they don't change every match a player doesn't get their preferred color
                 int colorID = PlayerPrefs.GetInt(RWFMod.GetCustomPropertyKey("PreferredColor" + localPlayerNumber.ToString()));
                 if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj && this.PrivateRoomCharacters.Select(p => p.colorID).Distinct().Contains(colorID))
                 {
-                    colorID = Enumerable.Range(0, RWFMod.MaxColorsHardLimit).Except(this.PrivateRoomCharacters.Select(p => p.colorID).Distinct()).FirstOrDefault();
+                    colorID = Enumerable.Range(0, RWFMod.MaxColorsHardLimit).Except(this.PrivateRoomCharacters.Select(p => p.colorID).Distinct()).OrderBy(c => UnityEngine.Mathf.Abs(c-colorID)).FirstOrDefault();
                 }
-
                 localCharacters[localPlayerNumber] = new LobbyCharacter(PhotonNetwork.LocalPlayer, colorID, localPlayerNumber);
 
                 PhotonNetwork.LocalPlayer.SetProperty("players", localCharacters);

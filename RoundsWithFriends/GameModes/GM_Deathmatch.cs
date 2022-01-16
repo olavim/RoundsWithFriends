@@ -22,6 +22,7 @@ namespace RWF.GameModes
 		private bool isTransitioning;
 		private int playersNeededToStart = 2;
 		private int currentWinningTeamID = -1;
+        private int? timeUntilBattleStart = null;
 
 		private void Awake() {
 			GM_Deathmatch.instance = this;
@@ -51,7 +52,12 @@ namespace RWF.GameModes
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookInitEnd);
 		}
 		[UnboundRPC]
-		public static void RPC_SyncBattleStart(int requestingPlayer) {
+		public static void RPC_SyncBattleStart(int requestingPlayer, int timeOfBattleStart) 
+        {
+
+            // calculate the time in milliseconds until the battle starts
+            GM_Deathmatch.instance.timeUntilBattleStart = timeOfBattleStart - PhotonNetwork.ServerTimestamp;
+
 			NetworkingManager.RPC(typeof(GM_Deathmatch), nameof(GM_Deathmatch.RPC_SyncBattleStartResponse), requestingPlayer, PhotonNetwork.LocalPlayer.ActorNumber);
 		}
 
@@ -68,14 +74,34 @@ namespace RWF.GameModes
 				yield break;
 			}
 
-			yield return this.SyncMethod(nameof(GM_Deathmatch.RPC_SyncBattleStart), null, PhotonNetwork.LocalPlayer.ActorNumber);
+            // only the host will communicate when the battle should start
 
-            // wait an extra time equivalent to the maximum ping in the lobby minus this client's ping
-            float maxPing = PhotonNetwork.CurrentRoom.Players.Select(kv => (float)(int) kv.Value.CustomProperties["Ping"]).Max() * 0.001f;
-            float myPing = (float)(int)PhotonNetwork.LocalPlayer.CustomProperties["Ping"] * 0.001f;
-            float wait = UnityEngine.Mathf.Abs(maxPing - myPing) < 0.001f ? 0f : maxPing - myPing;
+            if (PhotonNetwork.IsMasterClient)
+            {
+                // schedule the battle to start 5 times the maximum client ping + host client's ping from now, with a minimum of 1 second
+                // 5 because the host and slowest client must:
+                // Host 1) send the RPC
+                // Host 2) receive ALL clients' responses
+                // Host 3) retrieve the server time
+                // Client 1) receive the RPC
+                // Client 2) respond to the RPC
+                // Client 3) retrieve the server time
+                // + wiggle room
 
-            if (wait > 0f) { yield return new WaitForSecondsRealtime(wait); }
+                // if the host client is the slowest client (very unlikely because of how Photon chooses servers),
+                // then this is overkill - but better safe than sorry
+
+                // this is in milliseconds and can overflow, but luckily all overflows will cancel out when a time difference is calculated
+                int timeOfBattleStart = PhotonNetwork.ServerTimestamp + UnityEngine.Mathf.Clamp(5 * ((int)PhotonNetwork.LocalPlayer.CustomProperties["Ping"] + PhotonNetwork.CurrentRoom.Players.Select(kv => (int) kv.Value.CustomProperties["Ping"]).Max()), 1000, int.MaxValue);
+
+			    yield return this.SyncMethod(nameof(GM_Deathmatch.RPC_SyncBattleStart), null, PhotonNetwork.LocalPlayer.ActorNumber, timeOfBattleStart);
+            }
+
+            yield return new WaitUntil(() => this.timeUntilBattleStart != null);
+
+            yield return new WaitForSecondsRealtime((float)this.timeUntilBattleStart * 0.001f);
+
+            this.timeUntilBattleStart = null;
 		}
 
 		[UnboundRPC]
@@ -346,7 +372,7 @@ namespace RWF.GameModes
 			PlayerManager.instance.SetPlayersSimulated(true);
 
 			yield return GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
-
+            
 			this.ExecuteAfterSeconds(0.5f, () => {
 				UIHandler.instance.HideRoundStartText();
 			});
