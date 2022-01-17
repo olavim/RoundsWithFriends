@@ -24,6 +24,8 @@ namespace RWF.UI
         public static Color readycolor = new Color(0.2f, 0.8f, 0.1f, 1f);
         public static Color createdColor = new Color(0.9f, 0f, 0.1f, 1f);
         public static Color joinedcolor = new Color(0.566f, 0.566f, 0.566f, 1f);
+        public static Color myBorderColor = Color.white;
+        public static Color othersBorderColor = Color.clear;
     }
     [RequireComponent(typeof(PhotonView))]
     public class PrivateRoomCharacterSelectionInstance : MonoBehaviour, IPunInstantiateMagicCallback
@@ -171,6 +173,11 @@ namespace RWF.UI
 
                 // update colors
                 this.buttons[i].transform.GetChild(2).GetChild(0).GetComponent<SpriteRenderer>().color = ExtraPlayerSkins.GetPlayerSkinColors(this.currentPlayer.colorID).color;
+
+                // update the border color and width
+                this.buttons[i].transform.GetChild(1).GetComponent<ProceduralImage>().color = this.currentPlayer.IsMine ? Colors.myBorderColor : Colors.othersBorderColor;
+                this.buttons[i].transform.GetChild(1).GetComponent<ProceduralImage>().BorderWidth = 3f;
+                this.buttons[i].transform.GetChild(1).GetComponent<ProceduralImage>().FalloffDistance = 3f;
 
                 if (this.currentPlayer.IsMine)
                 {

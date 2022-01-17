@@ -134,7 +134,7 @@ namespace RWF
                 sizer3.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                 sizer3.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 layoutGroup1.childAlignment = TextAnchor.MiddleCenter;
-                layoutGroup1.spacing = new Vector2(125f, 35f);
+                layoutGroup1.spacing = new Vector2(125f, 75f);
                 layoutGroup1.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
                 layoutGroup1.constraintCount = 2;
                 layoutGroup1.startCorner = GridLayoutGroup.Corner.UpperLeft;
@@ -323,7 +323,7 @@ namespace RWF
         {
             foreach (LobbyCharacter player in players)
             {
-                if (players.Where(p => p.uniqueID != player.uniqueID).Select(p => this.UniqueIDToTeamID(p.uniqueID)).Contains(this.UniqueIDToTeamID(player.uniqueID)))
+                if (false)//players.Where(p => p.uniqueID != player.uniqueID).Select(p => this.UniqueIDToTeamID(p.uniqueID)).Contains(this.UniqueIDToTeamID(player.uniqueID)))
                 {
                     // player is on a team
                     this.PlayerGO(player.uniqueID).transform.localScale = VersusDisplay.SizeOnTeam * Vector3.one;
