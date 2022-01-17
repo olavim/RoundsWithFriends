@@ -183,7 +183,7 @@ namespace RWF
         public void Start()
         {
             // register credits with unbound
-            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI, Fair pick orders)", "Pykess (> 4 player support, multiple players per client, additional player colors, disconnect handling, UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://www.buymeacoffee.com/Pykess" });
+            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI, Fair pick orders)", "Pykess (> 4 player support, multiple players per client, additional player colors, disconnect handling, UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://ko-fi.com/pykess" });
 
             // add GUI to modoptions menu
             Unbound.RegisterMenu(RWFMod.ModName, () => { }, this.GUI, null, false);
