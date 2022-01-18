@@ -94,6 +94,11 @@ namespace RWF.GameModes
             this.GameMode.teamRounds[teamID] = score.rounds;
         }
 
+        public override int[] GetGameWinners()
+        {
+            return this.GameMode.teamRounds.Keys.Where(tID => this.GameMode.teamRounds[tID] >= (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"]).ToArray();
+        }
+
         public override void StartGame()
         {
             this.GameMode.StartGame();

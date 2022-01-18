@@ -131,8 +131,6 @@ namespace RWF.GameModes
             {
                 yield break;
             }
-            UnityEngine.Debug.Log($"TYPE: {this.GetType()}");
-            UnityEngine.Debug.Log($"BASE TYPE: {this.GetType().BaseType}");
             yield return this.SyncMethod(nameof(RWFGameMode.RPC_RequestSync), null, PhotonNetwork.LocalPlayer.ActorNumber);
         }
 
@@ -167,8 +165,6 @@ namespace RWF.GameModes
             {
                 return;
             }
-
-            UnityEngine.Debug.Log("START GAME");
 
             // clear teams and redo them
             this.teamPoints.Clear();
@@ -207,16 +203,12 @@ namespace RWF.GameModes
 
             yield return new WaitForSecondsRealtime(1f);
 
-            UnityEngine.Debug.Log("HOOK PICK START");
             yield return GameModeManager.TriggerHook(GameModeHooks.HookPickStart);
             List<Player> pickOrder = PlayerManager.instance.GetPickOrder(null);
 
-            UnityEngine.Debug.Log("START PICKING");
             foreach (Player player in pickOrder)
             {
-                UnityEngine.Debug.Log("WAIT FOR SYNC");
                 yield return this.WaitForSyncUp();
-                UnityEngine.Debug.Log("SYNCED");
 
                 yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
 
@@ -249,7 +241,8 @@ namespace RWF.GameModes
             yield return GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
             yield return GameModeManager.TriggerHook(GameModeHooks.HookRoundEnd);
 
-            if (this.teamRounds[winningTeamID] >= (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"])
+            int[] winningTeams = GameModeManager.CurrentHandler.GetGameWinners();
+            if (winningTeams.Any())
             {
                 this.GameOver(winningTeamID);
                 yield break;
