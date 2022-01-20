@@ -9,15 +9,17 @@ namespace RWF.GameModes
 {
     public class RWFGameModeHandler<TGameMode> : GameModeHandler<TGameMode> where TGameMode : RWFGameMode
     {
+        private readonly string _Name;
         public override string Name
         {
-            get { return (string) this.GetFieldValue("gameModeId"); }
+            get { return this._Name; }
         }
 
         public override GameSettings Settings { get; protected set; }
 
-        public RWFGameModeHandler(string gameModeId, bool allowTeams, int pointsToWinRound = 2, int roundsToWinGame = 5, int? playersRequiredToStartGame = null, int? maxPlayers = null, int? maxTeams = null, int? maxClients = null) : base(gameModeId)
+        public RWFGameModeHandler(string name, string gameModeId, bool allowTeams, int pointsToWinRound = 2, int roundsToWinGame = 5, int? playersRequiredToStartGame = null, int? maxPlayers = null, int? maxTeams = null, int? maxClients = null) : base(gameModeId)
         {
+            this._Name = name;
             this.Settings = new GameSettings()
             {
                 { "pointsToWinRound", pointsToWinRound},

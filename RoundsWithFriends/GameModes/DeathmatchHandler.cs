@@ -3,6 +3,7 @@
     public class DeathmatchHandler : RWFGameModeHandler<GM_Deathmatch>
     {
         public DeathmatchHandler() : base(
+            name: "Deathmatch",
             gameModeId: "Deathmatch",
             allowTeams: false,
             pointsToWinRound: 2,
