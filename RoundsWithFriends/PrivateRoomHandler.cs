@@ -226,7 +226,7 @@ namespace RWF
             var gamemodeGoRect = this.gamemodeHeader.AddComponent<RectTransform>();
             var gamemodeGoLayout = this.gamemodeHeader.AddComponent<LayoutElement>();
             this.gamemodeHeaderText = gamemodeTextGo.GetComponent<TextMeshProUGUI>();
-            this.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "CONNECTING...";
+            this.gamemodeHeaderText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "CONNECTING...";
             this.gamemodeHeaderText.fontSize = 60;
             this.gamemodeHeaderText.fontStyle = FontStyles.Bold;
             this.gamemodeHeaderText.enableWordWrapping = false;
@@ -291,7 +291,7 @@ namespace RWF
             this.gameModeListObject.transform.SetParent(this.grid.transform);
             this.gameModeListObject.transform.localScale = Vector3.one;
 
-            var gameModeTextGo = GetText(GameModeManager.CurrentHandlerID?.ToUpper() ?? "GAMEMODE");
+            var gameModeTextGo = GetText(GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "GAMEMODE");
             gameModeTextGo.transform.SetParent(this.gameModeListObject.transform);
             gameModeTextGo.transform.localScale = Vector3.one;
 
@@ -332,7 +332,9 @@ namespace RWF
                 if (PhotonNetwork.CurrentRoom == null) { return; }
                 if (PhotonNetwork.IsMasterClient)
                 {
-                    string nextGameMode = GameModeManager.CurrentHandlerID == "Team Deathmatch" ? "Deathmatch" : "Team Deathmatch";
+                    // cycle through gamemodes alphabetically, skipping Sandbox and ArmsRace
+                    string[] gameModes = GameModeManager.Handlers.Keys.Where(k=> k != GameModeManager.SandBoxID && k != GameModeManager.ArmsRaceID).OrderBy(k => GameModeManager.Handlers[k].Name).ToArray();
+                    string nextGameMode = gameModes[Math.mod(Array.IndexOf(gameModes, GameModeManager.CurrentHandlerID) + 1, gameModes.Count())];
                     GameModeManager.SetGameMode(nextGameMode);
                     this.UnreadyAllPlayers();
                     this.ExecuteAfterGameModeInitialized(nextGameMode, () =>
@@ -516,11 +518,12 @@ namespace RWF
             {
                 if (GameModeManager.CurrentHandler == null)
                 {
-                    GameModeManager.SetGameMode("Team Deathmatch");
+                    // default to TDM
+                    GameModeManager.SetGameMode(RWF.GameModes.TeamDeathmatchHandler.GameModeID);
                 }
 
-                PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
-                PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
+                PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
+                PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
             }
 
             /* The local player's nickname is also set in NetworkConnectionHandler::OnJoinedRoom, but we'll do it here too so we don't
@@ -697,8 +700,8 @@ namespace RWF
             GameModeManager.SetGameMode(gameMode);
             GameModeManager.CurrentHandler.SetSettings(settings);
 
-            PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
-            PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandlerID?.ToUpper() ?? "";
+            PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
+            PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettingsResponse), PhotonNetwork.LocalPlayer.ActorNumber);
         }

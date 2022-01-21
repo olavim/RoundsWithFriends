@@ -421,42 +421,7 @@ namespace RWF
 
         public void SetupGameModes()
         {
-            var gameModeGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/GameMode");
-            var versusGo = gameModeGo.transform.Find("Group").GetChild(0).gameObject;
-            var characterSelectGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/CharacterSelect");
-
-            var characterSelectPage = characterSelectGo.GetComponent<ListMenuPage>();
-
-            var teamDeathmatchButtonGo = GameObject.Instantiate(versusGo, versusGo.transform.parent);
-            teamDeathmatchButtonGo.transform.localScale = Vector3.one;
-            teamDeathmatchButtonGo.transform.SetSiblingIndex(0);
-
-            var teamDeathmatchButtonText = teamDeathmatchButtonGo.GetComponentInChildren<TextMeshProUGUI>();
-            teamDeathmatchButtonText.text = "TEAM DEATHMATCH";
-
-            GameObject.DestroyImmediate(teamDeathmatchButtonGo.GetComponent<Button>());
-            var teamDeathmatchButton = teamDeathmatchButtonGo.AddComponent<Button>();
-
-            teamDeathmatchButton.onClick.AddListener(characterSelectPage.Open);
-            teamDeathmatchButton.onClick.AddListener(() => GameModeManager.SetGameMode("Team Deathmatch"));
-            teamDeathmatchButton.onClick.AddListener(() => KeybindHints.CreateLocalHints());
-
-            var deathmatchButtonGo = GameObject.Instantiate(versusGo, versusGo.transform.parent);
-            deathmatchButtonGo.transform.localScale = Vector3.one;
-            deathmatchButtonGo.transform.SetSiblingIndex(1);
-
-            var deathmatchButtonText = deathmatchButtonGo.GetComponentInChildren<TextMeshProUGUI>();
-            deathmatchButtonText.text = "DEATHMATCH";
-
-            GameObject.DestroyImmediate(deathmatchButtonGo.GetComponent<Button>());
-            var deathmatchButton = deathmatchButtonGo.AddComponent<Button>();
-
-            deathmatchButton.onClick.AddListener(characterSelectPage.Open);
-            deathmatchButton.onClick.AddListener(() => GameModeManager.SetGameMode("Deathmatch"));
-            deathmatchButton.onClick.AddListener(() => KeybindHints.CreateLocalHints());
-
-            UnityEngine.GameObject.Destroy(versusGo);
-
+            GameModeManager.RemoveHandler(GameModeManager.ArmsRaceID);
         }
 
         public void InjectUIElements()

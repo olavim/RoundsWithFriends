@@ -100,6 +100,14 @@ namespace RWF.GameModes
         {
             return this.GameMode.teamRounds.Keys.Where(tID => this.GameMode.teamRounds[tID] >= (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"]).ToArray();
         }
+        public override int[] GetRoundWinners()
+        {
+            return this.GameMode.previousRoundWinners;
+        }
+        public override int[] GetPointWinners()
+        {
+            return this.GameMode.previousPointWinners;
+        }
 
         public override void StartGame()
         {

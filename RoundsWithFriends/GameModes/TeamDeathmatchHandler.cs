@@ -2,9 +2,11 @@
 {
     public class TeamDeathmatchHandler : RWFGameModeHandler<GM_TeamDeathmatch>
     {
+        internal const string GameModeName = "Team Deathmatch";
+        internal const string GameModeID = "Team Deathmatch";
         public TeamDeathmatchHandler() : base(
-            name: "Team Deathmatch",
-            gameModeId: "Team Deathmatch",
+            name: GameModeName,
+            gameModeId: GameModeID,
             allowTeams: true,
             pointsToWinRound: 2,
             roundsToWinGame: 5,

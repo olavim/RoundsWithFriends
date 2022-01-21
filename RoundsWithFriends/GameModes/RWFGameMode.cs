@@ -24,6 +24,9 @@ namespace RWF.GameModes
         private int currentWinningTeamID = -1;
         private int? timeUntilBattleStart = null;
 
+        internal int[] previousRoundWinners = new int[] { };
+        internal int[] previousPointWinners = new int[] { };
+
         protected virtual void Awake()
         {
             RWFGameMode.instance = this;
@@ -169,6 +172,11 @@ namespace RWF.GameModes
             // clear teams and redo them
             this.teamPoints.Clear();
             this.teamRounds.Clear();
+
+            // clear previous winners
+            this.previousPointWinners = new int[] { };
+            this.previousRoundWinners = new int[] { };
+
             foreach (Player player in PlayerManager.instance.players)
             {
                 this.PlayerJoined(player);
@@ -410,12 +418,17 @@ namespace RWF.GameModes
                 this.teamPoints[teamID] = 0;
             }
 
+            this.previousRoundWinners = new int[] { winningTeamID };
+
             this.StartCoroutine(this.RoundTransition(winningTeamID));
         }
 
         protected virtual void PointOver(int winningTeamID)
         {
             this.currentWinningTeamID = winningTeamID;
+
+            this.previousPointWinners = new int[] { winningTeamID };
+
             this.StartCoroutine(this.PointTransition(winningTeamID));
         }
 
