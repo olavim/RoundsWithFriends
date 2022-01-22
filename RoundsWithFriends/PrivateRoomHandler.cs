@@ -17,6 +17,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.UI.ProceduralImage;
 using RWF.UI;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RWF
 {
@@ -66,7 +67,7 @@ namespace RWF
             private set { }
         }
     }
-
+    
     class PrivateRoomHandler : MonoBehaviourPunCallbacks
     {
         private const int ReadyStartGameCountdown = 3;
@@ -82,11 +83,11 @@ namespace RWF
         private GameObject grid;
         private GameObject header;
         private GameObject gamemodeHeader;
-        private GameObject gameModeListObject;
+        // private GameObject gameModeListObject;
         private TextMeshProUGUI headerText;
         private TextMeshProUGUI gamemodeHeaderText;
         private TextMeshProUGUI inviteText;
-        private TextMeshProUGUI gameModeText;
+        // private TextMeshProUGUI gameModeText;
         private VersusDisplay versusDisplay;
         private bool _lockReadies;
         private bool lockReadies
@@ -246,22 +247,22 @@ namespace RWF
             keybindGo.transform.SetParent(this.grid.transform);
             keybindGo.transform.localScale = Vector3.one;
             var keybindHints1 = GameObject.Instantiate(KeybindHints.KeybindPrefab, keybindGo.transform).AddComponent<KeybindHints.ControllerBasedHints>();
-            keybindHints1.hints = new string[] { "[A/D]", "[LEFT STICK]" };
+            keybindHints1.hints = new[] { "[A/D]", "[LEFT STICK]" };
             keybindHints1.action = "CHANGE TEAM";
             keybindHints1.gameObject.SetActive(true);
             keybindHints1.gameObject.AddComponent<KeybindHints.DisableIfSet>();
             var keybindHints2 = GameObject.Instantiate(KeybindHints.KeybindPrefab, keybindGo.transform).AddComponent<KeybindHints.ControllerBasedHints>();
-            keybindHints2.hints = new string[] { "[SPACE]", "[START]" };
+            keybindHints2.hints = new[] { "[SPACE]", "[START]" };
             keybindHints2.action = "JOIN/READY";
             keybindHints2.gameObject.SetActive(true);
             keybindHints2.gameObject.AddComponent<KeybindHints.DisableIfSet>();
             var keybindHints3 = GameObject.Instantiate(KeybindHints.KeybindPrefab, keybindGo.transform).AddComponent<KeybindHints.ControllerBasedHints>();
-            keybindHints3.hints = new string[] { "[ESC]", "[B]" };
+            keybindHints3.hints = new[] { "[ESC]", "[B]" };
             keybindHints3.action = "UNREADY/LEAVE";
             keybindHints3.gameObject.SetActive(true);
             keybindHints3.gameObject.AddComponent<KeybindHints.DisableIfSet>();
             var keybindHints4 = GameObject.Instantiate(KeybindHints.KeybindPrefab, keybindGo.transform).AddComponent<KeybindHints.ControllerBasedHints>();
-            keybindHints4.hints = new string[] { "[Q/E]", "[LB/RB]" };
+            keybindHints4.hints = new[] { "[Q/E]", "[LB/RB]" };
             keybindHints4.action = "CHANGE FACE";
             keybindHints4.gameObject.SetActive(true);
             keybindHints4.gameObject.AddComponent<KeybindHints.DisableIfSet>();
@@ -287,13 +288,15 @@ namespace RWF
             this.inviteText = inviteTextGo.GetComponent<TextMeshProUGUI>();
             this.inviteText.color = (PhotonNetwork.CurrentRoom != null) ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
 
-            this.gameModeListObject = new GameObject("GameMode");
-            this.gameModeListObject.transform.SetParent(this.grid.transform);
-            this.gameModeListObject.transform.localScale = Vector3.one;
+            // this.gameModeListObject = new GameObject("GameMode");
+            // this.gameModeListObject.transform.SetParent(this.grid.transform);
+            // this.gameModeListObject.transform.localScale = Vector3.one;
 
-            var gameModeTextGo = GetText(GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "GAMEMODE");
-            gameModeTextGo.transform.SetParent(this.gameModeListObject.transform);
-            gameModeTextGo.transform.localScale = Vector3.one;
+            // var gameModeTextGo = GetText(GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "GAMEMODE");
+            // gameModeTextGo.transform.SetParent(this.gameModeListObject.transform);
+            // gameModeTextGo.transform.localScale = Vector3.one;
+            
+            GamemodeScrollView.Create(this.grid.transform);
 
             var backGo = new GameObject("Back");
             backGo.transform.SetParent(this.grid.transform);
@@ -319,34 +322,34 @@ namespace RWF
                 lobby.ShowInviteScreenWhenConnected();
             });
 
-            this.gameModeListObject.AddComponent<RectTransform>();
-            this.gameModeListObject.AddComponent<CanvasRenderer>();
-            var gameModeLayout = this.gameModeListObject.AddComponent<LayoutElement>();
-            gameModeLayout.minHeight = 92;
-            var gameModeButton = this.gameModeListObject.AddComponent<Button>();
-            var gameModeListButton = this.gameModeListObject.AddComponent<ListMenuButton>();
-            gameModeListButton.setBarHeight = 92f;
-
-            gameModeButton.onClick.AddListener(() =>
-            {
-                if (PhotonNetwork.CurrentRoom == null) { return; }
-                if (PhotonNetwork.IsMasterClient)
-                {
-                    // cycle through gamemodes alphabetically, skipping Sandbox and ArmsRace
-                    string[] gameModes = GameModeManager.Handlers.Keys.Where(k=> k != GameModeManager.SandBoxID && k != GameModeManager.ArmsRaceID).OrderBy(k => GameModeManager.Handlers[k].Name).ToArray();
-                    string nextGameMode = gameModes[Math.mod(Array.IndexOf(gameModes, GameModeManager.CurrentHandlerID) + 1, gameModes.Count())];
-                    GameModeManager.SetGameMode(nextGameMode);
-                    this.UnreadyAllPlayers();
-                    this.ExecuteAfterGameModeInitialized(nextGameMode, () =>
-                    {
-                        this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
-                        this.HandleTeamRules();
-                    });
-                }
-            });
-
-            this.gameModeText = gameModeTextGo.GetComponent<TextMeshProUGUI>();
-            this.gameModeText.color = (PhotonNetwork.CurrentRoom != null) ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
+            // this.gameModeListObject.AddComponent<RectTransform>();
+            // this.gameModeListObject.AddComponent<CanvasRenderer>();
+            // var gameModeLayout = this.gameModeListObject.AddComponent<LayoutElement>();
+            // gameModeLayout.minHeight = 92;
+            // var gameModeButton = this.gameModeListObject.AddComponent<Button>();
+            // var gameModeListButton = this.gameModeListObject.AddComponent<ListMenuButton>();
+            // gameModeListButton.setBarHeight = 92f;
+            //
+            // gameModeButton.onClick.AddListener(() =>
+            // {
+            //     if (PhotonNetwork.CurrentRoom == null) { return; }
+            //     if (PhotonNetwork.IsMasterClient)
+            //     {
+            //         // cycle through gamemodes alphabetically, skipping Sandbox and ArmsRace
+            //         string[] gameModes = GameModeManager.Handlers.Keys.Where(k=> k != GameModeManager.SandBoxID && k != GameModeManager.ArmsRaceID).OrderBy(k => GameModeManager.Handlers[k].Name).ToArray();
+            //         string nextGameMode = gameModes[Math.mod(Array.IndexOf(gameModes, GameModeManager.CurrentHandlerID) + 1, gameModes.Count())];
+            //         GameModeManager.SetGameMode(nextGameMode);
+            //         this.UnreadyAllPlayers();
+            //         this.ExecuteAfterGameModeInitialized(nextGameMode, () =>
+            //         {
+            //             this.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
+            //             this.HandleTeamRules();
+            //         });
+            //     }
+            // });
+            //
+            // this.gameModeText = gameModeTextGo.GetComponent<TextMeshProUGUI>();
+            // this.gameModeText.color = (PhotonNetwork.CurrentRoom != null) ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
 
             divGo1.AddComponent<RectTransform>();
 
@@ -380,7 +383,7 @@ namespace RWF
             this.MainPage.Close();
         }
 
-        private void HandleTeamRules()
+        public void HandleTeamRules()
         {
             // prevent players from being on the same team if the new gamemode prohibits it
             if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
@@ -445,9 +448,9 @@ namespace RWF
             {
                 particleSystem.particleSettings.randomColor = (Color)randomColor;
             }
-         }
+        }
 
-        private GameObject GetText(string str)
+        public GameObject GetText(string str)
         {
             var textGo = new GameObject("Text");
 
@@ -497,10 +500,10 @@ namespace RWF
 
             // set text colors to enabled, hide gamemode button if this player is not host
             this.inviteText.color = PrivateRoomHandler.enabledTextColor;
-            this.gameModeText.color = PrivateRoomHandler.enabledTextColor;
-            if (!PhotonNetwork.IsMasterClient)
+            // this.gameModeText.color = PrivateRoomHandler.enabledTextColor;
+            if (PhotonNetwork.IsMasterClient)
             {
-                this.gameModeListObject.SetActive(false);
+                GamemodeScrollView.scrollView.SetActive(true);
             }
 
             // necessary for VersusDisplay characters to render in the correct order
@@ -522,7 +525,8 @@ namespace RWF
                     GameModeManager.SetGameMode(RWF.GameModes.TeamDeathmatchHandler.GameModeID);
                 }
 
-                PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
+                GamemodeScrollView.SetGameMode(GameModeManager.CurrentHandler?.Name);
+                // PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
                 PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
             }
 
@@ -667,7 +671,7 @@ namespace RWF
             }
         }
 
-        private void UnreadyAllPlayers()
+        public void UnreadyAllPlayers()
         {
             if (!PhotonNetwork.IsMasterClient) { return; }
             foreach (int actorID in this.PrivateRoomCharacters.Select(p => p.actorID))
@@ -700,7 +704,8 @@ namespace RWF
             GameModeManager.SetGameMode(gameMode);
             GameModeManager.CurrentHandler.SetSettings(settings);
 
-            PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
+            // GamemodeScrollView.SetGameMode(GameModeManager.CurrentHandler?.Name);
+            // PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
             PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.SetGameSettingsResponse), PhotonNetwork.LocalPlayer.ActorNumber);
