@@ -69,7 +69,7 @@ namespace RWF.UI
                 var button = buttonObj.AddComponent<Button>();
                 var index = i;
                 
-                var text = PrivateRoomHandler.instance.GetText(GameModeManager.Handlers[gameMode].Name);
+                var text = PrivateRoomHandler.instance.GetText(GameModeManager.Handlers[gameMode].Name.ToUpper());
                 text.transform.SetParent(buttonObj.transform);
                 GamemodeScrollView.SameAsParent(text.GetComponent<RectTransform>());
                 text.GetComponent<TextMeshProUGUI>().enableAutoSizing = true;
