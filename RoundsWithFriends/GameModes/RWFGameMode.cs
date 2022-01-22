@@ -188,7 +188,7 @@ namespace RWF.GameModes
             this.StartCoroutine(this.DoStartGame());
         }
 
-        protected virtual IEnumerator DoStartGame()
+        public virtual IEnumerator DoStartGame()
         {
             CardBarHandler.instance.Rebuild();
             UIHandler.instance.InvokeMethod("SetNumberOfRounds", (int) GameModeManager.CurrentHandler.Settings["roundsToWinGame"]);
@@ -244,7 +244,7 @@ namespace RWF.GameModes
             this.StartCoroutine(this.DoRoundStart());
         }
 
-        protected virtual IEnumerator RoundTransition(int winningTeamID)
+        public virtual IEnumerator RoundTransition(int winningTeamID)
         {
             yield return GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
             yield return GameModeManager.TriggerHook(GameModeHooks.HookRoundEnd);
@@ -310,7 +310,7 @@ namespace RWF.GameModes
             this.StartCoroutine(this.DoRoundStart());
         }
 
-        protected virtual IEnumerator PointTransition(int winningTeamID)
+        public virtual IEnumerator PointTransition(int winningTeamID)
         {
             yield return GameModeManager.TriggerHook(GameModeHooks.HookPointEnd);
 
@@ -336,7 +336,7 @@ namespace RWF.GameModes
             this.StartCoroutine(this.DoPointStart());
         }
 
-        protected virtual IEnumerator DoRoundStart()
+        public virtual IEnumerator DoRoundStart()
         {
             // Wait for MapManager to set all players to playing after map transition
             while (PlayerManager.instance.players.ToList().Any(p => !(bool) p.data.isPlaying))
@@ -373,7 +373,7 @@ namespace RWF.GameModes
             });
         }
 
-        protected virtual IEnumerator DoPointStart()
+        public virtual IEnumerator DoPointStart()
         {
             // Wait for MapManager to set all players to playing after map transition
             while (PlayerManager.instance.players.ToList().Any(p => !(bool) p.data.isPlaying))
@@ -409,7 +409,7 @@ namespace RWF.GameModes
             });
         }
 
-        protected virtual void RoundOver(int winningTeamID)
+        public virtual void RoundOver(int winningTeamID)
         {
             this.currentWinningTeamID = winningTeamID;
 
@@ -423,7 +423,7 @@ namespace RWF.GameModes
             this.StartCoroutine(this.RoundTransition(winningTeamID));
         }
 
-        protected virtual void PointOver(int winningTeamID)
+        public virtual void PointOver(int winningTeamID)
         {
             this.currentWinningTeamID = winningTeamID;
 
@@ -432,7 +432,7 @@ namespace RWF.GameModes
             this.StartCoroutine(this.PointTransition(winningTeamID));
         }
 
-        protected virtual IEnumerator GameOverTransition(int winningTeamID)
+        public virtual IEnumerator GameOverTransition(int winningTeamID)
         {
             yield return GameModeManager.TriggerHook(GameModeHooks.HookGameEnd);
 
