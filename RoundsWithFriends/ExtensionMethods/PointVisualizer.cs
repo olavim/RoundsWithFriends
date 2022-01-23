@@ -449,7 +449,7 @@ namespace RWF
             {
                 List<Color> colors = winnerTeamIDs.Select(tID => PlayerManager.instance.GetPlayersInTeam(tID).First().GetTeamColors().color).ToList();
                 color = AverageColor.Average(colors);
-                text = $"POINT TO {((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : $"TEAM{(winnerTeamIDs.Count() > 1 ? "S\n" : "")}")}";
+                text = $"POINT TO{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : $" TEAM{(winnerTeamIDs.Count() > 1 ? "S\n" : "")}")}";
                 foreach (int winnerTeamID in winnerTeamIDs)
                 {
                     text += $" {ExtraPlayerSkins.GetTeamColorName(PlayerManager.instance.GetPlayersInTeam(winnerTeamID).First().colorID()).ToUpper()}";
