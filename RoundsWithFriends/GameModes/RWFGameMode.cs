@@ -14,10 +14,10 @@ namespace RWF.GameModes
 {
     public class RWFGameMode : MonoBehaviour
     {
-        public static RWFGameMode instance;
+        private static RWFGameMode instance;
 
-        internal Dictionary<int, int> teamPoints = new Dictionary<int, int>();
-        internal Dictionary<int, int> teamRounds = new Dictionary<int, int>();
+        public Dictionary<int, int> teamPoints = new Dictionary<int, int>();
+        public Dictionary<int, int> teamRounds = new Dictionary<int, int>();
 
         private bool isTransitioning;
         private int playersNeededToStart = 2;
