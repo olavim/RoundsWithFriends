@@ -443,16 +443,22 @@ namespace RWF
                 }
             }
 
-            Color color = Color.white;
+            Color color = new Color32(230, 230, 230, 255);
             string text = "TIE\nNO POINTS";
             if (winnerTeamIDs.Count() > 0)
             {
-                List<Color> colors = winnerTeamIDs.Select(tID => PlayerManager.instance.GetPlayersInTeam(tID).First().GetTeamColors().color).ToList();
-                color = AverageColor.Average(colors);
-                text = $"POINT TO{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : $" TEAM{(winnerTeamIDs.Count() > 1 ? "S\n" : "")}")}";
-                foreach (int winnerTeamID in winnerTeamIDs)
+                text = $"POINT TO{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : $" TEAM{(winnerTeamIDs.Count() > 1 ? "S" : "")}")}";
+                for (int i = 0; i < winnerTeamIDs.Count(); i++)
                 {
-                    text += $" {ExtraPlayerSkins.GetTeamColorName(PlayerManager.instance.GetPlayersInTeam(winnerTeamID).First().colorID()).ToUpper()}";
+                    if (winnerTeamIDs.Count() > 1)
+                    {
+                        if (i == winnerTeamIDs.Count() - 1)
+                        {
+                            text += "\n<size=50%><voffset=0.5em>AND</voffset></size>";
+                        }
+                    }
+                    int colorID = PlayerManager.instance.GetPlayersInTeam(winnerTeamIDs[i]).First().colorID();
+                    text += $"\n<color=#{ColorUtility.ToHtmlStringRGBA(ExtraPlayerSkins.GetPlayerSkinColors(colorID).color)}>{ExtraPlayerSkins.GetTeamColorName(colorID).ToUpper()}</color>";
 
                 }
             }
