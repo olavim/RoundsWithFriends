@@ -30,19 +30,7 @@ namespace RWF.Algorithms
 
         private static int NumberOfTeams => TeamIDs.Count();
         private static int[] TeamIDs => PlayerManager.instance.players.Select(p => p.teamID).Distinct().ToArray();
-        private static int seed = 0;
         private static System.Random rng = new System.Random();
-
-        internal static void SetSeed(int newSeed)
-        {
-            GeneralizedSpawnPositions.seed = newSeed;
-        }
-
-        [UnboundRPC]
-        internal static void RPCA_SetSeed(int seed)
-        {
-            GeneralizedSpawnPositions.SetSeed(seed);
-        }
 
         private static int RandomRange(int l, int u)
         {
@@ -85,9 +73,6 @@ namespace RWF.Algorithms
                     UnityEngine.GameObject.DestroyImmediate(GameObject.Find(GeneralizedSpawnPositions.debugObjName));
                 }
             }
-
-            // Initialize the RNG to sync clients
-            GeneralizedSpawnPositions.rng = new System.Random(GeneralizedSpawnPositions.seed);
 
             // Blank spawn dictionary
             var spawnDictionary = new Dictionary<Player, Vector2>() { };
@@ -208,8 +193,10 @@ namespace RWF.Algorithms
                     var spawnPrev = Vector2.zero;
                     if (firstTeam)
                     {
-                        // Pick a spawn point at random for the very first player
-                        spawnPrev = spawnPositions.OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).First();
+                        // Pick the spawn point farthest from the average distance of all spawns (which should be near the center of the map) for the first team
+                        // so that this team spawns near the edge of the map
+                        Vector2 spawnCenter = new Vector2(spawnPositions.Average(v => v.x), spawnPositions.Average(v => v.y));
+                        spawnPrev = spawnPositions.OrderByDescending(s => Vector2.Distance(s, spawnCenter)).First();
                         firstTeam = false;
                     }
                     else
@@ -238,8 +225,10 @@ namespace RWF.Algorithms
                 var shuffledTeamIDs = TeamIDs.OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).ToArray(); // Shuffle teams
                 var teamSpawns = new List<Vector2>() { };
 
-                // Pick a random spawn for the first team
-                var teamSpawn = spawnPositions.OrderBy(_ => GeneralizedSpawnPositions.RandomRange()).First();
+                // Pick the spawn point farthest from the average distance of all spawns (which should be near the center of the map) for the first team
+                // so that this team spawns near the edge of the map
+                Vector2 spawnCenter = new Vector2(spawnPositions.Average(v => v.x), spawnPositions.Average(v => v.y));
+                var teamSpawn = spawnPositions.OrderByDescending(s => Vector2.Distance(s, spawnCenter)).First();
                 spawnPositions.Remove(teamSpawn);
                 teamSpawns.Add(teamSpawn);
 
