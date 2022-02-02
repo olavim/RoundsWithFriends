@@ -14,7 +14,9 @@
             playersRequiredToStartGame: null,
             maxPlayers: null,
             maxTeams: null,
-            maxClients: null)
+            maxClients: null,
+            description: "Team Deathmatch is a team based game mode where each team must be the last one standing to win the point."
+            )
         {
 
         }
