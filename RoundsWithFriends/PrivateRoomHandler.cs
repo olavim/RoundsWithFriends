@@ -522,16 +522,17 @@ namespace RWF
             // set text colors to enabled, hide gamemode button if this player is not host
             this.inviteText.color = PrivateRoomHandler.enabledTextColor;
             this.gamemodeText.color = PrivateRoomHandler.enabledTextColor;
-            this.gameModeButton.GetComponent<Button>().enabled = true;
             // this.gameModeText.color = PrivateRoomHandler.enabledTextColor;
             if (PhotonNetwork.IsMasterClient)
             {
                 // GamemodeScrollView.scrollView.SetActive(true);
                 this.gameModeButton.gameObject.SetActive(true);
+                this.gameModeButton.GetComponent<Button>().enabled = true;
             }
             else
             {
                 this.gameModeButton.gameObject.SetActive(false);
+                this.gameModeButton.GetComponent<Button>().enabled = false;
             }
 
             // necessary for VersusDisplay characters to render in the correct order
