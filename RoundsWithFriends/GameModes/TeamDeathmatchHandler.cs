@@ -15,7 +15,8 @@
             maxPlayers: null,
             maxTeams: null,
             maxClients: null,
-            description: "Team Deathmatch. Last team standing wins."
+            description: "Team Deathmatch. Last team standing wins.",
+            videoURL: "https://github.com/pdcook/RoundsWithFriends/raw/GameModeAbstraction2/Media/TeamDeathmatch.mp4"
             )
         {
 

@@ -15,7 +15,8 @@
             maxPlayers: null,
             maxTeams: null,
             maxClients: null,
-            description: "Free For All Deathmatch. Last player standing wins.")
+            description: "Free For All Deathmatch. Last player standing wins.",
+            videoURL: "https://github.com/pdcook/RoundsWithFriends/raw/GameModeAbstraction2/Media/Deathmatch.mp4")
         {
 
         }
