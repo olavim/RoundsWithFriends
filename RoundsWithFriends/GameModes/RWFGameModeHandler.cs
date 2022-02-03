@@ -17,7 +17,10 @@ namespace RWF.GameModes
 
         public override GameSettings Settings { get; protected set; }
 
-        public RWFGameModeHandler(string name, string gameModeId, bool allowTeams, int pointsToWinRound = 2, int roundsToWinGame = 5, int? playersRequiredToStartGame = null, int? maxPlayers = null, int? maxTeams = null, int? maxClients = null) : base(gameModeId)
+        public RWFGameModeHandler(string name, string gameModeId, bool allowTeams,
+            int pointsToWinRound = 2, int roundsToWinGame = 5, int? playersRequiredToStartGame = null,
+            int? maxPlayers = null, int? maxTeams = null, int? maxClients = null,
+            string description = null, int? descriptionFontSize = null, string videoURL = null) : base(gameModeId)
         {
             this._Name = name;
             this.Settings = new GameSettings()
@@ -28,7 +31,10 @@ namespace RWF.GameModes
                 { "playersRequiredToStartGame", UnityEngine.Mathf.Clamp(playersRequiredToStartGame ?? 2, 1, RWFMod.MaxPlayersHardLimit) },
                 { "maxPlayers", UnityEngine.Mathf.Clamp(maxPlayers ?? RWFMod.instance.MaxPlayers, 1, RWFMod.MaxPlayersHardLimit) },
                 { "maxTeams", UnityEngine.Mathf.Clamp(maxTeams ?? RWFMod.instance.MaxTeams, 1, RWFMod.MaxColorsHardLimit) },
-                { "maxClients", UnityEngine.Mathf.Clamp(maxClients ?? RWFMod.instance.MaxClients, 1, RWFMod.MaxPlayersHardLimit) }
+                { "maxClients", UnityEngine.Mathf.Clamp(maxClients ?? RWFMod.instance.MaxClients, 1, RWFMod.MaxPlayersHardLimit) },
+                { "description", description ?? ""},
+                { "descriptionFontSize", descriptionFontSize ?? 30},
+                { "videoURL", videoURL ?? "https://media.giphy.com/media/lcngwaPCkqFbfhzrsH/giphy.mp4"}
             };
         }
 

@@ -14,6 +14,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Photon.Pun.UtilityScripts;
 using ExitGames.Client.Photon;
+using Jotunn.Utils;
 using RWF.UI;
 using On;
 using UnboundLib.Utils.UI;
@@ -165,6 +166,8 @@ namespace RWF
 
         public DebugOptions debugOptions = new DebugOptions();
 
+        public static AssetBundle gmUIBundle;
+
         public void Awake()
         {
             RWFMod.instance = this;
@@ -246,6 +249,13 @@ namespace RWF
                 BetaTextHandler.AddBetaText(true);
             };
 
+            
+            // load the assetbundle for the gamemode ui
+            RWFMod.gmUIBundle = AssetUtils.LoadAssetBundleFromResources("rwf_lobbyui", typeof(RWFMod).Assembly);
+            if (RWFMod.gmUIBundle == null)
+            {
+                Debug.LogError("Could not load gamemode UI bundle!");
+            }
         }
 
         private void GUI(GameObject menu)

@@ -3,7 +3,6 @@ using Landfall.Network;
 using Photon.Pun;
 using SoundImplementation;
 using Steamworks;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +12,9 @@ using UnboundLib;
 using UnboundLib.GameModes;
 using UnboundLib.Networking;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using UnityEngine.UI.ProceduralImage;
 using RWF.UI;
-using System.Diagnostics.CodeAnalysis;
+using UnboundLib.Utils.UI;
 
 namespace RWF
 {
@@ -84,9 +81,11 @@ namespace RWF
         private GameObject header;
         private GameObject gamemodeHeader;
         // private GameObject gameModeListObject;
+        private GameObject gameModeButton;
         private TextMeshProUGUI headerText;
         private TextMeshProUGUI gamemodeHeaderText;
         private TextMeshProUGUI inviteText;
+        private TextMeshProUGUI gamemodeText;
         // private TextMeshProUGUI gameModeText;
         private VersusDisplay versusDisplay;
         private bool _lockReadies;
@@ -110,6 +109,7 @@ namespace RWF
         }
         private Coroutine countdownCoroutine;
         internal Dictionary<int, InputDevice> devicesToUse;
+
 
         public ListMenuPage MainPage { get; private set; }
 
@@ -296,8 +296,17 @@ namespace RWF
             // gameModeTextGo.transform.SetParent(this.gameModeListObject.transform);
             // gameModeTextGo.transform.localScale = Vector3.one;
             
-            GamemodeScrollView.Create(this.grid.transform);
-
+            // GamemodeScrollView.Create(this.grid.transform);
+            
+            this.gameModeButton = MenuHandler.CreateButton("select game mode", this.grid, () => { });
+            var gmLayoutElement = this.gameModeButton.GetComponent<LayoutElement>();
+            gmLayoutElement.minHeight = 92f;
+            gmLayoutElement.minWidth = 5000f;
+            this.gameModeButton.GetComponent<ListMenuButton>().setBarHeight = 92f;
+            this.gamemodeText = this.gameModeButton.GetComponentInChildren<TextMeshProUGUI>();
+            this.gamemodeText.color = (PhotonNetwork.CurrentRoom != null) ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
+            this.gameModeButton.GetComponent<Button>().enabled = false;
+            
             var backGo = new GameObject("Back");
             backGo.transform.SetParent(this.grid.transform);
             backGo.transform.localScale = Vector3.one;
@@ -350,6 +359,18 @@ namespace RWF
             //
             // this.gameModeText = gameModeTextGo.GetComponent<TextMeshProUGUI>();
             // this.gameModeText.color = (PhotonNetwork.CurrentRoom != null) ? PrivateRoomHandler.enabledTextColor : PrivateRoomHandler.disabledTextColor;
+            
+            
+            // Gamemode ui menu
+            var gamemodeMenu = GameObject.Instantiate(RWFMod.gmUIBundle.LoadAsset<GameObject>("GamemodeMenu"), this.grid.transform.parent);
+            gamemodeMenu.GetComponent<RectTransform>().anchoredPosition= new Vector2(1920*2, 0);
+            var menuManager = gamemodeMenu.AddComponent<GamemodeMenuManager>();
+            menuManager.lobbyMenuObject = this.grid;
+            menuManager.Init();
+            
+            this.gameModeButton.GetComponent<Button>().onClick.AddListener(() => {
+                menuManager.Open();
+            });
 
             divGo1.AddComponent<RectTransform>();
 
@@ -500,10 +521,13 @@ namespace RWF
 
             // set text colors to enabled, hide gamemode button if this player is not host
             this.inviteText.color = PrivateRoomHandler.enabledTextColor;
+            this.gamemodeText.color = PrivateRoomHandler.enabledTextColor;
+            this.gameModeButton.GetComponent<Button>().enabled = true;
             // this.gameModeText.color = PrivateRoomHandler.enabledTextColor;
             if (PhotonNetwork.IsMasterClient)
             {
-                GamemodeScrollView.scrollView.SetActive(true);
+                // GamemodeScrollView.scrollView.SetActive(true);
+                this.gameModeButton.gameObject.SetActive(true);
             }
 
             // necessary for VersusDisplay characters to render in the correct order
@@ -525,7 +549,7 @@ namespace RWF
                     GameModeManager.SetGameMode(RWF.GameModes.TeamDeathmatchHandler.GameModeID);
                 }
 
-                GamemodeScrollView.SetGameMode(GameModeManager.CurrentHandler?.Name);
+                // GamemodeScrollView.SetGameMode(GameModeManager.CurrentHandler?.Name);
                 // PrivateRoomHandler.instance.gameModeText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
                 PrivateRoomHandler.instance.gamemodeHeaderText.text = GameModeManager.CurrentHandler?.Name?.ToUpper() ?? "";
             }
