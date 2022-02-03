@@ -15,7 +15,7 @@
             maxPlayers: null,
             maxTeams: null,
             maxClients: null,
-            description: "Deathmatch is a free for all game mode where you must be the last one standing to win the point.")
+            description: "Free For All Deathmatch. Last player standing wins.")
         {
 
         }

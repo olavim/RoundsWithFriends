@@ -369,7 +369,7 @@ namespace RWF
             menuManager.Init();
             
             this.gameModeButton.GetComponent<Button>().onClick.AddListener(() => {
-                menuManager.Open();
+                if (PhotonNetwork.IsMasterClient) { menuManager.Open(); }
             });
 
             divGo1.AddComponent<RectTransform>();
@@ -528,6 +528,10 @@ namespace RWF
             {
                 // GamemodeScrollView.scrollView.SetActive(true);
                 this.gameModeButton.gameObject.SetActive(true);
+            }
+            else
+            {
+                this.gameModeButton.gameObject.SetActive(false);
             }
 
             // necessary for VersusDisplay characters to render in the correct order
