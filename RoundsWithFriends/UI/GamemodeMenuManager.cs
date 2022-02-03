@@ -1,5 +1,5 @@
-﻿using RWF.GameModes;
-using System;
+﻿using System;
+using System.Collections;
 using System.Linq;
 using TMPro;
 using UnboundLib;
@@ -22,27 +22,28 @@ namespace RWF.UI
 
         public void Open()
         {
-            this.lobbyMenuObject.SetActive(false);
-            this.gameObject.SetActive(true);
-            this.lobbyMenuObject.transform.parent.parent.parent.Find("UIHolder")?.gameObject.SetActive(false);
-            this.topBar.SetActive(true);
-            this.bottomBar.SetActive(true);
-
             this.transform.Find("BACK(short)").GetComponent<ListMenuButton>().OnPointerEnter(null);
-            
-            // Select the current gamemode category
-            if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeams) && !(bool) allowTeams)
+            this.StartCoroutine(this.Swoop(this.lobbyMenuObject, -1920*2, true));
+            this.StartCoroutine(this.Swoop(this.gameObject, 1920*2, false, () =>
             {
-                this.transform.Find("LeftPanel/Top/FFA(short)").GetComponent<Button>().onClick.Invoke();
-                this.transform.Find("LeftPanel/Bottom/FFA/Scroll View/Viewport/Content/" + GameModeManager.CurrentHandler.Name+"(short)").GetComponent<Button>().onClick.Invoke();
+                // Select the current gamemode category
+                if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeams) && !(bool) allowTeams)
+                {
+                    this.transform.Find("LeftPanel/Top/FFA(short)").GetComponent<Button>().onClick.Invoke();
+                    this.transform.Find("LeftPanel/Bottom/FFA/Scroll View/Viewport/Content/" + GameModeManager.CurrentHandler.Name+"(short)").GetComponent<Button>().onClick.Invoke();
                 
-            }
-            else
-            {
-                this.transform.Find("LeftPanel/Top/TEAM(short)").GetComponent<Button>().onClick.Invoke();
-                this.transform.Find("LeftPanel/Bottom/TEAM/Scroll View/Viewport/Content/" + GameModeManager.CurrentHandler.Name+"(short)").GetComponent<Button>().onClick.Invoke();
-            }
-            
+                }
+                else
+                {
+                    this.transform.Find("LeftPanel/Top/TEAM(short)").GetComponent<Button>().onClick.Invoke();
+                    this.transform.Find("LeftPanel/Bottom/TEAM/Scroll View/Viewport/Content/" + GameModeManager.CurrentHandler.Name+"(short)").GetComponent<Button>().onClick.Invoke();
+                }
+                this.topBar.SetActive(true);
+                this.bottomBar.SetActive(true);
+                this.transform.Find("BACK(short)").GetComponent<ListMenuButton>().OnPointerEnter(null);
+            }));
+            this.lobbyMenuObject.transform.parent.parent.parent.Find("UIHolder")?.gameObject.SetActive(false);
+
             this.UpdateInspector();
         }
 
@@ -50,11 +51,18 @@ namespace RWF.UI
         {
             this.transform.Find("BACK(short)").GetComponent<Button>().onClick.AddListener(() =>
             {
-                this.lobbyMenuObject.SetActive(true);
-                this.gameObject.SetActive(false);
-                this.lobbyMenuObject.transform.Find("ButtonBaseObject(Clone)").GetComponent<ListMenuButton>().OnPointerEnter(null);
+                GameObject.Find("Game/UI/UI_Game/Canvas/EscapeMenu/SelectionBar").transform.position = new Vector3(1000, 0, 0);
+                
+                this.StartCoroutine(this.Swoop(this.gameObject, 1920*2, true));
+                this.StartCoroutine(this.Swoop(this.lobbyMenuObject, -1920*2, false, () =>
+                {
+                    this.lobbyMenuObject.transform.Find("ButtonBaseObject(Clone)").GetComponent<ListMenuButton>().OnPointerEnter(null);
+                }));
+                
                 this.topBar.SetActive(false);
                 this.bottomBar.SetActive(false);
+                
+                
                 this.lobbyMenuObject.transform.parent.parent.parent.Find("UIHolder")?.gameObject.SetActive(true);
             });
 
@@ -87,7 +95,7 @@ namespace RWF.UI
             }
 
             var video = this.transform.Find("RightPanel/Top/gameModeVideo").gameObject;
-            var renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+            var renderTexture = new RenderTexture(1920, 1080, 24);
             video.GetComponent<VideoPlayer>().targetTexture = renderTexture;
             video.GetComponent<RawImage>().texture = renderTexture;
 
@@ -123,13 +131,13 @@ namespace RWF.UI
                     this.topBar.transform.position = position;
                     this.topBar.transform.localScale = new Vector3(23, 1.85f);
                     
-                    if(GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeams) || (bool) allowTeams)
+                    if(GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeams) && !(bool) allowTeams)
                     {
-                        this.bottomBar.SetActive(true);
+                        this.bottomBar.SetActive(false);
                     }
                     else
                     {
-                        this.bottomBar.SetActive(false);
+                        this.bottomBar.SetActive(true);
                     }
                 });
             });
@@ -147,7 +155,7 @@ namespace RWF.UI
                 curGamemode.Name.ToUpper();
             
             // Set video
-            this.transform.Find("RightPanel/Top/gameModeVideo").GetComponent<VideoPlayer>().url = curGamemode.Settings.TryGetValue("videoURL", out object url) ? (string) url : "https://media.giphy.com/media/50dtBlALJ5jIgmnasA/giphy.mp4"; 
+            this.transform.Find("RightPanel/Top/gameModeVideo").GetComponent<VideoPlayer>().url = curGamemode.Settings.TryGetValue("videoURL", out object url) ? (string) url : "https://media.giphy.com/media/lcngwaPCkqFbfhzrsH/giphy.mp4"; 
             this.transform.Find("RightPanel/Top/gameModeVideo").GetComponent<VideoPlayer>().Play();
             
             // Set description
@@ -183,6 +191,21 @@ namespace RWF.UI
                 this.UpdateInspector();
             });
             curGmButton.SetActive(true);
+        }
+
+        private IEnumerator Swoop(GameObject obj,int moveWidth, bool back, Action onFinished = null)
+        {
+            var rect = obj.GetComponent<RectTransform>();
+            float t = 0;
+            var startPos = rect.anchoredPosition;
+            var endPos =back ? rect.anchoredPosition + new Vector2(moveWidth, 0) : rect.anchoredPosition - new Vector2(moveWidth, 0);
+            while (t < 0.25f)
+            {
+                t += Time.deltaTime;
+                rect.anchoredPosition = Vector2.Lerp(startPos, endPos, t*4);
+                yield return null;
+            }
+            onFinished?.Invoke();
         }
     } 
 }

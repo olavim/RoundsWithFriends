@@ -34,7 +34,7 @@ namespace RWF.GameModes
                 { "maxClients", UnityEngine.Mathf.Clamp(maxClients ?? RWFMod.instance.MaxClients, 1, RWFMod.MaxPlayersHardLimit) },
                 { "description", description ?? ""},
                 { "descriptionFontSize", descriptionFontSize ?? 30},
-                { "videoURL", videoURL ?? "https://media.giphy.com/media/50dtBlALJ5jIgmnasA/giphy.mp4"}
+                { "videoURL", videoURL ?? "https://media.giphy.com/media/lcngwaPCkqFbfhzrsH/giphy.mp4"}
             };
         }
 

@@ -363,8 +363,7 @@ namespace RWF
             
             // Gamemode ui menu
             var gamemodeMenu = GameObject.Instantiate(RWFMod.gmUIBundle.LoadAsset<GameObject>("GamemodeMenu"), this.grid.transform.parent);
-            // gamemodeMenu.transform.localScale = Vector3.one;
-            gamemodeMenu.SetActive(false);
+            gamemodeMenu.GetComponent<RectTransform>().anchoredPosition= new Vector2(1920*2, 0);
             var menuManager = gamemodeMenu.AddComponent<GamemodeMenuManager>();
             menuManager.lobbyMenuObject = this.grid;
             menuManager.Init();
