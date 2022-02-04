@@ -5,6 +5,7 @@ using TMPro;
 using UnboundLib;
 using UnboundLib.GameModes;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.UI;
 using UnityEngine.Video;
 using Object = UnityEngine.Object;
@@ -62,7 +63,8 @@ namespace RWF.UI
                 this.topBar.SetActive(false);
                 this.bottomBar.SetActive(false);
                 
-                
+                this.transform.Find("RightPanel/Top/gameModeVideo").GetComponent<VideoPlayer>().Stop();
+
                 this.lobbyMenuObject.transform.parent.parent.parent.Find("UIHolder")?.gameObject.SetActive(true);
             });
 
@@ -98,6 +100,10 @@ namespace RWF.UI
             var renderTexture = new RenderTexture(1920, 1080, 24);
             video.GetComponent<VideoPlayer>().targetTexture = renderTexture;
             video.GetComponent<RawImage>().texture = renderTexture;
+
+            var mixers = Resources.FindObjectsOfTypeAll<AudioMixerGroup>();
+            var mixer = mixers.First(m => m.name == "SFX");
+            video.GetComponent<AudioSource>().outputAudioMixerGroup = mixer;
 
             var barParent = new GameObject("BarParent");
             

@@ -818,6 +818,8 @@ namespace RWF
             }
 
             NetworkingManager.RPC(typeof(PrivateRoomHandler), nameof(PrivateRoomHandler.StartGame));
+            
+            this.grid.transform.parent.GetChild(1).gameObject.SetActive(false);
         }
         [UnboundRPC]
         public static void AssignTeamIDs(Dictionary<int,int> colorIDtoTeamID)
