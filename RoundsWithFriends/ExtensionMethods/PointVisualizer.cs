@@ -463,8 +463,11 @@ namespace RWF
                 }
             }
 
+            float fontSize = winnerTeamIDs.Count() > 2 ? 100f / (winnerTeamIDs.Count() - 1) : 100f;
+
             instance.text.color = color;
             instance.text.text = text;
+            instance.text.fontSize = fontSize;
         }
     }
 }
