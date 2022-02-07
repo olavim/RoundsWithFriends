@@ -18,6 +18,7 @@ using Jotunn.Utils;
 using RWF.UI;
 using On;
 using UnboundLib.Utils.UI;
+using System.Linq;
 
 namespace RWF
 {
@@ -327,23 +328,29 @@ namespace RWF
             yield break;
         }
 
+        static string GetHandlerID(IGameModeHandler gm)
+        {
+            return GameModeManager.Handlers.Where(kv => kv.Value == gm).Select(kv => kv.Key).FirstOrDefault();
+        }
+
         private IEnumerator OnGameModeInitialized(IGameModeHandler gm)
         {
-            if (!this.gmInitialized.ContainsKey(gm.Name))
+            string ID = GetHandlerID(gm);
+            if (!this.gmInitialized.ContainsKey(ID))
             {
-                this.gmInitialized.Add(gm.Name, true);
+                this.gmInitialized.Add(ID, true);
             }
             else
             {
-                this.gmInitialized[gm.Name] = true;
+                this.gmInitialized[ID] = true;
             }
 
             yield break;
         }
 
-        public bool IsGameModeInitialized(string handler)
+        public bool IsGameModeInitialized(string handlerID)
         {
-            return this.gmInitialized.ContainsKey(handler) && this.gmInitialized[handler];
+            return this.gmInitialized.ContainsKey(handlerID) && this.gmInitialized[handlerID];
         }
 
         private IEnumerator ToggleCeaseFire(bool isCeaseFire)

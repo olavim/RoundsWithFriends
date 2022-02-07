@@ -31,13 +31,13 @@ namespace RWF.UI
                 if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeams) && !(bool) allowTeams)
                 {
                     this.transform.Find("LeftPanel/Top/FFA(short)").GetComponent<Button>().onClick.Invoke();
-                    this.transform.Find("LeftPanel/Bottom/FFA/Scroll View/Viewport/Content/" + GameModeManager.CurrentHandler.Name+"(short)").GetComponent<Button>().onClick.Invoke();
+                    this.transform.Find("LeftPanel/Bottom/FFA/Scroll View/Viewport/Content/" + GameModeManager.CurrentHandlerID+"(short)").GetComponent<Button>().onClick.Invoke();
                 
                 }
                 else
                 {
                     this.transform.Find("LeftPanel/Top/TEAM(short)").GetComponent<Button>().onClick.Invoke();
-                    this.transform.Find("LeftPanel/Bottom/TEAM/Scroll View/Viewport/Content/" + GameModeManager.CurrentHandler.Name+"(short)").GetComponent<Button>().onClick.Invoke();
+                    this.transform.Find("LeftPanel/Bottom/TEAM/Scroll View/Viewport/Content/" + GameModeManager.CurrentHandlerID+"(short)").GetComponent<Button>().onClick.Invoke();
                 }
                 this.topBar.SetActive(true);
                 this.bottomBar.SetActive(true);
@@ -171,14 +171,14 @@ namespace RWF.UI
             
         }
 
-        public void CreateGmButton(string gamemode, GameObject gameModeButton, Transform parent)
+        public void CreateGmButton(string handlerID, GameObject gameModeButton, Transform parent)
         {
             var curGmButton = Object.Instantiate(gameModeButton, parent);
-            curGmButton.name = gamemode+"(short)";
-            curGmButton.GetComponentInChildren<TextMeshProUGUI>(true).text = GameModeManager.Handlers[gamemode].Name.ToUpper();
+            curGmButton.name = handlerID+"(short)";
+            curGmButton.GetComponentInChildren<TextMeshProUGUI>(true).text = GameModeManager.Handlers[handlerID].Name.ToUpper();
             curGmButton.GetComponent<Button>().onClick.AddListener(() =>
             {
-                GameModeManager.SetGameMode(gamemode);
+                GameModeManager.SetGameMode(handlerID);
                 this.ExecuteAfterFrames(1, () =>
                 {
                     this.bottomBar.transform.position = curGmButton.transform.position;
@@ -186,8 +186,9 @@ namespace RWF.UI
                 });
 
                 PrivateRoomHandler.instance.UnreadyAllPlayers();
-                PrivateRoomHandler.instance.ExecuteAfterGameModeInitialized(gamemode, () =>
+                PrivateRoomHandler.instance.ExecuteAfterGameModeInitialized(handlerID, () =>
                 {
+                    RWFMod.Log($"SET GAMEMODE: {handlerID}");
                     PrivateRoomHandler.instance.SyncMethod(nameof(PrivateRoomHandler.SetGameSettings), null, GameModeManager.CurrentHandlerID, GameModeManager.CurrentHandler.Settings);
                     PrivateRoomHandler.instance.HandleTeamRules();
                 });
