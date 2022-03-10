@@ -14,6 +14,13 @@ namespace RWF.Patches
         static void Prefix(MapManager __instance, PhotonView ___view, int mapID)
         {
             PlayerManager.instance.SetPlayersPlaying(false);
+            /*
+            if (!PhotonNetwork.IsMasterClient && !PhotonNetwork.OfflineMode)
+            {
+                return;
+            }
+            NetworkingManager.RPC(typeof(GeneralizedSpawnPositions), nameof(GeneralizedSpawnPositions.RPCA_SetSeed), new object[] { UnityEngine.Random.Range(int.MinValue, int.MaxValue) });
+            */
         }
     }
 }

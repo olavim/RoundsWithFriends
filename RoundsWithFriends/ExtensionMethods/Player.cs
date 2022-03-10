@@ -5,7 +5,6 @@ using UnboundLib;
 using Photon.Pun;
 using ExitGames.Client.Photon;
 using UnboundLib.Extensions;
-// ReSharper disable NotAccessedField.Local
 
 namespace RWF
 {
