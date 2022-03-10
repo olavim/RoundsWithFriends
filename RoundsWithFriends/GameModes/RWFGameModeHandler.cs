@@ -15,6 +15,8 @@ namespace RWF.GameModes
             get { return this._Name; }
         }
 
+        public override bool OnlineOnly => false;
+
         public override GameSettings Settings { get; protected set; }
 
         public RWFGameModeHandler(string name, string gameModeId, bool allowTeams,
