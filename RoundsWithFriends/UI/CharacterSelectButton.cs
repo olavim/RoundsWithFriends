@@ -67,19 +67,6 @@ namespace RWF.UI
 
             if (this.currentlySelectedFace == this.characterSelectionInstance.currentlySelectedFace) { return; }
 
-            /*
-            if (this.characterSelectionInstance.currentlySelectedFace == 0 && this.direction == CharacterSelectButton.LeftRight.Left)
-            {
-                this.text.color = CharacterSelectButton.disabledColor;
-            }
-            else if (this.characterSelectionInstance.currentlySelectedFace == ((HoverEvent[]) this.characterSelectionInstance.GetFieldValue("buttons")).Length - 1 && this.direction == CharacterSelectButton.LeftRight.Right)
-            {
-                this.text.color = CharacterSelectButton.disabledColor;
-            }
-            else
-            {
-                this.text.color = CharacterSelectButton.enabledColor;
-            }*/
             this.text.color = CharacterSelectButton.enabledColor;
 
 

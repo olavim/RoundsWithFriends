@@ -3,7 +3,7 @@ param(
     [System.String]$Version,
 
     [Parameter(Mandatory)]
-    [ValidateSet('Debug','Release')]
+    [ValidateSet('Debug','Release','Beta')]
     [System.String]$Target,
     
     [Parameter(Mandatory)]

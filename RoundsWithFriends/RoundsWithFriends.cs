@@ -71,6 +71,12 @@ namespace RWF
         public static readonly bool DEBUG = false;
 #endif
 
+#if BETA
+        public static readonly bool BETA = true;
+#else
+        public static readonly bool BETA = false;
+#endif
+
         public static RWFMod instance;
 
         private static bool facesSet = false;
@@ -147,7 +153,7 @@ namespace RWF
         {
             get
             {
-                return GameModeManager.CurrentHandlerID == "Deathmatch" ? this.MaxPlayers : 4;
+                return this.MaxPlayers;
             }
         }
 
@@ -240,14 +246,14 @@ namespace RWF
             PhotonPeer.RegisterType(typeof(LobbyCharacter), 78, LobbyCharacter.Serialize, LobbyCharacter.Deserialize);
 
             // add beta text
-            BetaTextHandler.AddBetaText(true);
+            if (BETA) { BetaTextHandler.AddBetaText(true); }
 
             On.MainMenuHandler.Awake += (orig, self) =>
             {
                 orig(self);
 
                 // add beta text
-                BetaTextHandler.AddBetaText(true);
+                if (BETA) { BetaTextHandler.AddBetaText(true); }
             };
 
             
