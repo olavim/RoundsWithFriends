@@ -6,8 +6,8 @@ namespace RWF.Algorithms
     interface IPickOrderStrategy
     {
         void AddPlayer(Player player);
-        void RefreshOrder(int[] winningTeamIDs);
-        IEnumerable<Player> GetPlayers(int[] winningTeamIDs);
+        void RefreshOrder(int winningTeamID);
+        IEnumerable<Player> GetPlayers(int winningTeamID);
     }
 
     class RoundRobinStrategy : IPickOrderStrategy
@@ -32,43 +32,40 @@ namespace RWF.Algorithms
             this.playerOrders[player.teamID].Add(player);
         }
 
-        public void RefreshOrder(int[] winningTeamIDs)
+        public void RefreshOrder(int winningTeamID)
         {
             foreach (var key in this.playerOrders.Keys)
             {
-                if (!winningTeamIDs.Contains(key))
+                if (key != winningTeamID)
                 {
                     this.playerOrders[key].Add(this.playerOrders[key][0]);
                     this.playerOrders[key].RemoveAt(0);
                 }
             }
 
-            foreach (int winningTeamID in winningTeamIDs)
-            {
-                int winningTeamIndex = this.teamOrder.IndexOf(winningTeamID);
+            int winningTeamIndex = this.teamOrder.IndexOf(winningTeamID);
 
-                if (winningTeamIndex != -1)
-                {
-                    this.teamOrder.RemoveAt(winningTeamIndex);
-                    this.teamOrder.Add(this.teamOrder[0]);
-                    this.teamOrder.RemoveAt(0);
-                    this.teamOrder.Insert(winningTeamIndex, winningTeamID);
-                }
-                else
-                {
-                    this.teamOrder.Add(this.teamOrder[0]);
-                    this.teamOrder.RemoveAt(0);
-                }
+            if (winningTeamIndex != -1)
+            {
+                this.teamOrder.RemoveAt(winningTeamIndex);
+                this.teamOrder.Add(this.teamOrder[0]);
+                this.teamOrder.RemoveAt(0);
+                this.teamOrder.Insert(winningTeamIndex, winningTeamID);
+            }
+            else
+            {
+                this.teamOrder.Add(this.teamOrder[0]);
+                this.teamOrder.RemoveAt(0);
             }
         }
 
-        public IEnumerable<Player> GetPlayers(int[] winningTeamIDs)
+        public IEnumerable<Player> GetPlayers(int winningTeamID)
         {
             int maxTeamPlayers = this.playerOrders.Max(p => p.Value.Count);
 
             for (int playerIndex = 0; playerIndex < maxTeamPlayers; playerIndex++)
             {
-                foreach (int teamID in this.teamOrder.Where(id => !winningTeamIDs.Contains(id)))
+                foreach (int teamID in this.teamOrder.Where(id => id != winningTeamID))
                 {
                     var playerOrder = this.playerOrders[teamID];
                     if (playerIndex < playerOrder.Count)
@@ -95,10 +92,10 @@ namespace RWF.Algorithms
             }
         }
 
-        public List<Player> GetPickOrder(int[] winningTeamIDs)
+        public List<Player> GetPickOrder(int winningTeamID)
         {
-            var list = this.strategy.GetPlayers(winningTeamIDs).ToList();
-            this.strategy.RefreshOrder(winningTeamIDs);
+            var list = this.strategy.GetPlayers(winningTeamID).ToList();
+            this.strategy.RefreshOrder(winningTeamID);
             return list;
         }
     }

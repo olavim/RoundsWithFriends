@@ -19,12 +19,14 @@ namespace RWF.UI
         new public void Select()
         {
             this.hoverEvent.OnPointerEnter(null);
+            //this.button.targetGraphic.color = this.button.colors.highlightedColor;
         }
 
         new public void Deselect()
         {
             this.hoverEvent.OnPointerExit(null);
             this.button.OnDeselect(null);
+            //this.button.targetGraphic.color = this.button.colors.normalColor;
         }
 
         private HoverEvent hoverEvent;

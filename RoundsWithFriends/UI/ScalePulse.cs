@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace RWF.UI
 {
-    public class ScalePulse : MonoBehaviour
+    class ScalePulse : MonoBehaviour
     {
         public IEnumerator StartPulse(float scale = 0.2f, float duration = 0.2f, float delay = 0.5f) {
             float t = 0f;

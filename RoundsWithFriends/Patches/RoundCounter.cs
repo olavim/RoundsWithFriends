@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnboundLib;
 using UnboundLib.Extensions;
-using UnboundLib.GameModes;
 
 namespace RWF.Patches
 {
@@ -110,28 +109,14 @@ namespace RWF.Patches
                 for (int j = 0; j < roundCountGo.transform.childCount; j++) {
                     var child = roundCountGo.transform.GetChild(j);
 
-                    // fill rounds
-                    if (teamRounds[i] > j)
-                    {
+                    if (teamRounds[i] + teamPoints[i] > j) {
                         child.GetComponentInChildren<Image>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
-                        child.GetComponentInChildren<Image>().type = Image.Type.Simple;
-                        child.localScale = Vector3.one;
-                    }
-                    else if (teamRounds[i] == j && teamPoints[i] > 0)
-                    {
-                        // use radial filling for points - so that any number of points per round are supported
-                        child.GetComponentInChildren<Image>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
-                        child.GetComponentInChildren<Image>().type = Image.Type.Filled;
-                        child.GetComponentInChildren<Image>().fillMethod = Image.FillMethod.Radial360;
-                        child.GetComponentInChildren<Image>().fillAmount = (float) teamPoints[i] / (int) GameModeManager.CurrentHandler.Settings["pointsToWinRound"];
-                        child.localScale = new Vector3(1f, -1f, 1f);
 
-                    }
-                    else
-                    {
-                        // no partial points
+                        if (teamRounds[i] > j) {
+                            child.localScale = Vector3.one;
+                        }
+                    } else {
                         child.GetComponentInChildren<Image>().color = __instance.offColor;
-                        child.GetComponentInChildren<Image>().type = Image.Type.Simple;
                         child.localScale = Vector3.one * 0.3f;
                     }
                 }
