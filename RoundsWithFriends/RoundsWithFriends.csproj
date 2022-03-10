@@ -36,7 +36,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="AssetsEmbedded\rwf_lobbyui" />
     <None Remove="RoundsWithFriends.csproj.user.dist" />
+    <EmbeddedResource Include="AssetsEmbedded\rwf_lobbyui" />
     <None Include="..\README.md" />
     <None Include="..\.gitignore" />
   </ItemGroup>
