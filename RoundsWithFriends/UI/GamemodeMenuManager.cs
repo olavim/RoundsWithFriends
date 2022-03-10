@@ -21,11 +21,17 @@ namespace RWF.UI
         public GameObject topBar;
         public GameObject bottomBar;
 
+        void Start()
+        {
+            this.gameObject.SetActive(false);
+        }
+
         public void Open()
         {
+            this.gameObject.SetActive(true);
             this.transform.Find("BACK(short)").GetComponent<ListMenuButton>().OnPointerEnter(null);
-            this.StartCoroutine(this.Swoop(this.lobbyMenuObject, -1920*2, true));
-            this.StartCoroutine(this.Swoop(this.gameObject, 1920*2, false, () =>
+            RWFMod.instance.StartCoroutine(this.Swoop(this.lobbyMenuObject, -1920*2, true));
+            RWFMod.instance.StartCoroutine(this.Swoop(this.gameObject, 1920*2, false, () =>
             {
                 // Select the current gamemode category
                 if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeams) && !(bool) allowTeams)
@@ -54,8 +60,8 @@ namespace RWF.UI
             {
                 GameObject.Find("Game/UI/UI_Game/Canvas/EscapeMenu/SelectionBar").transform.position = new Vector3(1000, 0, 0);
                 
-                this.StartCoroutine(this.Swoop(this.gameObject, 1920*2, true));
-                this.StartCoroutine(this.Swoop(this.lobbyMenuObject, -1920*2, false, () =>
+                RWFMod.instance.StartCoroutine(this.Swoop(this.gameObject, 1920*2, true));
+                RWFMod.instance.StartCoroutine(this.Swoop(this.lobbyMenuObject, -1920*2, false, () =>
                 {
                     this.lobbyMenuObject.transform.Find("ButtonBaseObject(Clone)").GetComponent<ListMenuButton>().OnPointerEnter(null);
                 }));
@@ -66,6 +72,8 @@ namespace RWF.UI
                 this.transform.Find("RightPanel/Top/gameModeVideo").GetComponent<VideoPlayer>().Stop();
 
                 this.lobbyMenuObject.transform.parent.parent.parent.Find("UIHolder")?.gameObject.SetActive(true);
+
+                this.gameObject.SetActive(false);
             });
 
             var gameModeButton =
@@ -178,6 +186,7 @@ namespace RWF.UI
             curGmButton.GetComponentInChildren<TextMeshProUGUI>(true).text = GameModeManager.Handlers[handlerID].Name.ToUpper();
             curGmButton.GetComponent<Button>().onClick.AddListener(() =>
             {
+                if (GameManager.instance.isPlaying || !curGmButton.activeInHierarchy) { return; }
                 GameModeManager.SetGameMode(handlerID);
                 this.ExecuteAfterFrames(1, () =>
                 {
