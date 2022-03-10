@@ -14,9 +14,11 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Photon.Pun.UtilityScripts;
 using ExitGames.Client.Photon;
+using Jotunn.Utils;
 using RWF.UI;
 using On;
 using UnboundLib.Utils.UI;
+using System.Linq;
 
 namespace RWF
 {
@@ -67,6 +69,12 @@ namespace RWF
         public static readonly bool DEBUG = true;
 #else
         public static readonly bool DEBUG = false;
+#endif
+
+#if BETA
+        public static readonly bool BETA = true;
+#else
+        public static readonly bool BETA = false;
 #endif
 
         public static RWFMod instance;
@@ -145,7 +153,7 @@ namespace RWF
         {
             get
             {
-                return GameModeManager.CurrentHandlerID == "Deathmatch" ? this.MaxPlayers : 4;
+                return this.MaxPlayers;
             }
         }
 
@@ -165,6 +173,8 @@ namespace RWF
 
         public DebugOptions debugOptions = new DebugOptions();
 
+        public static AssetBundle gmUIBundle;
+
         public void Awake()
         {
             RWFMod.instance = this;
@@ -183,7 +193,7 @@ namespace RWF
         public void Start()
         {
             // register credits with unbound
-            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI, Fair pick orders)", "Pykess (> 4 player support, multiple players per client, additional player colors, disconnect handling, UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://ko-fi.com/pykess" });
+            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI, Fair pick orders)", "Pykess (> 4 player support, multiple players per client, additional player colors, disconnect handling, UI)", "BossSloth (Gamemode selection UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess", "Support BossSloth" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://ko-fi.com/pykess", "https://www.buymeacoffee.com/BossSloth" });
 
             // add GUI to modoptions menu
             Unbound.RegisterMenu(RWFMod.ModName, () => { }, this.GUI, null, false);
@@ -236,16 +246,23 @@ namespace RWF
             PhotonPeer.RegisterType(typeof(LobbyCharacter), 78, LobbyCharacter.Serialize, LobbyCharacter.Deserialize);
 
             // add beta text
-            BetaTextHandler.AddBetaText(true);
+            if (BETA) { BetaTextHandler.AddBetaText(true); }
 
             On.MainMenuHandler.Awake += (orig, self) =>
             {
                 orig(self);
 
                 // add beta text
-                BetaTextHandler.AddBetaText(true);
+                if (BETA) { BetaTextHandler.AddBetaText(true); }
             };
 
+            
+            // load the assetbundle for the gamemode ui
+            RWFMod.gmUIBundle = AssetUtils.LoadAssetBundleFromResources("rwf_lobbyui", typeof(RWFMod).Assembly);
+            if (RWFMod.gmUIBundle == null)
+            {
+                Debug.LogError("Could not load gamemode UI bundle!");
+            }
         }
 
         private void GUI(GameObject menu)
@@ -317,23 +334,29 @@ namespace RWF
             yield break;
         }
 
+        static string GetHandlerID(IGameModeHandler gm)
+        {
+            return GameModeManager.Handlers.Where(kv => kv.Value == gm).Select(kv => kv.Key).FirstOrDefault();
+        }
+
         private IEnumerator OnGameModeInitialized(IGameModeHandler gm)
         {
-            if (!this.gmInitialized.ContainsKey(gm.Name))
+            string ID = GetHandlerID(gm);
+            if (!this.gmInitialized.ContainsKey(ID))
             {
-                this.gmInitialized.Add(gm.Name, true);
+                this.gmInitialized.Add(ID, true);
             }
             else
             {
-                this.gmInitialized[gm.Name] = true;
+                this.gmInitialized[ID] = true;
             }
 
             yield break;
         }
 
-        public bool IsGameModeInitialized(string handler)
+        public bool IsGameModeInitialized(string handlerID)
         {
-            return this.gmInitialized.ContainsKey(handler) && this.gmInitialized[handler];
+            return this.gmInitialized.ContainsKey(handlerID) && this.gmInitialized[handlerID];
         }
 
         private IEnumerator ToggleCeaseFire(bool isCeaseFire)
@@ -421,42 +444,7 @@ namespace RWF
 
         public void SetupGameModes()
         {
-            var gameModeGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/GameMode");
-            var versusGo = gameModeGo.transform.Find("Group").GetChild(0).gameObject;
-            var characterSelectGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/CharacterSelect");
-
-            var characterSelectPage = characterSelectGo.GetComponent<ListMenuPage>();
-
-            var teamDeathmatchButtonGo = GameObject.Instantiate(versusGo, versusGo.transform.parent);
-            teamDeathmatchButtonGo.transform.localScale = Vector3.one;
-            teamDeathmatchButtonGo.transform.SetSiblingIndex(0);
-
-            var teamDeathmatchButtonText = teamDeathmatchButtonGo.GetComponentInChildren<TextMeshProUGUI>();
-            teamDeathmatchButtonText.text = "TEAM DEATHMATCH";
-
-            GameObject.DestroyImmediate(teamDeathmatchButtonGo.GetComponent<Button>());
-            var teamDeathmatchButton = teamDeathmatchButtonGo.AddComponent<Button>();
-
-            teamDeathmatchButton.onClick.AddListener(characterSelectPage.Open);
-            teamDeathmatchButton.onClick.AddListener(() => GameModeManager.SetGameMode("Team Deathmatch"));
-            teamDeathmatchButton.onClick.AddListener(() => KeybindHints.CreateLocalHints());
-
-            var deathmatchButtonGo = GameObject.Instantiate(versusGo, versusGo.transform.parent);
-            deathmatchButtonGo.transform.localScale = Vector3.one;
-            deathmatchButtonGo.transform.SetSiblingIndex(1);
-
-            var deathmatchButtonText = deathmatchButtonGo.GetComponentInChildren<TextMeshProUGUI>();
-            deathmatchButtonText.text = "DEATHMATCH";
-
-            GameObject.DestroyImmediate(deathmatchButtonGo.GetComponent<Button>());
-            var deathmatchButton = deathmatchButtonGo.AddComponent<Button>();
-
-            deathmatchButton.onClick.AddListener(characterSelectPage.Open);
-            deathmatchButton.onClick.AddListener(() => GameModeManager.SetGameMode("Deathmatch"));
-            deathmatchButton.onClick.AddListener(() => KeybindHints.CreateLocalHints());
-
-            UnityEngine.GameObject.Destroy(versusGo);
-
+            GameModeManager.RemoveHandler(GameModeManager.ArmsRaceID);
         }
 
         public void InjectUIElements()

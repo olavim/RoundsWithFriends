@@ -9,7 +9,7 @@ using UnboundLib.GameModes;
 
 namespace RWF.UI
 {
-    static class PlayerSpotlight
+    public static class PlayerSpotlight
     {
         internal static float SpotlightSizeMult = 1f;
 

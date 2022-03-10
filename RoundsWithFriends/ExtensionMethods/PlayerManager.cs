@@ -49,9 +49,9 @@ namespace RWF
             playerManager.GetAdditionalData().pickOrder = new PickOrder(playerManager.players);
         }
 
-        public static List<Player> GetPickOrder(this PlayerManager playerManager, int? winningTeamID = -1)
+        public static List<Player> GetPickOrder(this PlayerManager playerManager, int[] winningTeamIDs = null)
         {
-            return playerManager.GetAdditionalData().pickOrder.GetPickOrder(winningTeamID ?? -1);
+            return playerManager.GetAdditionalData().pickOrder.GetPickOrder(winningTeamIDs ?? new int[] { });
         }
 
         public static Player GetPlayerWithUniqueID(this PlayerManager instance, int uniqueID)

@@ -38,7 +38,7 @@ namespace RWF.Patches
                 {
                     return;
                 }
-                if (Input.GetKey(KeyCode.LeftBracket))
+                if (Input.GetKeyDown(KeyCode.LeftBracket))
                 {
 
                     __instance.StartCoroutine(__instance.CreatePlayer(null, false));
