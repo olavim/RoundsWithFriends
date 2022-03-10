@@ -122,9 +122,6 @@ namespace RWF.UI
             {
                 ChangeLayout(scale, Hspacing, Vspacing);
             }
-
-            
-
         }
 
         void ChangeLayout(float scale, float HSpacing, float VSpacing)
