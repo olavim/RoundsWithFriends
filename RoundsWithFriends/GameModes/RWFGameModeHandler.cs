@@ -16,6 +16,8 @@ namespace RWF.GameModes
         }
 
         public override bool OnlineOnly => false;
+        private bool _AllowTeams;
+        public override bool AllowTeams => _AllowTeams;
 
         public override GameSettings Settings { get; protected set; }
 
@@ -25,11 +27,11 @@ namespace RWF.GameModes
             string description = null, int? descriptionFontSize = null, string videoURL = null) : base(gameModeId)
         {
             this._Name = name;
+            this._AllowTeams = allowTeams;
             this.Settings = new GameSettings()
             {
                 { "pointsToWinRound", pointsToWinRound},
                 { "roundsToWinGame", roundsToWinGame},
-                { "allowTeams", allowTeams },
                 { "playersRequiredToStartGame", UnityEngine.Mathf.Clamp(playersRequiredToStartGame ?? 2, 1, RWFMod.MaxPlayersHardLimit) },
                 { "maxPlayers", UnityEngine.Mathf.Clamp(maxPlayers ?? RWFMod.instance.MaxPlayers, 1, RWFMod.MaxPlayersHardLimit) },
                 { "maxTeams", UnityEngine.Mathf.Clamp(maxTeams ?? RWFMod.instance.MaxTeams, 1, RWFMod.MaxColorsHardLimit) },

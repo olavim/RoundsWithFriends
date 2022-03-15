@@ -417,8 +417,7 @@ namespace RWF.UI
             int newColorID = this.colorID + colorIDDelta;
             int orig = this.colorID;
 
-            // wow this syntax is concerning
-            if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj)
+            if (!GameModeManager.CurrentHandler.AllowTeams)
             {
                 // teams not allowed, continue to next colorID
                 while (PrivateRoomHandler.instance.PrivateRoomCharacters.Where(p => p != null && p.uniqueID != this.currentPlayer.uniqueID && p.colorID == newColorID).Any() && newColorID < RWFMod.MaxColorsHardLimit && newColorID >= 0)

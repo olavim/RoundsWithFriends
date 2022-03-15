@@ -251,7 +251,7 @@ namespace RWF
 			}
 
 			instance.text.color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(winnerTeamID)[0].colorID()).winText;
-			instance.text.text = $"POINT TO {((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : "TEAM ")}{ExtraPlayerSkins.GetTeamColorName(PlayerManager.instance.GetPlayersInTeam(winnerTeamID)[0].colorID()).ToUpper()}";
+			instance.text.text = $"POINT TO {(GameModeManager.CurrentHandler.AllowTeams ? "TEAM " : "")}{ExtraPlayerSkins.GetTeamColorName(PlayerManager.instance.GetPlayersInTeam(winnerTeamID)[0].colorID()).ToUpper()}";
 		}
 
         // Overload for the existing DoWinSequence method to support more than two winners, or no winners
@@ -447,7 +447,7 @@ namespace RWF
             string text = "TIE\nNO POINTS";
             if (winnerTeamIDs.Count() > 0)
             {
-                text = $"POINT TO{((GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj) ? "" : $" TEAM{(winnerTeamIDs.Count() > 1 ? "S" : "")}")}";
+                text = $"POINT TO{(GameModeManager.CurrentHandler.AllowTeams ? $" TEAM{(winnerTeamIDs.Count() > 1 ? "S" : "")}" : "")}";
                 for (int i = 0; i < winnerTeamIDs.Count(); i++)
                 {
                     if (winnerTeamIDs.Count() > 1)

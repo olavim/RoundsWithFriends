@@ -34,7 +34,7 @@ namespace RWF.UI
             RWFMod.instance.StartCoroutine(this.Swoop(this.gameObject, 1920*2, false, () =>
             {
                 // Select the current gamemode category
-                if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeams) && !(bool) allowTeams)
+                if (!GameModeManager.CurrentHandler.AllowTeams)
                 {
                     this.transform.Find("LeftPanel/Top/FFA(short)").GetComponent<Button>().onClick.Invoke();
                     this.transform.Find("LeftPanel/Bottom/FFA/Scroll View/Viewport/Content/" + GameModeManager.CurrentHandlerID+"(short)").GetComponent<Button>().onClick.Invoke();
@@ -80,8 +80,7 @@ namespace RWF.UI
                 this.transform.Find("LeftPanel/Bottom/FFA/Scroll View/Viewport/Content/GamemodeButton (short)").gameObject;
 
             var ffaGamemodes = GameModeManager.Handlers.Keys
-                .Where(k => GameModeManager.Handlers[k].Settings.TryGetValue("allowTeams", out object allowTeams) &&
-                            !(bool) allowTeams).OrderByDescending(k => GameModeManager.Handlers[k].Name.ToLower())
+                .Where(k => !GameModeManager.Handlers[k].AllowTeams).OrderByDescending(k => GameModeManager.Handlers[k].Name.ToLower())
                 .Where(k => k != GameModeManager.SandBoxID && k != GameModeManager.ArmsRaceID);
 
             this.ffaContent = this.transform.Find("LeftPanel/Bottom/FFA/Scroll View/Viewport/Content");
@@ -93,8 +92,7 @@ namespace RWF.UI
             }
 
             var teamGamemodes = GameModeManager.Handlers.Keys
-                .Where(k => !GameModeManager.Handlers[k].Settings.TryGetValue("allowTeams", out object allowTeams) ||
-                            (bool) allowTeams).OrderByDescending(k => GameModeManager.Handlers[k].Name.ToLower())
+                .Where(k => GameModeManager.Handlers[k].AllowTeams).OrderByDescending(k => GameModeManager.Handlers[k].Name.ToLower())
                 .Where(k => k != GameModeManager.SandBoxID && k != GameModeManager.ArmsRaceID);
             
             this.teamContent = this.transform.Find("LeftPanel/Bottom/TEAM/Scroll View/Viewport/Content");
@@ -126,7 +124,7 @@ namespace RWF.UI
                     this.topBar.transform.position = position;
                     this.topBar.transform.localScale = new Vector3(23, 1.85f);
                     
-                    if(GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeams) && !(bool) allowTeams)
+                    if (!GameModeManager.CurrentHandler.AllowTeams)
                     {
                         this.bottomBar.SetActive(true);
                     }
@@ -145,7 +143,7 @@ namespace RWF.UI
                     this.topBar.transform.position = position;
                     this.topBar.transform.localScale = new Vector3(23, 1.85f);
                     
-                    if(GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeams) && !(bool) allowTeams)
+                    if (!GameModeManager.CurrentHandler.AllowTeams)
                     {
                         this.bottomBar.SetActive(false);
                     }

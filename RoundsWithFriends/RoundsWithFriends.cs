@@ -125,6 +125,11 @@ namespace RWF
         public static int MaxColorsHardLimit => UnboundLib.Utils.ExtraPlayerSkins.numberOfSkins;
         public const int MaxCharactersPerClientHardLimit = 2;
 
+        public const string PlayersRequiredToStartGameKey = "playersRequiredToStartGame";
+        public const string MaxPlayersKey = "maxPlayers";
+        public const string MaxTeamsKey = "maxTeams";
+        public const string MaxClientsKey = "maxClients";
+
         public int MaxClients
         {
             get
