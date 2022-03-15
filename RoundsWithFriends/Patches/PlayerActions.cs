@@ -13,11 +13,11 @@ namespace RWF.Patches
         private static void Postfix(PlayerActions __instance)
         {
             __instance.GetAdditionalData().increaseColorID = (PlayerAction) typeof(PlayerActions).InvokeMember("CreatePlayerAction",
-                                    BindingFlags.Instance | BindingFlags.InvokeMethod |
-                                    BindingFlags.NonPublic, null, __instance, new object[] { "Increase Team ID" });
+                                                                BindingFlags.Instance | BindingFlags.InvokeMethod |
+                                                                BindingFlags.NonPublic, null, __instance, new object[] { "Increase Team ID" });
             __instance.GetAdditionalData().decreaseColorID = (PlayerAction) typeof(PlayerActions).InvokeMember("CreatePlayerAction",
-                        BindingFlags.Instance | BindingFlags.InvokeMethod |
-                        BindingFlags.NonPublic, null, __instance, new object[] { "Descrease Team ID" });
+                                                                BindingFlags.Instance | BindingFlags.InvokeMethod |
+                                                                BindingFlags.NonPublic, null, __instance, new object[] { "Descrease Team ID" });
 
         }
     }

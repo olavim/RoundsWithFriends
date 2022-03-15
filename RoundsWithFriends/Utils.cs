@@ -1,7 +1,33 @@
 using UnityEngine;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace RWF
 {
+
+    public static class AverageColor
+    {
+        public static Color Average(List<Color> colors)
+        {
+            return AverageColor.Average(colors.ToArray());
+        }
+        public static Color Average(Color[] colors)
+        {
+            float r = 0f;
+            float g = 0f;
+            float b = 0f;
+            float a = 0f;
+            foreach (Color color in colors)
+            {
+                r += color.r;
+                g += color.g;
+                b += color.b;
+                a += color.a;
+            }
+            float num = (float) colors.Count();
+            return new Color(r / num, g / num, b / num, a / num);
+        }
+    }
     static class Math
     {
         public static int mod(int x, int m)

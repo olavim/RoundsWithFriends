@@ -46,7 +46,7 @@ namespace RWF.Patches
 
             // set the players colorID to their preferred color if its available or the next unused colorID
             int colorID = PlayerPrefs.GetInt(RWFMod.GetCustomPropertyKey("PreferredColor" + joinedPlayer.playerID.ToString()));
-            if (GameModeManager.CurrentHandler.Settings.TryGetValue("allowTeams", out object allowTeamsObj) && !(bool) allowTeamsObj && PlayerManager.instance.players.Where(p => p.playerID != joinedPlayer.playerID).Select(p => p.colorID()).Distinct().Contains(colorID))
+            if (!GameModeManager.CurrentHandler.AllowTeams && PlayerManager.instance.players.Where(p => p.playerID != joinedPlayer.playerID).Select(p => p.colorID()).Distinct().Contains(colorID))
             {
                 colorID = Enumerable.Range(0, RWFMod.MaxColorsHardLimit).Except(PlayerManager.instance.players.Where(p => p.playerID != joinedPlayer.playerID).Select(p => p.colorID())).Distinct().First();
             }

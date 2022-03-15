@@ -324,11 +324,13 @@ namespace RWF
             foreach (LobbyCharacter player in players)
             {
                 if (false)//players.Where(p => p.uniqueID != player.uniqueID).Select(p => this.UniqueIDToTeamID(p.uniqueID)).Contains(this.UniqueIDToTeamID(player.uniqueID)))
+#pragma warning disable CS0162
                 {
                     // player is on a team
                     this.PlayerGO(player.uniqueID).transform.localScale = VersusDisplay.SizeOnTeam * Vector3.one;
                     this.TeamGroupGO(this.UniqueIDToTeamID(player.uniqueID), this.PlayerVisualColorID(player.uniqueID)).GetComponent<LayoutElement>().minWidth = 300;
                 }
+#pragma warning restore CS0162
                 else
                 {
                     // player is alone
