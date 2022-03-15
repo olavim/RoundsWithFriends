@@ -20,6 +20,8 @@ namespace RWF.GameModes
         public override bool AllowTeams => _AllowTeams;
 
         public override GameSettings Settings { get; protected set; }
+        private UISettings _UISettings;
+        public override UISettings UISettings => this._UISettings;
 
         public RWFGameModeHandler(string name, string gameModeId, bool allowTeams,
             int pointsToWinRound = 2, int roundsToWinGame = 5, int? playersRequiredToStartGame = null,
@@ -36,10 +38,8 @@ namespace RWF.GameModes
                 { "maxPlayers", UnityEngine.Mathf.Clamp(maxPlayers ?? RWFMod.instance.MaxPlayers, 1, RWFMod.MaxPlayersHardLimit) },
                 { "maxTeams", UnityEngine.Mathf.Clamp(maxTeams ?? RWFMod.instance.MaxTeams, 1, RWFMod.MaxColorsHardLimit) },
                 { "maxClients", UnityEngine.Mathf.Clamp(maxClients ?? RWFMod.instance.MaxClients, 1, RWFMod.MaxPlayersHardLimit) },
-                { "description", description ?? ""},
-                { "descriptionFontSize", descriptionFontSize ?? 30},
-                { "videoURL", videoURL ?? "https://media.giphy.com/media/lcngwaPCkqFbfhzrsH/giphy.mp4"}
             };
+            this._UISettings = new UISettings(description ?? "", descriptionFontSize ?? 30, videoURL ?? "https://media.giphy.com/media/lcngwaPCkqFbfhzrsH/giphy.mp4");
         }
 
         public override void SetActive(bool active)

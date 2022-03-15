@@ -167,13 +167,13 @@ namespace RWF.UI
                 curGamemode.Name.ToUpper();
             
             // Set video
-            this.transform.Find("RightPanel/Top/gameModeVideo").GetComponent<VideoPlayer>().url = curGamemode.Settings.TryGetValue("videoURL", out object url) ? (string) url : "https://media.giphy.com/media/lcngwaPCkqFbfhzrsH/giphy.mp4"; 
+            this.transform.Find("RightPanel/Top/gameModeVideo").GetComponent<VideoPlayer>().url = curGamemode.UISettings.videoURL; 
             this.transform.Find("RightPanel/Top/gameModeVideo").GetComponent<VideoPlayer>().Play();
             
             // Set description
             var descriptionObj = this.transform.Find("RightPanel/Bottom/Panel/Text").GetComponent<TextMeshProUGUI>();
-            descriptionObj.text = curGamemode.Settings.TryGetValue("description", out object description) ? (string) description : "";
-            descriptionObj.fontSizeMax = curGamemode.Settings.TryGetValue("descriptionFontSize", out object fontSize) ? (int) fontSize : 30;
+            descriptionObj.text = curGamemode.UISettings.description;
+            descriptionObj.fontSizeMax = curGamemode.UISettings.descriptionFontSize;
             
         }
 
