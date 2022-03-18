@@ -1,11 +1,18 @@
+## v2.2.0
+
+Glory to [pdcook](https://github.com/pdcook):
+- Added support for up to 16 players.
+- Improved player pick order logic.
+- Changed lobby UIs to better support the increased maximum player count.
+
 ## v1.3.10
 
-- Fixed offline face assignment
-- Made `PopUpMenu` class public
+- Fixed offline face assignment.
+- Made `PopUpMenu` class public.
 
 ## v1.3.9
 
-- Fixed online face assignment
+- Fixed online face assignment.
 
 ## v1.3.8
 
