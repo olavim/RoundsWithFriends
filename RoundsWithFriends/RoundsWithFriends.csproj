@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-	<ProjectGuid>{9A19103F-16F7-4668-BE54-9A1E7A4F7556}</ProjectGuid>
+    <ProjectGuid>{9A19103F-16F7-4668-BE54-9A1E7A4F7556}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>RWF</RootNamespace>
     <AssemblyName>RoundsWithFriends</AssemblyName>
@@ -27,7 +27,7 @@
     <DebugType>portable</DebugType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <RoundsFolder>C:\Program Files (x86)\Steam\steamapps\common\ROUNDS</RoundsFolder>
     <IndirectBuildTask>true</IndirectBuildTask>
@@ -88,10 +88,10 @@
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AssetBundleModule">
-      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+      <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AudioModule">
-      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+      <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
@@ -118,7 +118,7 @@
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VideoModule">
-      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
+      <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -130,7 +130,7 @@
       <PackageVersion>%(PackAssembly.Version)</PackageVersion>
     </PropertyGroup>
   </Target>
-  
+
   <Target Name="PostBuildTaskWin" Condition="'$(OS)' == 'Windows_NT'" DependsOnTargets="Build" AfterTargets="Build">
     <CallTarget Targets="ReadPackageVersionFromOutputAssembly">
       <Output TaskParameter="TargetOutputs" PropertyName="PackageVersion" />
