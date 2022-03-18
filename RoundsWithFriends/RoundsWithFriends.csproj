@@ -36,13 +36,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="AssetsEmbedded\rwf_lobbyui" />
     <None Remove="RoundsWithFriends.csproj.user.dist" />
+    <EmbeddedResource Include="AssetsEmbedded\rwf_lobbyui" />
     <None Include="..\README.md" />
     <None Include="..\.gitignore" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="UnboundLib" Version="2.1.3" />
+    <PackageReference Include="UnboundLib" Version="2.11.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -60,6 +62,9 @@
     </Reference>
     <Reference Include="InControl">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\InControl.dll</HintPath>
+    </Reference>
+    <Reference Include="MMHOOK_Assembly-CSharp">
+      <HintPath>..\Assemblies\MMHOOK_Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Photon3Unity3D">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\Photon3Unity3D.dll</HintPath>
@@ -82,11 +87,23 @@
     <Reference Include="UnityEngine">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.AssetBundleModule">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ParticleSystemModule">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.SpriteMaskModule">
+      <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.SpriteMaskModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.Physics2DModule">
+      <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.Physics2DModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
@@ -99,6 +116,9 @@
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath>$(RoundsFolder)\Rounds_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.VideoModule">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\ROUNDS\Rounds_Data\Managed\UnityEngine.VideoModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 

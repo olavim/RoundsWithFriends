@@ -14,6 +14,11 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Photon.Pun.UtilityScripts;
 using ExitGames.Client.Photon;
+using Jotunn.Utils;
+using RWF.UI;
+using On;
+using UnboundLib.Utils.UI;
+using System.Linq;
 
 namespace RWF
 {
@@ -47,19 +52,29 @@ namespace RWF
 
         public int rounds = 5;
         public int points = 2;
+
+        public bool showSpawns = false;
     }
 
-    [BepInDependency("com.willis.rounds.unbound", "2.1.3")]
+    [BepInDependency("com.willis.rounds.unbound", "2.10.2")]
     [BepInPlugin(ModId, "RoundsWithFriends", Version)]
     public class RWFMod : BaseUnityPlugin
     {
+        private const string ModName = "Rounds With Friends";
+        private static string CompatibilityModName => RWFMod.ModName.Replace(" ", "");
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "1.3.10";
+        public const string Version = "2.2.0";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
 #else
         public static readonly bool DEBUG = false;
+#endif
+
+#if BETA
+        public static readonly bool BETA = true;
+#else
+        public static readonly bool BETA = false;
 #endif
 
         public static RWFMod instance;
@@ -106,11 +121,28 @@ namespace RWF
             }
         }
 
+        public const int MaxPlayersHardLimit = 32;
+        public static int MaxColorsHardLimit => UnboundLib.Utils.ExtraPlayerSkins.numberOfSkins;
+        public const int MaxCharactersPerClientHardLimit = 2;
+
+        public const string PlayersRequiredToStartGameKey = "playersRequiredToStartGame";
+        public const string MaxPlayersKey = "maxPlayers";
+        public const string MaxTeamsKey = "maxTeams";
+        public const string MaxClientsKey = "maxClients";
+
+        public int MaxClients
+        {
+            get
+            {
+                return 16;
+            }
+        }
+
         public int MaxPlayers
         {
             get
             {
-                return 4;
+                return 16;
             }
         }
 
@@ -126,7 +158,15 @@ namespace RWF
         {
             get
             {
-                return GameModeManager.CurrentHandlerID == "Deathmatch" ? this.MaxPlayers : 2;
+                return this.MaxPlayers;
+            }
+        }
+
+        public int MaxCharactersPerClient
+        {
+            get
+            {
+                return RWFMod.MaxCharactersPerClientHardLimit;
             }
         }
 
@@ -137,6 +177,8 @@ namespace RWF
         private Dictionary<string, bool> gmInitialized;
 
         public DebugOptions debugOptions = new DebugOptions();
+
+        public static AssetBundle gmUIBundle;
 
         public void Awake()
         {
@@ -155,6 +197,12 @@ namespace RWF
 
         public void Start()
         {
+            // register credits with unbound
+            Unbound.RegisterCredits(RWFMod.ModName, new string[] { "Tilastokeskus (Project creation, 4 player support, Deathmatch, Team Deathmatch, UI, Fair pick orders)", "Pykess (> 4 player support, multiple players per client, additional player colors, disconnect handling, UI)", "BossSloth (Gamemode selection UI)" }, new string[] { "github", "Support Tilastokeskus", "Support Pykess", "Support BossSloth" }, new string[] { "https://github.com/olavim/RoundsWithFriends", "https://www.buymeacoffee.com/tilastokeskus", "https://ko-fi.com/pykess", "https://www.buymeacoffee.com/BossSloth" });
+
+            // add GUI to modoptions menu
+            Unbound.RegisterMenu(RWFMod.ModName, () => { }, this.GUI, null, false);
+
             this.soundEnabled = new Dictionary<string, bool>();
             this.gmInitialized = new Dictionary<string, bool>();
 
@@ -167,6 +215,7 @@ namespace RWF
             });
 
             GameModeManager.AddHandler<GameModes.GM_Deathmatch>("Deathmatch", new GameModes.DeathmatchHandler());
+            GameModeManager.AddHandler<GameModes.GM_TeamDeathmatch>("Team Deathmatch", new GameModes.TeamDeathmatchHandler());
 
             GameModeManager.OnGameModeChanged += (gm) =>
             {
@@ -184,6 +233,8 @@ namespace RWF
             GameModeManager.AddHook(GameModeHooks.HookInitEnd, this.OnGameModeInitialized);
             GameModeManager.AddHook(GameModeHooks.HookGameStart, this.UnsetFaces);
             GameModeManager.AddHook(GameModeHooks.HookPickStart, this.SetPlayerFaces);
+            GameModeManager.AddHook(GameModeHooks.HookGameStart, gm => PlayerSpotlight.CancelFadeHook(true));
+            GameModeManager.AddHook(GameModeHooks.HookBattleStart, gm => PlayerSpotlight.BattleStartFailsafe());
 
             this.gameObject.AddComponent<RoundEndHandler>();
 
@@ -197,6 +248,37 @@ namespace RWF
 
                 PhotonPeer.RegisterType(typeof(DebugOptions), 77, DebugOptions.Serialize, DebugOptions.Deserialize);
             }
+            PhotonPeer.RegisterType(typeof(LobbyCharacter), 78, LobbyCharacter.Serialize, LobbyCharacter.Deserialize);
+
+            // add beta text
+            if (BETA) { BetaTextHandler.AddBetaText(true); }
+
+            On.MainMenuHandler.Awake += (orig, self) =>
+            {
+                orig(self);
+
+                // add beta text
+                if (BETA) { BetaTextHandler.AddBetaText(true); }
+            };
+
+
+            // load the assetbundle for the gamemode ui
+            RWFMod.gmUIBundle = AssetUtils.LoadAssetBundleFromResources("rwf_lobbyui", typeof(RWFMod).Assembly);
+            if (RWFMod.gmUIBundle == null)
+            {
+                Debug.LogError("Could not load gamemode UI bundle!");
+            }
+        }
+
+        private void GUI(GameObject menu)
+        {
+            MenuHandler.CreateText($"{RWFMod.ModName} Options", menu, out TextMeshProUGUI _, 45);
+            MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 15);
+            void ShowKeybindsChanged(bool val)
+            {
+                PlayerPrefs.SetInt(RWFMod.GetCustomPropertyKey("ShowKeybinds"), val ? 1 : 0);
+            }
+            MenuHandler.CreateToggle(PlayerPrefs.GetInt(RWFMod.GetCustomPropertyKey("ShowKeybinds"), 1) == 1, "Show keybind hints in menus", menu, ShowKeybindsChanged, 30);
         }
 
         public void Update()
@@ -239,7 +321,7 @@ namespace RWF
             {
                 if (player.data.view.IsMine)
                 {
-                    PlayerFace playerFace = CharacterCreatorHandler.instance.selectedPlayerFaces[0];
+                    PlayerFace playerFace = CharacterCreatorHandler.instance.selectedPlayerFaces[player.GetAdditionalData().localID];
                     player.data.view.RPC("RPCA_SetFace", RpcTarget.All, new object[]
                     {
                         playerFace.eyeID,
@@ -257,23 +339,29 @@ namespace RWF
             yield break;
         }
 
+        static string GetHandlerID(IGameModeHandler gm)
+        {
+            return GameModeManager.Handlers.Where(kv => kv.Value == gm).Select(kv => kv.Key).FirstOrDefault();
+        }
+
         private IEnumerator OnGameModeInitialized(IGameModeHandler gm)
         {
-            if (!this.gmInitialized.ContainsKey(gm.Name))
+            string ID = GetHandlerID(gm);
+            if (!this.gmInitialized.ContainsKey(ID))
             {
-                this.gmInitialized.Add(gm.Name, true);
+                this.gmInitialized.Add(ID, true);
             }
             else
             {
-                this.gmInitialized[gm.Name] = true;
+                this.gmInitialized[ID] = true;
             }
 
             yield break;
         }
 
-        public bool IsGameModeInitialized(string handler)
+        public bool IsGameModeInitialized(string handlerID)
         {
-            return this.gmInitialized.ContainsKey(handler) && this.gmInitialized[handler];
+            return this.gmInitialized.ContainsKey(handlerID) && this.gmInitialized[handlerID];
         }
 
         private IEnumerator ToggleCeaseFire(bool isCeaseFire)
@@ -361,27 +449,7 @@ namespace RWF
 
         public void SetupGameModes()
         {
-            var gameModeGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/GameMode");
-            var versusGo = gameModeGo.transform.Find("Group").Find("Versus").gameObject;
-            var characterSelectGo = GameObject.Find("/Game/UI/UI_MainMenu/Canvas/ListSelector/CharacterSelect");
-
-            var versusText = versusGo.GetComponentInChildren<TextMeshProUGUI>();
-            versusText.text = "TEAM DEATHMATCH";
-
-            var characterSelectPage = characterSelectGo.GetComponent<ListMenuPage>();
-
-            var deathmatchButtonGo = GameObject.Instantiate(versusGo, versusGo.transform.parent);
-            deathmatchButtonGo.transform.localScale = Vector3.one;
-            deathmatchButtonGo.transform.SetSiblingIndex(1);
-
-            var deathmatchButtonText = deathmatchButtonGo.GetComponentInChildren<TextMeshProUGUI>();
-            deathmatchButtonText.text = "DEATHMATCH";
-
-            GameObject.DestroyImmediate(deathmatchButtonGo.GetComponent<Button>());
-            var deathmatchButton = deathmatchButtonGo.AddComponent<Button>();
-
-            deathmatchButton.onClick.AddListener(characterSelectPage.Open);
-            deathmatchButton.onClick.AddListener(() => GameModeManager.SetGameMode("Deathmatch"));
+            GameModeManager.RemoveHandler(GameModeManager.ArmsRaceID);
         }
 
         public void InjectUIElements()
@@ -397,32 +465,23 @@ namespace RWF
                 var charSelectInstanceGo1 = charSelectionGroupGo.transform.GetChild(0).gameObject;
                 var charSelectInstanceGo2 = charSelectionGroupGo.transform.GetChild(1).gameObject;
 
-                var charSelectInstanceGo3 = GameObject.Instantiate(charSelectInstanceGo1, charSelectionGroupGo.transform);
-                charSelectInstanceGo3.name = "CharacterSelect 3";
-                charSelectInstanceGo3.transform.localScale = Vector3.one;
-
-                charSelectInstanceGo3.transform.position = charSelectInstanceGo1.transform.position - new Vector3(0, 6, 0);
                 charSelectInstanceGo1.transform.position += new Vector3(0, 6, 0);
-
-                foreach (var portrait in charSelectInstanceGo3.transform.GetChild(0).GetChild(0).GetComponentsInChildren<CharacterCreatorPortrait>())
-                {
-                    portrait.playerId = 2;
-                }
-
-                var charSelectInstanceGo4 = GameObject.Instantiate(charSelectInstanceGo2, charSelectionGroupGo.transform);
-                charSelectInstanceGo4.name = "CharacterSelect 4";
-                charSelectInstanceGo4.transform.localScale = Vector3.one;
-
-                charSelectInstanceGo4.transform.position = charSelectInstanceGo2.transform.position - new Vector3(0, 6, 0);
                 charSelectInstanceGo2.transform.position += new Vector3(0, 6, 0);
 
-                foreach (var portrait in charSelectInstanceGo4.transform.GetChild(0).GetChild(0).GetComponentsInChildren<CharacterCreatorPortrait>())
+                for (int playerNum = 3; playerNum <= this.MaxPlayers; playerNum++)
                 {
-                    portrait.playerId = 3;
-                }
+                    var newCharSelectInstanceGo = GameObject.Instantiate(playerNum % 2 == 1 ? charSelectInstanceGo1 : charSelectInstanceGo2, charSelectionGroupGo.transform);
+                    newCharSelectInstanceGo.name = "CharacterSelect " + playerNum.ToString();
+                    newCharSelectInstanceGo.transform.localScale = Vector3.one;
 
-                charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(charSelectInstanceGo3.GetComponent<CharacterSelectionInstance>().ResetMenu);
-                charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(charSelectInstanceGo4.GetComponent<CharacterSelectionInstance>().ResetMenu);
+                    newCharSelectInstanceGo.transform.position = (playerNum % 2 == 1 ? charSelectInstanceGo1 : charSelectInstanceGo2).transform.position - new Vector3(0, 12 * (UnityEngine.Mathf.Ceil(((float) playerNum - 2f) / 2f)), 0);
+
+                    foreach (var portrait in newCharSelectInstanceGo.transform.GetChild(0).GetChild(0).GetComponentsInChildren<CharacterCreatorPortrait>())
+                    {
+                        portrait.playerId = playerNum - 1;
+                    }
+                    charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(newCharSelectInstanceGo.GetComponent<CharacterSelectionInstance>().ResetMenu);
+                }
             }
 
             if (!gameGo.transform.Find("PrivateRoom"))

@@ -2,6 +2,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnboundLib;
+using UnboundLib.Extensions;
+using UnboundLib.GameModes;
 
 namespace RWF.Patches
 {
@@ -88,24 +90,48 @@ namespace RWF.Patches
             var deltaY = roundCountBlue.transform.position.y - roundCountOrange.transform.position.y;
             var localDeltaY = roundCountBlue.transform.localPosition.y - roundCountOrange.transform.localPosition.y;
 
-            // This postfix just adds handling for more than two teams, so we skip the first two
-            for (int i = 2; i < numTeams; i++) {
-                var newPos = roundCountOrange.transform.position + new Vector3(0, deltaY * i, 0);
-                var roundCountGo = GameObject.Instantiate(roundCountOrange, newPos, Quaternion.identity, parent);
-                roundCountGo.transform.localPosition = roundCountOrange.transform.localPosition + new Vector3(0, localDeltaY * i, 0);
-                roundCountGo.transform.localScale = Vector3.one;
+            // This postfix just adds handling for more than two teams, so we skip instantiating the first two
+            for (int i = 0; i < numTeams; i++) {
+                GameObject roundCountGo = null;
+
+                if (i <= 1)
+                {
+                    roundCountGo = i == 0 ? roundCountOrange : roundCountBlue;
+                }
+                else if (i > 1)
+                {
+                    var newPos = roundCountOrange.transform.position + new Vector3(0, deltaY * i, 0);
+                    roundCountGo = GameObject.Instantiate(roundCountOrange, newPos, Quaternion.identity, parent);
+                    roundCountGo.transform.localPosition = roundCountOrange.transform.localPosition + new Vector3(0, localDeltaY * i, 0);
+                    roundCountGo.transform.localScale = Vector3.one;
+                }
+
 
                 for (int j = 0; j < roundCountGo.transform.childCount; j++) {
                     var child = roundCountGo.transform.GetChild(j);
 
-                    if (teamRounds[i] + teamPoints[i] > j) {
-                        child.GetComponentInChildren<Image>().color = PlayerSkinBank.GetPlayerSkinColors(i).color;
+                    // fill rounds
+                    if (teamRounds[i] > j)
+                    {
+                        child.GetComponentInChildren<Image>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
+                        child.GetComponentInChildren<Image>().type = Image.Type.Simple;
+                        child.localScale = Vector3.one;
+                    }
+                    else if (teamRounds[i] == j && teamPoints[i] > 0)
+                    {
+                        // use radial filling for points - so that any number of points per round are supported
+                        child.GetComponentInChildren<Image>().color = PlayerSkinBank.GetPlayerSkinColors(PlayerManager.instance.GetPlayersInTeam(i)[0].colorID()).color;
+                        child.GetComponentInChildren<Image>().type = Image.Type.Filled;
+                        child.GetComponentInChildren<Image>().fillMethod = Image.FillMethod.Radial360;
+                        child.GetComponentInChildren<Image>().fillAmount = (float) teamPoints[i] / (int) GameModeManager.CurrentHandler.Settings["pointsToWinRound"];
+                        child.localScale = new Vector3(1f, -1f, 1f);
 
-                        if (teamRounds[i] > j) {
-                            child.localScale = Vector3.one;
-                        }
-                    } else {
+                    }
+                    else
+                    {
+                        // no partial points
                         child.GetComponentInChildren<Image>().color = __instance.offColor;
+                        child.GetComponentInChildren<Image>().type = Image.Type.Simple;
                         child.localScale = Vector3.one * 0.3f;
                     }
                 }

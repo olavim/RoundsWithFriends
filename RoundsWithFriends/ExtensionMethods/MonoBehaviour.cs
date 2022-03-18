@@ -66,11 +66,11 @@ namespace RWF
             requests.Remove(new Tuple<int, string>(actor, methodName));
         }
 
-        public static void ExecuteAfterGameModeInitialized(this MonoBehaviour instance, string handler, Action action)
+        public static void ExecuteAfterGameModeInitialized(this MonoBehaviour instance, string handlerID, Action action)
         {
             IEnumerator ExecuteAfter()
             {
-                while (!RWFMod.instance.IsGameModeInitialized(handler))
+                while (!RWFMod.instance.IsGameModeInitialized(handlerID))
                 {
                     yield return null;
                 }

@@ -18,8 +18,8 @@ namespace RWF.Patches
             var list = instructions.ToList();
             var newInstructions = new List<CodeInstruction>();
 
-            var f_simulated = ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "simulated");
-            var m_isCeaseFire = ExtensionMethods.GetMethodInfo(typeof(OutOfBoundsHandler_Patch_LateUpdate), "IsCeaseFire");
+            var f_simulated = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "simulated");
+            var m_isCeaseFire = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(OutOfBoundsHandler_Patch_LateUpdate), "IsCeaseFire");
 
             for (int i = 0; i < list.Count; i++) {
                 if (list[i].LoadsField(f_simulated) && list[i + 1].opcode == OpCodes.Brtrue) {

@@ -1,9 +1,25 @@
 ﻿using HarmonyLib;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Reflection.Emit;
 
 namespace RWF.Patches
 {
+    [HarmonyPatch(typeof(CharacterCreatorPortrait), "ClickButton")]
+    class CharacterCreatorPortrait_Patch_ClickButton
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            foreach (var ins in instructions)
+            {
+                if (ins.opcode == OpCodes.Ldc_I4_S && (sbyte)ins.operand == (sbyte)10)
+                {
+                    ins.operand = RWFMod.MaxPlayersHardLimit;
+                }
+                yield return ins;
+            }
+        }
+    }
     [HarmonyPatch(typeof(CharacterCreatorPortrait), "EditCharacter")]
     class CharacterCreatorPortrait_Patch_EditCharacter
     {

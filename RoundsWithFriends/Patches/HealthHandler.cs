@@ -4,17 +4,10 @@ using System.Collections.Generic;
 using UnboundLib;
 using System.Reflection.Emit;
 using System.Linq;
+using System;
 
 namespace RWF.Patches
 {
-    [HarmonyPatch(typeof(HealthHandler), "Revive")]
-    class HealthHandler_Patch_Revive
-    {
-        static void Postfix(SpriteRenderer ___hpSprite, Player ___player) {
-            // For reasons unknown, "Health" is actually player color
-            ___hpSprite.color = PlayerSkinBank.GetPlayerSkinColors(___player.teamID).color;
-        }
-    }
 
     [HarmonyPatch(typeof(HealthHandler), "TakeForce")]
     class HealthHandler_Patch_TakeForce
@@ -28,8 +21,8 @@ namespace RWF.Patches
             var list = instructions.ToList();
             var newInstructions = new List<CodeInstruction>();
 
-            var f_simulated = ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "simulated");
-            var m_isCeaseFire = ExtensionMethods.GetMethodInfo(typeof(HealthHandler_Patch_TakeForce), "IsCeaseFire");
+            var f_simulated = UnboundLib.ExtensionMethods.GetFieldInfo(typeof(PlayerVelocity), "simulated");
+            var m_isCeaseFire = UnboundLib.ExtensionMethods.GetMethodInfo(typeof(HealthHandler_Patch_TakeForce), "IsCeaseFire");
 
             for (int i = 0; i < list.Count; i++) {
                 if (list[i].LoadsField(f_simulated) && list[i + 1].opcode == OpCodes.Brtrue) {
