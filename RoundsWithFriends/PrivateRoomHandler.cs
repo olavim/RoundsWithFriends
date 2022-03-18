@@ -143,13 +143,14 @@ namespace RWF
         }
 
         // bool that represents if all of the game mode's requirements are fulfilled
-        private bool GameCanStart => this.NumCharactersReady == this.NumCharacters // is everyone ready?
-                                    && PhotonNetwork.CurrentRoom.PlayerCount > 1 // is there more than just one client?
+        private bool GameCanStart => this.NumCharacters > 0 && this.NumCharactersReady == this.NumCharacters // is everyone ready?
+                                    && (RWFMod.DEBUG || // either using debug mode or all of the game mode's requirements are satisfied
+                                    (PhotonNetwork.CurrentRoom.PlayerCount > 1 // is there more than just one client?
                                     && PhotonNetwork.CurrentRoom.PlayerCount <= (GameModeManager.CurrentHandler.Settings.TryGetValue(RWFMod.MaxClientsKey, out object maxC) ? (int) maxC : RWFMod.instance.MaxClients) // are there too many clients?
                                     && this.PrivateRoomCharacters.Select(p => p.colorID).Distinct().Count() > 1 // is there more than one player?
                                     && this.NumCharactersReady >= (GameModeManager.CurrentHandler.Settings.TryGetValue(RWFMod.PlayersRequiredToStartGameKey, out object req) ? (int) req : RWFMod.instance.MinPlayers) // are there enough players for this game mode? 
                                     && this.NumCharactersReady <= (GameModeManager.CurrentHandler.Settings.TryGetValue(RWFMod.MaxPlayersKey, out object maxP) ? (int) maxP : RWFMod.MaxPlayersHardLimit) // are there too many players for this game mode?
-                                    && this.PrivateRoomCharacters.Select(p => p.colorID).Distinct().Count() <= (GameModeManager.CurrentHandler.Settings.TryGetValue(RWFMod.MaxTeamsKey, out object maxT) ? (int) maxT : RWFMod.instance.MaxTeams); // are there too many teams?
+                                    && this.PrivateRoomCharacters.Select(p => p.colorID).Distinct().Count() <= (GameModeManager.CurrentHandler.Settings.TryGetValue(RWFMod.MaxTeamsKey, out object maxT) ? (int) maxT : RWFMod.instance.MaxTeams))); // are there too many teams?
 
 
 
