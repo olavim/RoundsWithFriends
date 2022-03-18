@@ -63,7 +63,7 @@ namespace RWF
         private const string ModName = "Rounds With Friends";
         private static string CompatibilityModName => RWFMod.ModName.Replace(" ", "");
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "2.1.10";
+        public const string Version = "2.2.0";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
@@ -261,7 +261,7 @@ namespace RWF
                 if (BETA) { BetaTextHandler.AddBetaText(true); }
             };
 
-            
+
             // load the assetbundle for the gamemode ui
             RWFMod.gmUIBundle = AssetUtils.LoadAssetBundleFromResources("rwf_lobbyui", typeof(RWFMod).Assembly);
             if (RWFMod.gmUIBundle == null)
@@ -474,11 +474,11 @@ namespace RWF
                     newCharSelectInstanceGo.name = "CharacterSelect " + playerNum.ToString();
                     newCharSelectInstanceGo.transform.localScale = Vector3.one;
 
-                    newCharSelectInstanceGo.transform.position = (playerNum % 2 == 1 ? charSelectInstanceGo1 : charSelectInstanceGo2).transform.position - new Vector3(0, 12 * (UnityEngine.Mathf.Ceil(((float)playerNum-2f)/2f)), 0);
+                    newCharSelectInstanceGo.transform.position = (playerNum % 2 == 1 ? charSelectInstanceGo1 : charSelectInstanceGo2).transform.position - new Vector3(0, 12 * (UnityEngine.Mathf.Ceil(((float) playerNum - 2f) / 2f)), 0);
 
                     foreach (var portrait in newCharSelectInstanceGo.transform.GetChild(0).GetChild(0).GetComponentsInChildren<CharacterCreatorPortrait>())
                     {
-                        portrait.playerId = playerNum-1;
+                        portrait.playerId = playerNum - 1;
                     }
                     charSelectionGroupGo.GetComponent<GoBack>().goBackEvent.AddListener(newCharSelectInstanceGo.GetComponent<CharacterSelectionInstance>().ResetMenu);
                 }
