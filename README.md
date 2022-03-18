@@ -4,7 +4,7 @@ A [ROUNDS](https://landfall.se/rounds) mod to extend the game's multiplayer capa
 
 ## Current Features
 
-The mod supports up to four players in local and private online lobbies.
+The mod supports up to 16 players in local and private online lobbies.
 
 ### Team Deathmatch
 
