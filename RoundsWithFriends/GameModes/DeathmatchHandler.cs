@@ -16,7 +16,7 @@
             maxTeams: null,
             maxClients: null,
             description: "Free For All Deathmatch. Last player standing wins.",
-            videoURL: "https://github.com/olavim/RoundsWithFriends/blob/main/Media/Deathmatch.mp4")
+            videoURL: "https://github.com/olavim/RoundsWithFriends/raw/main/Media/Deathmatch.mp4")
         {
 
         }
