@@ -16,7 +16,7 @@
             maxTeams: null,
             maxClients: null,
             description: "Team Deathmatch. Last team standing wins.",
-            videoURL: "https://github.com/olavim/RoundsWithFriends/blob/main/Media/TeamDeathmatch.mp4"
+            videoURL: "https://github.com/olavim/RoundsWithFriends/raw/main/Media/TeamDeathmatch.mp4"
             )
         {
 
