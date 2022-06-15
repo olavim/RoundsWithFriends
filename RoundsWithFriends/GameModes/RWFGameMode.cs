@@ -361,6 +361,7 @@ namespace RWF.GameModes
 
             yield return this.SyncBattleStart();
 
+            /*
             for (int i = 3; i >= 1; i--)
             {
                 UIHandler.instance.DisplayRoundStartText($"{i}");
@@ -368,8 +369,9 @@ namespace RWF.GameModes
                 yield return new WaitForSecondsRealtime(0.5f);
             }
 
-            SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
             UIHandler.instance.DisplayRoundStartText("FIGHT");
+            */
+            SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
             PlayerManager.instance.SetPlayersSimulated(true);
 
             yield return GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
@@ -397,6 +399,7 @@ namespace RWF.GameModes
 
             yield return this.SyncBattleStart();
 
+            /*
             for (int i = 3; i >= 1; i--)
             {
                 UIHandler.instance.DisplayRoundStartText($"{i}");
@@ -404,8 +407,9 @@ namespace RWF.GameModes
                 yield return new WaitForSecondsRealtime(0.5f);
             }
 
-            SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
             UIHandler.instance.DisplayRoundStartText("FIGHT");
+            */
+            SoundManager.Instance.Play(PointVisualizer.instance.sound_UI_Arms_Race_C_Ball_Pop_Shake, this.transform);
             PlayerManager.instance.SetPlayersSimulated(true);
 
             yield return GameModeManager.TriggerHook(GameModeHooks.HookBattleStart);
