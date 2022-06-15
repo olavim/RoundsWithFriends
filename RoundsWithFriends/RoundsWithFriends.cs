@@ -460,6 +460,8 @@ namespace RWF
             var mainMenuGo = uiGo.transform.Find("UI_MainMenu").Find("Canvas").gameObject;
             var charSelectionGroupGo = mainMenuGo.transform.Find("ListSelector").Find("CharacterSelect").GetChild(0).gameObject;
 
+            StartCoroutine(InjectKeybindsWhenReady());
+
             if (!charSelectionGroupGo.transform.Find("CharacterSelect 3"))
             {
                 var charSelectInstanceGo1 = charSelectionGroupGo.transform.GetChild(0).gameObject;
@@ -541,6 +543,30 @@ namespace RWF
                 popupGo.transform.localScale = Vector3.one;
                 popupGo.AddComponent<UI.PopUpMenu>();
             }
+
+        }
+        public IEnumerator InjectKeybindsWhenReady()
+        {
+            var uiGo = GameObject.Find("/Game/UI");
+            var mainMenuGo = uiGo.transform.Find("UI_MainMenu").Find("Canvas").gameObject;
+            
+            var localGameModeGroupGo = mainMenuGo.transform.Find("ListSelector/LOCAL/Group/Grid/Scroll View/Viewport/Content")?.gameObject;
+            while (localGameModeGroupGo is null)
+            {
+                yield return new WaitForEndOfFrame();
+                localGameModeGroupGo = mainMenuGo.transform.Find("ListSelector/LOCAL/Group/Grid/Scroll View/Viewport/Content")?.gameObject;
+            }
+            foreach (Transform gameModeButtonGo in localGameModeGroupGo.transform)
+            {
+                if (gameModeButtonGo.name == "Test") { continue; } // we don't want to add keybind hints to Sandbox
+                var gameModeButton = gameModeButtonGo.GetComponent<Button>();
+                if (gameModeButton is null) { continue; }
+                gameModeButton.onClick.AddListener(() =>
+                {
+                    KeybindHints.CreateLocalHints();
+                });
+            }                    
+            yield break; 
         }
     }
 }
