@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace RWF.Algorithms
 {
-    interface IPickOrderStrategy
+    public interface IPickOrderStrategy
     {
         void AddPlayer(Player player);
         void RefreshOrder(int[] winningTeamIDs);
@@ -84,6 +84,11 @@ namespace RWF.Algorithms
     {
 
         private IPickOrderStrategy strategy;
+        
+        public SetStrategy(IPickOrderStrategy strategy)
+        {
+            this.strategy = strategy;
+        }
 
         public PickOrder(List<Player> players)
         {
