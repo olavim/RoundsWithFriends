@@ -84,11 +84,6 @@ namespace RWF.Algorithms
     {
 
         private IPickOrderStrategy strategy;
-        
-        public void SetStrategy(IPickOrderStrategy strategy)
-        {
-            this.strategy = strategy;
-        }
 
         public PickOrder(List<Player> players)
         {
@@ -98,6 +93,11 @@ namespace RWF.Algorithms
             {
                 strategy.AddPlayer(player);
             }
+        }
+
+        public void SetStrategy(IPickOrderStrategy strategy)
+        {
+            this.strategy = strategy;
         }
 
         public List<Player> GetPickOrder(int[] winningTeamIDs)

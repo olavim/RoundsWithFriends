@@ -63,7 +63,7 @@ namespace RWF
         private const string ModName = "Rounds With Friends";
         private static string CompatibilityModName => RWFMod.ModName.Replace(" ", "");
         private const string ModId = "io.olavim.rounds.rwf";
-        public const string Version = "2.2.0";
+        public const string Version = "2.2.2";
 
 #if DEBUG
         public static readonly bool DEBUG = true;
@@ -549,7 +549,7 @@ namespace RWF
         {
             var uiGo = GameObject.Find("/Game/UI");
             var mainMenuGo = uiGo.transform.Find("UI_MainMenu").Find("Canvas").gameObject;
-            
+
             var localGameModeGroupGo = mainMenuGo.transform.Find("ListSelector/LOCAL/Group/Grid/Scroll View/Viewport/Content")?.gameObject;
             while (localGameModeGroupGo is null)
             {
@@ -565,8 +565,8 @@ namespace RWF
                 {
                     KeybindHints.CreateLocalHints();
                 });
-            }                    
-            yield break; 
+            }
+            yield break;
         }
     }
 }

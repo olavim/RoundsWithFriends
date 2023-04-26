@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using UnityEngine;
 using UnboundLib;
 using Photon.Pun;
-using ExitGames.Client.Photon;
 using UnboundLib.Extensions;
 // ReSharper disable NotAccessedField.Local
 
@@ -65,7 +63,7 @@ namespace RWF
         {
             // return uniqueID if it has been assigned (i.e. is negative), otherwise just return the actorID
 
-            int uniqueID = (int)instance.GetAdditionalData().GetFieldValue("uniqueID");
+            int uniqueID = (int) instance.GetAdditionalData().GetFieldValue("uniqueID");
 
             return uniqueID < 0 ? uniqueID : instance.data.view.ControllerActorNr;
         }
