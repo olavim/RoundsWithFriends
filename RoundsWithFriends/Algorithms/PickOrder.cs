@@ -85,7 +85,7 @@ namespace RWF.Algorithms
 
         private IPickOrderStrategy strategy;
         
-        public SetStrategy(IPickOrderStrategy strategy)
+        public void SetStrategy(IPickOrderStrategy strategy)
         {
             this.strategy = strategy;
         }
